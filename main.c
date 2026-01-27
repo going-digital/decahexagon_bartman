@@ -337,6 +337,7 @@ static void Wait12() { WaitLine(0x12); }
 static void Wait13() { WaitLine(0x13); }
 
 int main() {
+
     SysBase = *((struct ExecBase**)4UL);
 
     // We will use the graphics library only to locate and restore the system copper list once we are through.
@@ -354,25 +355,24 @@ int main() {
 #else
     KPrintF("Hello debugger from Amiga!\n");
 #endif
-    Write(Output(), (APTR)"Hello console!\n", 15);
+    Write(Output(), (APTR)"Decahexagon...\n", 15);
     Delay(50);
 
     warpmode(1);
+    // Precalc start
+
     // TODO: precalc stuff here
     init_tables();
-#ifdef MUSIC
+    #ifdef MUSIC
     if(p61Init(module) != 0)
         KPrintF("p61Init failed!\n");
-#endif
+    #endif
+
+    // Precalc end
     warpmode(0);
 
     TakeSystem();
     WaitVbl();
-
-    char* test = (char*)AllocMem(2502, MEMF_ANY);
-    memset(test, 0xcd, 2502);
-    memclr(test + 2, 2502 - 4);
-    FreeMem(test, 2502);
 
     // Allocate bitplanes
     bitplane_bg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
@@ -405,6 +405,7 @@ int main() {
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl2mod), 0);
 
     // set bitplane pointers
+    void* copListSetBpl = copPtr;
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bitplane_bg1);
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg1);
 
@@ -438,13 +439,25 @@ int main() {
         int f = frameCounter & 255;
 
         // clear
-        custom->color[0] = 0xf00;
-        blit_cls(bitplane_bg1);
-        custom->color[0] = 0x0f0;
-        blit_cls(bitplane_fg1);
-        custom->color[0] = 0x00f;
+        custom->color[0] = 0xf00; // Red raster
+        blit_cls(bitplane_bg2);
+        custom->color[0] = 0x0f0; // Green raster
+        blit_cls(bitplane_fg2);
+        custom->color[0] = 0x00f; // Blue raster
         blit_wait();
-        *(UWORD*)bitplane_bg1 = frameCounter;
+
+        // Add some moving debug content
+        bitplane_bg2[0] = frameCounter;
+
+        // Flip render buffers on next frame
+        copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_bg2);
+        copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg2);
+        void* tmp = bitplane_bg1;
+        bitplane_bg1 = bitplane_bg2;
+        bitplane_bg2 = tmp;
+        tmp = bitplane_fg1;
+        bitplane_fg1 = bitplane_fg2;
+        bitplane_fg2 = tmp;
 
         // WinUAE debug overlay test
         debug_clear();
