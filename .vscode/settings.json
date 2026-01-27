@@ -1,0 +1,6 @@
+{
+    "m68k.includePaths": [
+        "/Users/peterknight/.vscode/extensions/bartmanabyss.amiga-debug-1.7.9/bin/darwin/opt/m68k-amiga-elf/sys-include"
+    ],
+    "m68k.vasm.provideDiagnostics": false
+}

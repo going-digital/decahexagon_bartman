@@ -1,0 +1,62 @@
+
+#define POTINF_START (1<<0)
+#define POTINF_DATLX (1<<8)
+#define POTINF_OUTLX (1<<9)
+#define POTINF_DATLY (1<<10)
+#define POTINF_OUTLY (1<<11)
+#define POTINF_DATRX (1<<12)
+#define POTINF_OUTRX (1<<13)
+#define POTINF_DATRY (1<<14)
+#define POTINF_OUTRY (1<<15)
+
+// Alternative defines for mouse connetion
+#define POTINF_L_MOUSE_BUT2 POTINF_DATLY
+#define POTINF_L_MOUSE_BUT3 POTINF_DATLX
+#define POTINF_R_MOUSE_BUT2 POTINF_DATRY
+#define POTINF_R_MOUSE_BUT3 POTINF_DATRX
+
+// Alternative defines for joystick connetion
+#define POTINF_L_JOY_FIRE2 POTINF_DATLY
+#define POTINF_R_JOY_FIRE2 POTINF_DATRY
+
+#define BPLCON0F_ECSENA (1<<0)
+#define BPLCON0F_ERSY (1<<1)
+#define BPLCON0F_LACE (1<<2)
+#define BPLCON0F_LPEN (1<<3)
+#define BPLCON0F_BPU3 (1<<4)
+#define BPLCON0F_BYPASS (1<<5)
+#define BPLCON0F_SHRES (1<<6)
+#define BPLCON0F_UHRES (1<<7)
+#define BPLCON0F_GAUD (1<<8)
+#define BPLCON0F_COLOR (1<<9)
+#define BPLCON0F_DPF (1<<10)
+#define BPLCON0F_HAM (1<<11)
+#define BPLCON0F_BPU210 (1<<12)
+#define BPLCON0F_HIRES (1<<15)
+
+#define BPLCON1F_PF2H76 (1<<14)
+#define BPLCON1F_PF2H10 (1<<12)
+#define BPLCON1F_PF1H76 (1<<10)
+#define BPLCON1F_PF1H10 (1<<8)
+#define BPLCON1F_PF2H5432 (1<<4)
+#define BPLCON1F_PF1H5432 (1<<0)
+
+#define BPLCON2F_ZDBPSEL210 (1<<12)
+#define BPLCON2F_ZDBPEN (1<<11)
+#define BPLCON2F_ZDCTEN (1<<10)
+#define BPLCON2F_KILLEHB (1<<9)
+#define BPLCON2F_RDRAM (1<<8)
+#define BPLCON2F_SOGEN (1<<7)
+#define BPLCON2F_PF2PRI (1<<6)
+#define BPLCON2F_PF2P210 (1<<3)
+#define BPLCON2F_PF1P210 (1<<0)
+
+#define BPLCON3F_BANK210 (1<<13)
+#define BPLCON3F_PF2OF210 (1<<10)
+#define BPLCON3F_LOCT (1<<9)
+#define BPLCON3F_SPRES10 (1<<6)
+#define BPLCON3F_BRDRBLNK (1<<5)
+#define BPLCON3F_BRDNTRAN (1<<4)
+#define BPLCON3F_ZDCLKEN (1<<2)
+#define BPLCON3F_BRDSPRT (1<<1)
+#define BPLCON3F_EXTBLKEN (1<<0)
