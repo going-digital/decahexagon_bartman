@@ -653,16 +653,16 @@ void blit_line(
 
 __attribute__((always_inline)) inline
 void blit_cls(void *bitplane) {
-    memcpy(bitplane, sin_table, 2048/*BITPLANE_SIZE*/);
-    #if 0
     register volatile const void* _a0 ASM("a0") = bitplane;
     register volatile const struct Custom* _a6 ASM("a6") = custom;
     __asm volatile (
         "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
         "1:      btst.b  #6,4(%%a6)\n" // 14-8, dmaconr
         "        bne.b   1b\n"
-        "        move.l  #0x00000100,0x40(%%a6)\n" // bltcon0/1
-        "        move.l  #0xffffffff,0x44(%%a6)\n" // bltafwm/bltalwm
+        "        move.w  #0x0100,0x40(%%a6)\n" // bltcon0
+        "        move.w  #0x0000,0x42(%%a6)\n" // bltcon0/1
+        "        move.w  #0xffff,0x44(%%a6)\n" // bltafwm
+        "        move.w  #0xffff,0x46(%%a6)\n" // bltalwm
         "        move.l  %%a0,0x54(%%a6)\n" // bltdpt
         "        move.w  #0x0000,0x66(%%a6)\n" // bltdmod
         "        move.w  #0x3c14,0x58(%%a6)\n" // bltsize 320x240
@@ -670,7 +670,6 @@ void blit_cls(void *bitplane) {
         : "r"(_a0), "r"(_a6)
         : "cc", "memory"
     );
-    #endif
 }
 
 __attribute__((always_inline)) inline
