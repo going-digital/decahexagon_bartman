@@ -45,18 +45,50 @@ UWORD *bitplane_fg1;
 UWORD *bitplane_bg2;
 UWORD *bitplane_fg2;
 
+typedef struct sGameState {
+    UWORD field_angle;
+    WORD field_rotation;
+    UWORD segment_angle;
+    UWORD segment_angle_target;
+    UWORD player_angle;
+    UWORD wall_fraction;
+    UWORD draw_distance;
+    UWORD draw_distance_target;
+    UWORD time_seconds;
+    UWORD time_subsecond_frames;
+    UWORD record_seconds;
+    UWORD record_subsecond_frames;
+} GameState;
+
+GameState gamestate = {
+    .field_angle = 0,
+    .field_rotation = 65536 / FRAME_RATE,
+    .segment_angle = 65536 / 6,
+    .segment_angle_target = 65536 / 6,
+    .player_angle = 0,
+    .wall_fraction = 0,
+    .draw_distance = 0x500,
+    .draw_distance_target = 0x500,
+    .time_seconds = 16,
+    .time_subsecond_frames = 10,
+    .record_seconds = 126,
+    .record_subsecond_frames = 10
+};
+
+
 #define BLITHOG_ON custom->dmacon = (DMAF_SETCLR | DMAF_BLITHOG)
 #define BLITHOG_OFF custom->dmacon = DMAF_BLITHOG
 
 __attribute__((always_inline)) inline void blit_cls(void *bitplane);
 void blit_line_or(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
-void blit_wait();
+__attribute__((always_inline)) inline void blit_wait();
 
-UWORD sin_table[1024];
+WORD sin_table[1024];
 
 void init_tables();
 __attribute__((always_inline)) inline USHORT* copWrite(USHORT* copListEnd, UWORD offset, UWORD data);
+void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y);
 
 static APTR GetVBR(void) {
     APTR vbr = 0;
@@ -449,20 +481,25 @@ int main() {
         //bitplane_bg2[100] = frameCounter;
 
         // clear
-        custom->color[0] = 0x700; // Red raster
+        custom->color[0] = 0x700; // Red raster - Clearing bitplanes
         blit_cls(bitplane_bg2);
-        custom->color[0] = 0x070; // Green raster
         blit_cls(bitplane_fg2);
-        custom->color[0] = 0x007; // Blue raster
         blit_wait();
-        custom->color[0] = 0x077; // Cyan raster
-
-        ((UBYTE*)bitplane_bg2)[0] = 0xff;
-        ((UBYTE*)bitplane_bg2)[40] = 0xff;
-        ((UBYTE*)bitplane_fg2)[0] = 0x0f;
-        ((UBYTE*)bitplane_fg2)[40] = 0x0f;
-        ((UWORD*)bitplane_bg2)[40] = frameCounter;
-        blit_line(10, 10, 20, 20, bitplane_bg2);
+        custom->color[0] = 0x222; // Black raster
+        UWORD angle = gamestate.field_angle >> 6;
+        gamestate.field_angle += gamestate.field_rotation;
+        WORD x, y;
+        radial_to_cartesian(angle, 50, &x, &y);
+        blit_line(
+            SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
+            SCREEN_WIDTH/2+50, SCREEN_HEIGHT/2,
+            bitplane_bg2
+        );
+        blit_line(
+            SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
+            SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
+            bitplane_bg2
+        );
 
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_bg2);
@@ -518,130 +555,13 @@ void init_tables() {
     );
 }
 
-// void blit_line_or(
-//     UWORD x0, UWORD y0, UWORD x1, UWORD y1,
-//     void *bitplane
-// ) {
-//     blit_line(x0, y0, x1, y1, bitplane, 0x0bca, 0x0001);
-// }
-
-// void blit_line_onedot_xor(
-//     UWORD x0, UWORD y0, UWORD x1, UWORD y1,
-//     void *bitplane
-// ) {
-//     blit_line(x0, y0, x1, y1, bitplane, 0x0aaa, 0x0003);
-// }
-
+__attribute__((always_inline)) inline
 void blit_wait() {
     custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     UWORD dummy = custom->dmaconr; // Dummy read for thin Agnus compatibility
     while (custom->dmaconr & DMAF_BLTDONE);
     custom->dmacon = DMAF_BLITHOG;
 }
-
-#if 0
-__attribute__((always_inline)) inline
-void blit_line2(
-    UWORD x0, UWORD y0, UWORD x1, UWORD y1,
-    void *bitplane, UWORD bltcon0, UWORD bltcon1
-    // TODO: Add screen width as a parameter
-    // TODO: Handling screen clipping?
-) {
-    register volatile const UWORD _d0 ASM("d0") = x0;
-    register volatile const UWORD _d1 ASM("d1") = y0;
-    register volatile const UWORD _d2 ASM("d2") = x1;
-    register volatile const UWORD _d3 ASM("d3") = y1;
-    register volatile const UWORD _d4 ASM("d4") = bltcon0;
-    register volatile const UWORD _d5 ASM("d5") = bltcon1;
-    register volatile const void* _a0 ASM("a0") = bitplane;
-    register volatile const struct Custom* _a6 ASM("a6") = custom;
-    __asm volatile (
-        // On entry
-        //  d0 x0
-        //  d1 y0
-        //  d2 x1
-        //  d3 y1
-        //  d4 bytes per row
-        //  a0 bitplane
-        //  a6 custom
-        "   move.w  d4,a1\n" // a1 = Bytes per row
-        "   cmp.w   d1,d3\n" // Swap lines to ensure y1 > y0
-        "   bge.s   1f\n"
-        "   exg	    d0,d2\n"
-        "   exg	    d1,d3\n"
-        "1: sub.w	d0,d2\n" // d2 = x1 - x0
-		"   sub.w	d1,d3\n" // d3 = ybig - ysmall (guaranteed to be zero/positive)
-		"   move.w	d2,d4\n" // d4 = x1 - x0
-		"   bpl.s	1f\n"
-		"   neg.w	d4\n"    // d4 = abs(x1-x0)
-        "1: move.w	d3,d5\n" // d5 = ybig - ysmall
-		"   bpl.s	1f\n"
-		"   neg.w	d5\n"    // d5 = abs(ysmall - ybig
-        "1: move.w	d4,d6\n" // d6 = abs(x1-x0)
-		"   sub.w	d5,d6\n" // d6 = abs(x1-x0) - abs()
-		"   add.l	d6,d6\n" // d6 <<= 1 (shifting sign bit into the upper 16 bits)
-		"   move.w	d3,d6\n" // d3 = ybig - ysmall FIXME: Isn't this guaranteed to be zero from above?
-		"   add.l	d6,d6\n" // d6 <<= 1 (shift sign bit into the upper 16 bits)
-		"   move.w	d2,d6\n" // d2 = x1 - x0
-		"   add.l	d6,d6\n" // d6 <<= 1 (shift sign bit into the upper 16 bits)
-		"   swap	d6\n"    // d6 >>= 16, bringing those bits down.
-		"   and.w	#7,d6\n" // d6 contains the octant
-		"   lea	    .octant_lookup,a2\n"
-		"   move.b	(a2,d6.w),d6\n" // Lookup octant (can't we calculate it?)
-		"   or.w	#BLTCON1F_LINE,d6\n" // FIXME: the line bit is 1. Can't we add that to the lookup table to save some cycles?
-		"   cmp.w	d4,d5\n"
-		"   bls.s	1f\n"
-		"   exg	    d4,d5\n" // d4 is major axis count, d5 is minor axis count
-        "1: move.w	d5,d7\n"
-		"   add.w	d7,d7\n"
-		"   sub.w	d4,d7\n"
-		"   add.w	d7,d7\n"
-		"   ext.l	d7\n"
-		"   move.l	d7,bltapt(a6)\n" // Calculate starting word, update bltapt
-		"   bpl.s	1f\n"
-		"   or.w	#BLTCON1F_SIGN,d6\n" // Handle sign bit TODO: Need to really understand how octant and sign bit are related
-        "1: add.w	d4,d4\n"
-		"   add.w	d4,d4\n"
-		"   add.w	d5,d5\n"
-		"   add.w	d5,d5\n"
-        // TODO: Stall on blitter busy flag before continuing.
-		"   move.w	d5,bltbmod(a6)\n" // Populate bltbmod
-		"   sub.w	d4,d5\n"
-		"   move.w	d5,bltamod(a6)\n" // Populate bltamod
-		"   lsr.w	#2,d4\n"
-		"   move.w	#$8000,bltadat(a6)\n"
-		"   move.l	#$ffffffff,bltafwm(a6)\n"
-		"   move.w	d0,d2\n"
-		"   and.w	#$f,d2\n"
-		"   ror.w	#4,d2\n"
-		"   move.w	#$ffff,bltbdat(a6)\n"
-		"   move.w	a1,d7\n"
-		"   mulu.w	d1,d7\n"
-		"   add.l	d7,a0\n"
-		"   move.w	d0,d7\n"
-		"   lsr.w	#4,d7\n"
-		"   add.w	d7,d7\n"
-		"   add.w	d7,a0\n"
-		"   move.l	a0,bltcpt(a6)\n"
-		"   move.l	#blitter_temp_output_word,bltdpt(a6)\n"
-		"   move.w	a1,bltcmod(a6)\n"
-		"   move.w	a1,bltdmod(a6)\n"
-        // TODO: Can we move bltcon0 flags to a function parameter?
-		"   or.w	#BLTCON0F_USEA|BLTCON0F_USEC|BLTCON0F_USED|LINE_MINTERM,d2\n"
-		"   move.w	d2,bltcon0(a6)\n"
-        // TODO: Can we insert the ONEDOT flag as a function parameter?
-		"   move.w	d6,bltcon1(a6)\n"
-		"   addq.w	#1,d4\n"
-		"   lsl.w	#6,d4\n"
-		"   addq.w	#2,d4\n"
-		"   move.w	d4,bltsize(a6)\n"
-        // Programming the blitter takes some time. Can we precalc the blitter registers, spin on blit busy then mass write the registers?
-        :
-        : "r"(_d0), "r"(_d1), "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a0), "r"(_a6)
-        : "cc", "memory"
-    };
-}
-#endif
 
 void blit_line(
     UWORD x0, UWORD y0,
@@ -740,10 +660,7 @@ void blit_line(
     //bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABNC | NABC | NANBC;  // xor
 
     // Spin until blitter free
-    UWORD dummy = custom->dmaconr; // Thin Agnus compatibility
-    custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
-    while (custom->dmaconr & DMAF_BLTDONE);
-    custom->dmacon = DMAF_BLITHOG;
+    blit_wait();
     // Set up
     custom->bltadat = 0x8000;
     custom->bltbdat = 0xffff;
@@ -760,147 +677,6 @@ void blit_line(
     custom->bltcon1 = bltcon1;
     custom->bltsize = ((maj_d + 1) << 6) | 2;
 }
-
-#if 0
-__attribute__((always_inline)) inline
-void blit_line(
-    UWORD x0, UWORD y0, UWORD x1, UWORD y1,
-    void *bitplane, UWORD bltcon0, UWORD bltcon1
-) {
-    // bltcon0:
-    //  0x0a00: Always set
-    //  0x0100: Draw first pixel (usually set)
-    //  0x00ca: OR drawing mode
-    //  0x00aa: XOR drawing mode
-    // bltcon1:
-    //  0x0001: Always set
-    //  0xX000: Texture (usually 0)
-    //  0x0002: Onedot mode
-    register volatile const UWORD _d0 ASM("d0") = x0;
-    register volatile const UWORD _d1 ASM("d1") = y0;
-    register volatile const UWORD _d2 ASM("d2") = x1;
-    register volatile const UWORD _d3 ASM("d3") = y1;
-    register volatile const UWORD _d4 ASM("d4") = bltcon0;
-    register volatile const UWORD _d5 ASM("d5") = bltcon1;
-    register volatile const void* _a0 ASM("a0") = bitplane;
-    register volatile const struct Custom* _a6 ASM("a6") = custom;
-    __asm volatile (
-        // d4 contains bltcon0 value
-        // d5 contains bltcon1 value
-        "        ext.l   %%d0\n"
-        "        ext.l   %%d1\n"
-        "        ext.l   %%d2\n"
-        "        ext.l   %%d3\n"
-        "        sub.w   %%d0,%%d2\n"
-        "        bmi.b   .oct3456%=\n"
-
-        // Octants 1 2 7 8
-        "        sub.w   %%d1,%%d3\n"
-        "        bmi.b   .oct78%=\n"
-
-        // Octants 1 2
-        "        cmp.w   %%d3,%%d2\n"
-        "        bmi.b   .oct2%=\n"
-        // Octant 1
-        "        bset.b  #4,%%d5\n" // BLTCON1 OCTANT1 100--
-        "        bra.b   .done_oct%=\n"
-
-        // Octant 2 "6"
-        ".oct2%=:exg     %%d2,%%d3\n"
-        // OCTANT2 requires no additional set bits 000--
-        "        bra.b   .done_oct%=\n"
-
-        // Octants 3 4 5 6
-        ".oct3456%=:\n"
-        "        neg.w   %%d2\n"
-        "        sub.w   %%d1,%%d3\n"
-        "        bmi.b   .oct56%=\n"
-
-        // Octants 3 4
-        "        cmp.w   %%d3,%%d2\n"
-        "        bmi.b   .oct3%=\n"
-
-        // Octant 4
-        "        ori.b   #0x14,%%d5\n" // BLTCON1 OCTANT4 101--
-        "        bra.b   .done_oct%=\n"
-
-        // Octant 3
-        ".oct3%=:exg     %%d2,%%d3\n"
-        "        bset.b  #3,%%d5\n" // BLTCON1 OCTANT3 010--
-        "        bra.b   .done_oct%=\n"
-
-        // Octants 5 6
-        ".oct56%=:neg.w   %%d3\n"
-        "        cmp.w   %%d3,%%d2\n"
-        "        bmi.b   .oct6%=\n"
-
-        // Octant 5
-        "        ori.b   #0x1c,%%d5\n" // BLTCON1 OCTANT5 111--
-        "        bra.b   .done_oct%=\n"
-
-        // Octant 6 "2"
-        ".oct6%=:exg     %%d2,%%d3\n"
-        "        ori.b   #0xc,%%d5\n" // BLTCON1 OCTANT6 011--
-        "        bra.b   .done_oct%=\n"
-
-        // Octants 78
-        ".oct78%=:neg.w   %%d3\n"
-        "        cmp.w   %%d3,%%d2\n"
-        "        bmi.b   .oct7%=\n"
-
-        // Octant 8 "1"
-        "        ori.b   #0x18,%%d5\n" // BLTCON1 OCTANT8 110--
-        "        bra.b   .done_oct%=\n"
-
-        // Octant 7
-        ".oct7%=:\n"
-        "        exg     %%d2,%%d3\n"
-        "        bset.b  #2,%%d5\n" // BLTCON1 OCTANT7
-
-        ".done_oct%=:\n"
-        "        add.w   %%d2,%%d2\n"
-        "        asl.w   #2,%%d3\n"
-        "        mulu.w  #40,%%d1\n" // SCREEN_WIDTH/8 FIXME:Currently hardcoded for 320 pixel width
-        "        add.l   %%d1,%%a0\n"
-        "        ext.l   %%d0\n"
-        "        ror.l   #4,%%d0\n"
-        "        add.w   %%d0,%%d0\n"
-        "        adda.w  %%d0,%%a0\n"
-        "        swap    %%d0\n"
-        "        or.w    %%d4,%%d0\n" // SRCA+SRCC+DEST+ABC+ABNC+NABC+NANBC
-        "        move.w  %%d2,%%d1\n"
-        "        lsl.w   #5,%%d1\n"
-        "        add.w   #0x42,%%d1\n"
-        // Precalc done, wait until blitter free
-        "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,4(%%a6)\n" // 14-8, dmaconr
-        "        bne.b   1b\n"
-        // Program up blitter
-        "        move.w  #0xffff,0x44(%%a6)\n" // bltafwm
-        "        move.w  #0xffff,0x46(%%a6)\n" // bltalwm
-        "        move.w  #40,0x60(%%a6)\n" // screen_width/8, bltcmod FIXME:Currently hardcoded for 320 pixel width
-        "        move.w  #40,0x66(%%a6)\n" // screen_width/8, bltdmod FIXME:Currently hardcoded for 320 pixel width
-        "        move.l  %%a0,0x48(%%a6)\n" // bltcpt
-        "        move.l  %%a0,0x54(%%a6)\n" // bptdpt
-        "        move.w  %%d0,0x40(%%a6)\n" // bltcon0
-        "        move.w  %%d3,0x62(%%a6)\n" // bltbmod
-        "        move.w  #0x8000,0x74(%%a6)\n" // bltadat
-        "        sub.w   %%d2,%%d3\n"
-        "        ext.l   %%d3\n"
-        "        move.l  %%d3,0x50(%%a6)\n" // bltapt
-        "        bpl.b   1f\n"
-        "        bset    #6, %%d5\n" // BLTCON1 Signflag
-        "1:      move.w  %%d5,0x42(%%a6)\n" // BLTCON1
-        "        sub.w   %%d2,%%d3\n"
-        "        move.w  %%d3,0x64(%%a6)\n" // bltamod
-        "        move.w  %%d1,0x58(%%a6)\n" // bltsize
-        :
-        : "r"(_d0), "r"(_d1), "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a0), "r"(_a6)
-        : "cc", "memory"
-    );
-    // Note this starts a line drawing which will complete in the background with BLTDONE flag
-}
-#endif
 
 __attribute__((always_inline)) inline
 void blit_cls(void *bitplane) {
@@ -979,40 +755,9 @@ void blit_fill_even(void *bitplane) {
     );
 }
 
-
-typedef struct sGameState {
-    UWORD field_angle;
-    WORD field_rotation;
-    UWORD segment_angle;
-    UWORD segment_angle_target;
-    UWORD player_angle;
-    UWORD wall_fraction;
-    UWORD draw_distance;
-    UWORD draw_distance_target;
-    UWORD time_seconds;
-    UWORD time_subsecond_frames;
-    UWORD record_seconds;
-    UWORD record_subsecond_frames;
-} GameState;
-
-GameState gamestate = {
-    .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE,
-    .segment_angle = 65536 / 6,
-    .segment_angle_target = 65536 / 6,
-    .player_angle = 0,
-    .wall_fraction = 0,
-    .draw_distance = 0x500,
-    .draw_distance_target = 0x500,
-    .time_seconds = 16,
-    .time_subsecond_frames = 10,
-    .record_seconds = 126,
-    .record_subsecond_frames = 10
-};
-
 void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
-    *y = sin_table[angle] * length;
-    *x = sin_table[(angle + 0x100) & 0x3ff] * length;
+    *y = (sin_table[angle & 0x3ff] * length) >> 14;
+    *x = (sin_table[(angle + 0x100) & 0x3ff] * length) >> 14;
 }
 
 void background_outlines() {
