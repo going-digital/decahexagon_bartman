@@ -32,3 +32,7 @@ Screen resolution is 320 x 200. Reduced Y resolution is because the game is play
 
 * y1 = SCREEN
 * x1 = SCREEN
+
+# Vector routines
+
+## Line clipping

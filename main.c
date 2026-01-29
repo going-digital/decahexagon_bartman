@@ -6,6 +6,7 @@
 #include <graphics/view.h>
 #include <exec/execbase.h>
 #include <graphics/gfxmacros.h>
+#include "custom.h"
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
 #include <hardware/intbits.h>
@@ -13,11 +14,13 @@
 #include "paulabits.h"
 
 //config
-#define MUSIC
+//#define MUSIC
+//#define MUSIC_LSP
 
 #define SCREEN_WIDTH (320)
 #define SCREEN_HEIGHT (256)
 #define FRAME_RATE (50)
+#define SCREEN_WIDTH_BYTES (SCREEN_WIDTH >> 3)
 
 struct ExecBase *SysBase;
 struct Custom *custom = (struct Custom*)0xdff000;
@@ -35,7 +38,8 @@ static APTR SystemIrq;
  
 struct View *ActiView;
 
-#define BITPLANE_SIZE (SCREEN_HEIGHT*SCREEN_WIDTH/8)
+#define BITPLANE_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH_BYTES)
+
 UWORD *bitplane_bg1;
 UWORD *bitplane_fg1;
 UWORD *bitplane_bg2;
@@ -46,7 +50,7 @@ UWORD *bitplane_fg2;
 
 __attribute__((always_inline)) inline void blit_cls(void *bitplane);
 void blit_line_or(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
-__attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane, UWORD bltcon0, UWORD bltcon1);
+__attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 void blit_wait();
 
 UWORD sin_table[1024];
@@ -226,6 +230,7 @@ void* doynaxdepack(const void* input, void* output) { // returns end of output d
             : "=r" (_d0), "+rf"(_a0), "+rf"(_a1), "+rf"(_a2), "+rf"(_a3)
             :
             : "cc", "memory" //, "d1", "d2", "d3", "d4", "d5", "d6", "d7", "a4", "a5", "a6"
+            // NOTE: Register clobbers here cause compiletime errors, so used push/pop instead.
         );
         return _d0;
     }
@@ -240,6 +245,7 @@ void* doynaxdepack(const void* input, void* output) { // returns end of output d
             : "+rf"(_a3), "+rf"(_a6)
             :
             : "cc", "memory"//, "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "a0", "a1", "a2", "a4", "a5"
+            // NOTE: Register clobbers here cause compiletime errors, so used push/pop instead.
         );
     }
 
@@ -313,21 +319,21 @@ static __attribute__((interrupt)) void interruptHandler() {
 #endif
 
 
-// set up a 320x256 lowres display
+// set up a 320x240 lowres display
 __attribute__((always_inline)) inline USHORT* screenScanDefault(USHORT* copListEnd) {
-    const USHORT width=SCREEN_WIDTH;
-    const USHORT height=SCREEN_HEIGHT;
-    const USHORT x=129;
-    const USHORT y=44;
-    const USHORT RES=8; //8=lowres,4=hires
-    USHORT xstop = x+width;
-    USHORT ystop = y+height;
-    USHORT fw=(x>>1)-RES;
+    const USHORT width = SCREEN_WIDTH;
+    const USHORT height = SCREEN_HEIGHT;
+    const USHORT x = 129;
+    const USHORT y = 44;
+    const USHORT RES = 8; //8=lowres,4=hires
+    USHORT xstop = x + width;
+    USHORT ystop = y + height;
+    USHORT fw = (x >> 1) - RES;
 
     copListEnd = copWrite(copListEnd, offsetof(struct Custom, ddfstrt), fw);
-    copListEnd = copWrite(copListEnd, offsetof(struct Custom, ddfstop), fw+(((width>>4)-1)<<3));
-    copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstrt), x+(y<<8));
-    copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstop), (xstop-256)+((ystop-256)<<8));
+    copListEnd = copWrite(copListEnd, offsetof(struct Custom, ddfstop), fw + (((width >> 4) - 1) << 3));
+    copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstrt), x + (y << 8));
+    copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstop), (xstop - 256) + ((ystop - 256) << 8));
     return copListEnd;
 }
 
@@ -355,7 +361,7 @@ int main() {
 #else
     KPrintF("Hello debugger from Amiga!\n");
 #endif
-    Write(Output(), (APTR)"Decahexagon...\n", 15);
+    Write(Output(), (APTR)"\nDecahexagon debug build\n", 25);
     Delay(50);
 
     warpmode(1);
@@ -411,9 +417,9 @@ int main() {
 
     // set colors
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), 0x000); // Even sector background / border
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x700); // Odd sector background
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), 0x070); // Even sector wall
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), 0x770); // Odd sector wall
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x00f); // Odd sector background
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), 0xf00); // Even sector wall
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), 0xf0f); // Odd sector wall
 
     // jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
@@ -438,16 +444,25 @@ int main() {
         Wait10();
         int f = frameCounter & 255;
 
-        // clear
-        custom->color[0] = 0xf00; // Red raster
-        blit_cls(bitplane_bg2);
-        custom->color[0] = 0x0f0; // Green raster
-        blit_cls(bitplane_fg2);
-        custom->color[0] = 0x00f; // Blue raster
-        blit_wait();
+        // Debug: Put junk on bitplane to check cls
+        ((UWORD*)bitplane_bg2)[0] = frameCounter;
+        //bitplane_bg2[100] = frameCounter;
 
-        // Add some moving debug content
-        bitplane_bg2[0] = frameCounter;
+        // clear
+        custom->color[0] = 0x700; // Red raster
+        blit_cls(bitplane_bg2);
+        custom->color[0] = 0x070; // Green raster
+        blit_cls(bitplane_fg2);
+        custom->color[0] = 0x007; // Blue raster
+        blit_wait();
+        custom->color[0] = 0x077; // Cyan raster
+
+        ((UBYTE*)bitplane_bg2)[0] = 0xff;
+        ((UBYTE*)bitplane_bg2)[40] = 0xff;
+        ((UBYTE*)bitplane_fg2)[0] = 0x0f;
+        ((UBYTE*)bitplane_fg2)[40] = 0x0f;
+        ((UWORD*)bitplane_bg2)[40] = frameCounter;
+        blit_line(10, 10, 20, 20, bitplane_bg2);
 
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_bg2);
@@ -461,9 +476,9 @@ int main() {
 
         // WinUAE debug overlay test
         debug_clear();
-        debug_filled_rect(f + 100, 200*2, f + 400, 220*2, 0x0000ff00); // 0x00RRGGBB
-        debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
-        debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
+        // debug_filled_rect(f + 100, 200*2, f + 400, 220*2, 0x0000ff00); // 0x00RRGGBB
+        // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
+        // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
     }
 
 #ifdef MUSIC
@@ -480,7 +495,6 @@ int main() {
 void init_tables() {
     register volatile const void* _a0 ASM("a0") = sin_table;
     __asm volatile (
-        //"    movem.l %%d0-%%d3/%%a1,-(%%sp)\n"
         "    eor.w   %%d0,%%d0\n"
         "    moveq   #5,%%d1\n"
         "    swap    %%d1\n"
@@ -498,37 +512,256 @@ void init_tables() {
         "    sub.l   %%a1,%%d1\n"
         "    add.l   %%a1,%%d0\n"
         "    bne.b   1b\n"
-        //"    movem.l (%%sp)+,%%d0-%%d3/%%a1\n"
         : "+rf"(_a0)
         :
         : "cc", "memory", "d0", "d1", "d2", "d3", "a1"
     );
 }
 
+// void blit_line_or(
+//     UWORD x0, UWORD y0, UWORD x1, UWORD y1,
+//     void *bitplane
+// ) {
+//     blit_line(x0, y0, x1, y1, bitplane, 0x0bca, 0x0001);
+// }
 
-void blit_line_or(
-    UWORD x0, UWORD y0, UWORD x1, UWORD y1,
-    void *bitplane
-) {
-    blit_line(x0, y0, x1, y1, bitplane, 0x0bca, 0x0001);
-}
-
-void blit_line_onedot_xor(
-    UWORD x0, UWORD y0, UWORD x1, UWORD y1,
-    void *bitplane
-) {
-    blit_line(x0, y0, x1, y1, bitplane, 0x0aaa, 0x0003);
-}
+// void blit_line_onedot_xor(
+//     UWORD x0, UWORD y0, UWORD x1, UWORD y1,
+//     void *bitplane
+// ) {
+//     blit_line(x0, y0, x1, y1, bitplane, 0x0aaa, 0x0003);
+// }
 
 void blit_wait() {
-    if (!(custom->dmaconr & DMAF_BLTDONE)) {
-        // Waiting on blitter now, so give it priority.
-        custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
-        while (custom->dmaconr & DMAF_BLTDONE);
-        custom->dmacon = DMAF_BLITHOG;
-    }
+    custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
+    UWORD dummy = custom->dmaconr; // Dummy read for thin Agnus compatibility
+    while (custom->dmaconr & DMAF_BLTDONE);
+    custom->dmacon = DMAF_BLITHOG;
 }
 
+#if 0
+__attribute__((always_inline)) inline
+void blit_line2(
+    UWORD x0, UWORD y0, UWORD x1, UWORD y1,
+    void *bitplane, UWORD bltcon0, UWORD bltcon1
+    // TODO: Add screen width as a parameter
+    // TODO: Handling screen clipping?
+) {
+    register volatile const UWORD _d0 ASM("d0") = x0;
+    register volatile const UWORD _d1 ASM("d1") = y0;
+    register volatile const UWORD _d2 ASM("d2") = x1;
+    register volatile const UWORD _d3 ASM("d3") = y1;
+    register volatile const UWORD _d4 ASM("d4") = bltcon0;
+    register volatile const UWORD _d5 ASM("d5") = bltcon1;
+    register volatile const void* _a0 ASM("a0") = bitplane;
+    register volatile const struct Custom* _a6 ASM("a6") = custom;
+    __asm volatile (
+        // On entry
+        //  d0 x0
+        //  d1 y0
+        //  d2 x1
+        //  d3 y1
+        //  d4 bytes per row
+        //  a0 bitplane
+        //  a6 custom
+        "   move.w  d4,a1\n" // a1 = Bytes per row
+        "   cmp.w   d1,d3\n" // Swap lines to ensure y1 > y0
+        "   bge.s   1f\n"
+        "   exg	    d0,d2\n"
+        "   exg	    d1,d3\n"
+        "1: sub.w	d0,d2\n" // d2 = x1 - x0
+		"   sub.w	d1,d3\n" // d3 = ybig - ysmall (guaranteed to be zero/positive)
+		"   move.w	d2,d4\n" // d4 = x1 - x0
+		"   bpl.s	1f\n"
+		"   neg.w	d4\n"    // d4 = abs(x1-x0)
+        "1: move.w	d3,d5\n" // d5 = ybig - ysmall
+		"   bpl.s	1f\n"
+		"   neg.w	d5\n"    // d5 = abs(ysmall - ybig
+        "1: move.w	d4,d6\n" // d6 = abs(x1-x0)
+		"   sub.w	d5,d6\n" // d6 = abs(x1-x0) - abs()
+		"   add.l	d6,d6\n" // d6 <<= 1 (shifting sign bit into the upper 16 bits)
+		"   move.w	d3,d6\n" // d3 = ybig - ysmall FIXME: Isn't this guaranteed to be zero from above?
+		"   add.l	d6,d6\n" // d6 <<= 1 (shift sign bit into the upper 16 bits)
+		"   move.w	d2,d6\n" // d2 = x1 - x0
+		"   add.l	d6,d6\n" // d6 <<= 1 (shift sign bit into the upper 16 bits)
+		"   swap	d6\n"    // d6 >>= 16, bringing those bits down.
+		"   and.w	#7,d6\n" // d6 contains the octant
+		"   lea	    .octant_lookup,a2\n"
+		"   move.b	(a2,d6.w),d6\n" // Lookup octant (can't we calculate it?)
+		"   or.w	#BLTCON1F_LINE,d6\n" // FIXME: the line bit is 1. Can't we add that to the lookup table to save some cycles?
+		"   cmp.w	d4,d5\n"
+		"   bls.s	1f\n"
+		"   exg	    d4,d5\n" // d4 is major axis count, d5 is minor axis count
+        "1: move.w	d5,d7\n"
+		"   add.w	d7,d7\n"
+		"   sub.w	d4,d7\n"
+		"   add.w	d7,d7\n"
+		"   ext.l	d7\n"
+		"   move.l	d7,bltapt(a6)\n" // Calculate starting word, update bltapt
+		"   bpl.s	1f\n"
+		"   or.w	#BLTCON1F_SIGN,d6\n" // Handle sign bit TODO: Need to really understand how octant and sign bit are related
+        "1: add.w	d4,d4\n"
+		"   add.w	d4,d4\n"
+		"   add.w	d5,d5\n"
+		"   add.w	d5,d5\n"
+        // TODO: Stall on blitter busy flag before continuing.
+		"   move.w	d5,bltbmod(a6)\n" // Populate bltbmod
+		"   sub.w	d4,d5\n"
+		"   move.w	d5,bltamod(a6)\n" // Populate bltamod
+		"   lsr.w	#2,d4\n"
+		"   move.w	#$8000,bltadat(a6)\n"
+		"   move.l	#$ffffffff,bltafwm(a6)\n"
+		"   move.w	d0,d2\n"
+		"   and.w	#$f,d2\n"
+		"   ror.w	#4,d2\n"
+		"   move.w	#$ffff,bltbdat(a6)\n"
+		"   move.w	a1,d7\n"
+		"   mulu.w	d1,d7\n"
+		"   add.l	d7,a0\n"
+		"   move.w	d0,d7\n"
+		"   lsr.w	#4,d7\n"
+		"   add.w	d7,d7\n"
+		"   add.w	d7,a0\n"
+		"   move.l	a0,bltcpt(a6)\n"
+		"   move.l	#blitter_temp_output_word,bltdpt(a6)\n"
+		"   move.w	a1,bltcmod(a6)\n"
+		"   move.w	a1,bltdmod(a6)\n"
+        // TODO: Can we move bltcon0 flags to a function parameter?
+		"   or.w	#BLTCON0F_USEA|BLTCON0F_USEC|BLTCON0F_USED|LINE_MINTERM,d2\n"
+		"   move.w	d2,bltcon0(a6)\n"
+        // TODO: Can we insert the ONEDOT flag as a function parameter?
+		"   move.w	d6,bltcon1(a6)\n"
+		"   addq.w	#1,d4\n"
+		"   lsl.w	#6,d4\n"
+		"   addq.w	#2,d4\n"
+		"   move.w	d4,bltsize(a6)\n"
+        // Programming the blitter takes some time. Can we precalc the blitter registers, spin on blit busy then mass write the registers?
+        :
+        : "r"(_d0), "r"(_d1), "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a0), "r"(_a6)
+        : "cc", "memory"
+    };
+}
+#endif
+
+void blit_line(
+    UWORD x0, UWORD y0,
+    UWORD x1, UWORD y1,
+    void *bitplane
+) {
+    // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
+    // Calculate word address of start point
+    APTR startpt = bitplane + SCREEN_WIDTH_BYTES * y0 + ((x0 >> 4) << 1);
+    WORD ed = x1 - x0; // Positive in east direction
+    WORD sd = y1 - y0; // Positive in south direction
+    WORD ne = ed - sd; // Positive in ne direction
+    WORD se = ed + sd; // Positive in se direction
+
+    UWORD bltcon1;
+    UWORD maj_d;
+    UWORD min_d;
+
+    if (se < 0) {
+        // Octant 1234 Northwest
+        if (ne < 0) {
+            // Octant 34 West
+            // x is major axis
+            maj_d = -ed;
+            if (sd < 0) {
+                // Octant 3
+                bltcon1 = SUD | SUL | AUL | LINEMODE;
+                min_d = -sd;
+            } else {
+                // Octant 4
+                bltcon1 = SUD | AUL | LINEMODE;
+                min_d = sd;
+            }
+        } else {
+            // Octant 12 North predominant
+            // SUD = 0
+            maj_d = -sd;
+            if (ed < 0) {
+                // Octant 2
+                bltcon1 = SUL | AUL | LINEMODE;
+                min_d = -ed;
+            } else {
+                // Octant 1
+                bltcon1 = AUL | LINEMODE;
+                min_d = ed;
+            }
+        }
+    } else {
+        // Octant 0567 Southeast
+        // AUL = 0
+        if (ne < 0) {
+            // South predominant
+            // Octant 5 6
+            // SUD = 0
+            maj_d = sd;
+            if (ed < 0) {
+                // Octant 5
+                bltcon1 = SUL | LINEMODE;
+                min_d = -ed;
+            } else {
+                // Octant 6
+                bltcon1 = LINEMODE;
+                min_d = ed;
+            }
+        } else {
+            // East predominant
+            // Octant 0 7
+            maj_d = ed;
+            if (sd < 0) {
+                // Octant 0 SUL = 1
+                bltcon1 = SUD | SUL | LINEMODE;
+                min_d = -sd;
+            } else {
+                // Octant 7 SUL = 0
+                bltcon1 = SUD | LINEMODE;
+                min_d = sd;
+            }
+        }
+    }
+    // After that, majd is pixel distance on dominant axis,
+    // mind is pixel distance on minor axis. Both are guaranteed zero/positive.
+    // Preshift max_d, min_d
+    maj_d <<= 1;
+    WORD bltbmod = min_d << 2; // 4min_d
+    WORD bltaptl = bltbmod - maj_d; // 4 min_d - 2 maj_d
+    WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
+    if (bltaptl < 0) {
+        //bltaptl = -bltaptl;
+        bltcon1 |= SIGNFLAG;
+    }
+    // Set starting word
+    // Set starting bit
+    UWORD bltcon0 = (x0 & 0xf) << 12;
+    // Set DMA channels
+    bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABC | ABNC | NABC | NANBC;  // or
+    //bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABNC | NABC | NANBC;  // xor
+
+    // Spin until blitter free
+    UWORD dummy = custom->dmaconr; // Thin Agnus compatibility
+    custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
+    while (custom->dmaconr & DMAF_BLTDONE);
+    custom->dmacon = DMAF_BLITHOG;
+    // Set up
+    custom->bltadat = 0x8000;
+    custom->bltbdat = 0xffff;
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltamod = bltamod;
+    custom->bltbmod = bltbmod;
+    custom->bltcmod = SCREEN_WIDTH_BYTES;
+    custom->bltdmod = SCREEN_WIDTH_BYTES;
+    custom->bltapt = (APTR)((ULONG)bltaptl);
+    custom->bltcpt = startpt;
+    custom->bltdpt = startpt;
+    custom->bltcon0 = bltcon0;
+    custom->bltcon1 = bltcon1;
+    custom->bltsize = ((maj_d + 1) << 6) | 2;
+}
+
+#if 0
 __attribute__((always_inline)) inline
 void blit_line(
     UWORD x0, UWORD y0, UWORD x1, UWORD y1,
@@ -552,65 +785,82 @@ void blit_line(
     register volatile const void* _a0 ASM("a0") = bitplane;
     register volatile const struct Custom* _a6 ASM("a6") = custom;
     __asm volatile (
+        // d4 contains bltcon0 value
+        // d5 contains bltcon1 value
         "        ext.l   %%d0\n"
         "        ext.l   %%d1\n"
         "        ext.l   %%d2\n"
         "        ext.l   %%d3\n"
         "        sub.w   %%d0,%%d2\n"
         "        bmi.b   .oct3456%=\n"
+
+        // Octants 1 2 7 8
         "        sub.w   %%d1,%%d3\n"
         "        bmi.b   .oct78%=\n"
+
+        // Octants 1 2
         "        cmp.w   %%d3,%%d2\n"
         "        bmi.b   .oct2%=\n"
         // Octant 1
-        "        bset.b  #4,%%d5\n" // OCTANT1 100--
+        "        bset.b  #4,%%d5\n" // BLTCON1 OCTANT1 100--
         "        bra.b   .done_oct%=\n"
-        ".oct2%=:\n"
+
         // Octant 2 "6"
-        "        exg     %%d2,%%d3\n"
+        ".oct2%=:exg     %%d2,%%d3\n"
         // OCTANT2 requires no additional set bits 000--
         "        bra.b   .done_oct%=\n"
+
+        // Octants 3 4 5 6
         ".oct3456%=:\n"
         "        neg.w   %%d2\n"
         "        sub.w   %%d1,%%d3\n"
         "        bmi.b   .oct56%=\n"
+
+        // Octants 3 4
         "        cmp.w   %%d3,%%d2\n"
         "        bmi.b   .oct3%=\n"
-        // Octant 4 "4"
-        "        ori.b   #20,%%d5\n" // OCTANT4 101--
+
+        // Octant 4
+        "        ori.b   #0x14,%%d5\n" // BLTCON1 OCTANT4 101--
         "        bra.b   .done_oct%=\n"
-        ".oct3%=:\n"
-        // Octant 3 "5"
-        "        exg     %%d2,%%d3\n"
-        "        bset.b  #3,%%d5\n" // OCTANT3 010--
+
+        // Octant 3
+        ".oct3%=:exg     %%d2,%%d3\n"
+        "        bset.b  #3,%%d5\n" // BLTCON1 OCTANT3 010--
         "        bra.b   .done_oct%=\n"
-        ".oct56%=:\n"
-        "        neg.w   %%d3\n"
+
+        // Octants 5 6
+        ".oct56%=:neg.w   %%d3\n"
         "        cmp.w   %%d3,%%d2\n"
         "        bmi.b   .oct6%=\n"
-        // Octant 5 "3"
-        "        ori.b   #28,%%d5\n" // OCTANT5 111--
+
+        // Octant 5
+        "        ori.b   #0x1c,%%d5\n" // BLTCON1 OCTANT5 111--
         "        bra.b   .done_oct%=\n"
-        ".oct6%=:\n"
+
         // Octant 6 "2"
-        "        exg     %%d2,%%d3\n"
-        "        ori.b   #12,%%d5\n" // OCTANT6 011--
+        ".oct6%=:exg     %%d2,%%d3\n"
+        "        ori.b   #0xc,%%d5\n" // BLTCON1 OCTANT6 011--
         "        bra.b   .done_oct%=\n"
-        ".oct78%=:\n"
-        "        neg.w   %%d3\n"
+
+        // Octants 78
+        ".oct78%=:neg.w   %%d3\n"
         "        cmp.w   %%d3,%%d2\n"
         "        bmi.b   .oct7%=\n"
+
         // Octant 8 "1"
-        "        ori.b   #24,%%d5\n" // OCTANT8 110--
+        "        ori.b   #0x18,%%d5\n" // BLTCON1 OCTANT8 110--
         "        bra.b   .done_oct%=\n"
+
+        // Octant 7
         ".oct7%=:\n"
-        // Octant 7 "0"
         "        exg     %%d2,%%d3\n"
-        "        bset.b #2,%%d5\n" // OCTANT7
+        "        bset.b  #2,%%d5\n" // BLTCON1 OCTANT7
+
         ".done_oct%=:\n"
         "        add.w   %%d2,%%d2\n"
         "        asl.w   #2,%%d3\n"
-        "        mulu.w  #40,%%d1\n" // SCREEN_WIDTH/8
+        "        mulu.w  #40,%%d1\n" // SCREEN_WIDTH/8 FIXME:Currently hardcoded for 320 pixel width
         "        add.l   %%d1,%%a0\n"
         "        ext.l   %%d0\n"
         "        ror.l   #4,%%d0\n"
@@ -628,8 +878,8 @@ void blit_line(
         // Program up blitter
         "        move.w  #0xffff,0x44(%%a6)\n" // bltafwm
         "        move.w  #0xffff,0x46(%%a6)\n" // bltalwm
-        "        move.w  #40,0x60(%%a6)\n" // screen_width/8, bltcmod
-        "        move.w  #40,0x66(%%a6)\n" // screen_width/8, bltdmod
+        "        move.w  #40,0x60(%%a6)\n" // screen_width/8, bltcmod FIXME:Currently hardcoded for 320 pixel width
+        "        move.w  #40,0x66(%%a6)\n" // screen_width/8, bltdmod FIXME:Currently hardcoded for 320 pixel width
         "        move.l  %%a0,0x48(%%a6)\n" // bltcpt
         "        move.l  %%a0,0x54(%%a6)\n" // bptdpt
         "        move.w  %%d0,0x40(%%a6)\n" // bltcon0
@@ -639,28 +889,31 @@ void blit_line(
         "        ext.l   %%d3\n"
         "        move.l  %%d3,0x50(%%a6)\n" // bltapt
         "        bpl.b   1f\n"
-        "        bset    #6, %%d5\n" // Signflag
-        "1:      move.w  %%d5,0x42(%%a6)\n" // bltcon1
+        "        bset    #6, %%d5\n" // BLTCON1 Signflag
+        "1:      move.w  %%d5,0x42(%%a6)\n" // BLTCON1
         "        sub.w   %%d2,%%d3\n"
         "        move.w  %%d3,0x64(%%a6)\n" // bltamod
         "        move.w  %%d1,0x58(%%a6)\n" // bltsize
         :
-        : "r"(_d0), "r"(_d1), "r"(_d2), "r"(_d3), "r"(_a0), "r"(_a6), "r"(_d4), "r"(_d5)
+        : "r"(_d0), "r"(_d1), "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a0), "r"(_a6)
         : "cc", "memory"
     );
     // Note this starts a line drawing which will complete in the background with BLTDONE flag
 }
+#endif
 
 __attribute__((always_inline)) inline
 void blit_cls(void *bitplane) {
     register volatile const void* _a0 ASM("a0") = bitplane;
     register volatile const struct Custom* _a6 ASM("a6") = custom;
     __asm volatile (
+        "        move.w  #0xc000,0x96(%%a6)\n" // Turn on BLITHOG
         "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,4(%%a6)\n" // 14-8, dmaconr
+        "1:      btst.b  #6,2(%%a6)\n" // 14-8, dmaconr
         "        bne.b   1b\n"
+        "        move.w  #0x4000,0x96(%%a6)\n" // Turn off BLITHOG
         "        move.w  #0x0100,0x40(%%a6)\n" // bltcon0
-        "        move.w  #0x0000,0x42(%%a6)\n" // bltcon0/1
+        "        move.w  #0x0000,0x42(%%a6)\n" // bltcon1
         "        move.w  #0xffff,0x44(%%a6)\n" // bltafwm
         "        move.w  #0xffff,0x46(%%a6)\n" // bltalwm
         "        move.l  %%a0,0x54(%%a6)\n" // bltdpt
@@ -682,9 +935,11 @@ void blit_fill(void *bitplane) {
     // BLTCON0 0000_1001_1111_0000
     // BLTCON1 0000_0000_0000_1010
     __asm volatile (
+        "        move.w  #0xc000,0x96(%%a6)\n" // Turn on BLITHOG
         "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,4(%%a6)\n" // 14-8, dmaconr
+        "1:      btst.b  #6,2(%%a6)\n" // 14-8, dmaconr
         "        bne.b   1b\n"
+        "        move.w  #0x4000,0x96(%%a6)\n" // Turn off BLITHOG
         "        move.l  #0x000a09f0,0x40(%%a6)\n" // bltcon0/1
         "        move.l  #0xffffffff,0x44(%%a6)\n" // bltafwm/bltalwm
         "        move.l  %%a0,0x50(%%a6)\n" // bltapt
@@ -707,9 +962,11 @@ void blit_fill_even(void *bitplane) {
     // BLTCON0 0000_1001_1111_0000
     // BLTCON1 0000_0000_0000_1010
     __asm volatile (
+        "        move.w  #0xc000,0x96(%%a6)\n" // Turn on BLITHOG
         "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,4(%%a6)\n" // 14-8, dmaconr
+        "1:      btst.b  #6,2(%%a6)\n" // 14-8, dmaconr
         "        bne.b   1b\n"
+        "        move.w  #0x4000,0x96(%%a6)\n" // Turn off BLITHOG
         "        move.l  #0xa09f0,0x40(%%a6)\n" // bltcon0/1
         "        move.l  #0xffffffff,0x44(%%a6)\n" // bltafwm/bltalwm
         "        move.l  %%a0,0x50(%%a6)\n" // bltapt
@@ -758,10 +1015,8 @@ void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     *x = sin_table[(angle + 0x100) & 0x3ff] * length;
 }
 
-
 void background_outlines() {
-    // Draw solid around segments 1, 3, 5
-    
+    // Draw solid around segments 1, 3, 5    
 }
 
 void render(void * bitplane_bg, void * bitplane_fg) {
