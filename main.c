@@ -16,9 +16,10 @@
 //config
 //#define MUSIC
 //#define MUSIC_LSP
+#define NUM_SIDES (6)
 
 #define SCREEN_WIDTH (320)
-#define SCREEN_HEIGHT (256)
+#define SCREEN_HEIGHT (200)
 #define FRAME_RATE (50)
 #define SCREEN_WIDTH_BYTES (SCREEN_WIDTH >> 3)
 
@@ -62,9 +63,9 @@ typedef struct sGameState {
 
 GameState gamestate = {
     .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE,
-    .segment_angle = 65536 / 6,
-    .segment_angle_target = 65536 / 6,
+    .field_rotation = 65536 / FRAME_RATE / 6, // 1 degree per 60Hz frame
+    .segment_angle = ((65536+NUM_SIDES-1) / NUM_SIDES), // Ensure overflow after last segment
+    .segment_angle_target = ((65536+NUM_SIDES-1) / NUM_SIDES),
     .player_angle = 0,
     .wall_fraction = 0,
     .draw_distance = 0x500,
@@ -76,13 +77,11 @@ GameState gamestate = {
 };
 
 
-#define BLITHOG_ON custom->dmacon = (DMAF_SETCLR | DMAF_BLITHOG)
-#define BLITHOG_OFF custom->dmacon = DMAF_BLITHOG
-
 __attribute__((always_inline)) inline void blit_cls(void *bitplane);
-void blit_line_or(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
+__attribute__((always_inline)) inline void blit_line_onedot(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_wait();
+__attribute__((always_inline)) inline void blit_fill(void *bitplane, void* bitplane2);
 
 WORD sin_table[1024];
 
@@ -214,12 +213,11 @@ __attribute__((always_inline)) inline short MouseLeft() {
 
 __attribute__((always_inline)) inline short MouseRight(){
     return !(custom->potinp & POTINF_L_MOUSE_BUT2);
-    //return !((*(volatile UWORD*)0xdff016)&(1<<10));
 }
 
 // DEMO - INCBIN
 volatile short frameCounter = 0;
-INCBIN(colors, "image.pal")
+//INCBIN(colors, "image.pal")
 //INCBIN_CHIP(image, "image.bpl") // load image into chipmem so we can use it without copying
 //INCBIN_CHIP(bob, "bob.bpl")
 
@@ -355,8 +353,8 @@ static __attribute__((interrupt)) void interruptHandler() {
 __attribute__((always_inline)) inline USHORT* screenScanDefault(USHORT* copListEnd) {
     const USHORT width = SCREEN_WIDTH;
     const USHORT height = SCREEN_HEIGHT;
-    const USHORT x = 129;
-    const USHORT y = 44;
+    const USHORT x = 129 + (SCREEN_WIDTH-320)/2;
+    const USHORT y = 44 + (SCREEN_WIDTH-256)/2;
     const USHORT RES = 8; //8=lowres,4=hires
     USHORT xstop = x + width;
     USHORT ystop = y + height;
@@ -449,9 +447,9 @@ int main() {
 
     // set colors
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), 0x000); // Even sector background / border
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x00f); // Odd sector background
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), 0xf00); // Even sector wall
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), 0xf0f); // Odd sector wall
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0xff0); // Odd sector background
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), 0x00f); // Even sector wall
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), 0xfff); // Odd sector wall
 
     // jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
@@ -476,34 +474,49 @@ int main() {
         Wait10();
         int f = frameCounter & 255;
 
-        // Debug: Put junk on bitplane to check cls
-        ((UWORD*)bitplane_bg2)[0] = frameCounter;
-        //bitplane_bg2[100] = frameCounter;
-
         // clear
-        custom->color[0] = 0x700; // Red raster - Clearing bitplanes
+        custom->color[0] = 0x200; // Red raster - starter render
         blit_cls(bitplane_bg2);
         blit_cls(bitplane_fg2);
-        blit_wait();
-        custom->color[0] = 0x222; // Black raster
-        UWORD angle = gamestate.field_angle >> 6;
+        UWORD field_angle = gamestate.field_angle;
         gamestate.field_angle += gamestate.field_rotation;
-        WORD x, y;
-        radial_to_cartesian(angle, 50, &x, &y);
-        blit_line(
-            SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
-            SCREEN_WIDTH/2+50, SCREEN_HEIGHT/2,
-            bitplane_bg2
-        );
-        blit_line(
-            SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
+        WORD x, y, new_x, new_y;
+        // radial_to_cartesian(field_angle, (SCREEN_HEIGHT/2-2), &x, &y);    
+        // blit_line(
+        //     SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
+        //     SCREEN_WIDTH/2 + x, SCREEN_HEIGHT/2 + y,
+        //     bitplane_fg2
+        // );
+        UWORD draw_angle = 0;
+        radial_to_cartesian(field_angle, (SCREEN_HEIGHT/2-2), &x, &y);
+        WORD end_x = x;
+        WORD end_y = y;
+        while (1) {
+            UWORD new_angle = draw_angle + gamestate.segment_angle;
+            if (new_angle < draw_angle) break;
+            radial_to_cartesian(new_angle + field_angle, (SCREEN_HEIGHT/2-2), &new_x, &new_y);
+            blit_line_onedot(
+                SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
+                SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
+                bitplane_bg2
+            );
+            x = new_x;
+            y = new_y;
+            draw_angle = new_angle;
+        }
+        // Draw last line back to start point
+        blit_line_onedot(
             SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
+            SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
             bitplane_bg2
         );
+        //custom->color[0] = 0x008; // Blue raster - done
+        blit_fill(bitplane_bg2, bitplane_fg2);
 
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_bg2);
         copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg2);
+
         void* tmp = bitplane_bg1;
         bitplane_bg1 = bitplane_bg2;
         bitplane_bg2 = tmp;
@@ -512,10 +525,13 @@ int main() {
         bitplane_fg2 = tmp;
 
         // WinUAE debug overlay test
-        debug_clear();
+        // debug_clear();
         // debug_filled_rect(f + 100, 200*2, f + 400, 220*2, 0x0000ff00); // 0x00RRGGBB
         // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
         // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
+
+        blit_wait();
+        custom->color[0] = 0x000; // Black raster - all done
     }
 
 #ifdef MUSIC
@@ -563,11 +579,32 @@ void blit_wait() {
     custom->dmacon = DMAF_BLITHOG;
 }
 
-void blit_line(
+void blit_line_subpixel_onedot(
+    UWORD x0, UWORD y0,
+    UWORD x1, UWORD y1,
+    void* bitplane
+) {
+    // Initialisation
+    // BLTAPT = 4*minordelta - 2 * majordelta
+    // BLTAMOD = 4*minordelta - 4 * majordelta
+    // BLTBMOD = 4*minordelta
+    // BLTCON1.SIGN = BLTAPT < 0
+
+    // 
+}
+
+void blit_line_onedot(
     UWORD x0, UWORD y0,
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
+    if (y0 == y1) return;
+    if (y0 > y1) {
+        UWORD tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+    }
+
     // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
     // Calculate word address of start point
     APTR startpt = bitplane + SCREEN_WIDTH_BYTES * y0 + ((x0 >> 4) << 1);
@@ -575,10 +612,146 @@ void blit_line(
     WORD sd = y1 - y0; // Positive in south direction
     WORD ne = ed - sd; // Positive in ne direction
     WORD se = ed + sd; // Positive in se direction
-
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
+    UWORD bltsize;
+    BOOL use_bmod = 0;
+    if (se < 0) {
+        // Octant 1234 Northwest
+        if (ne < 0) {
+            // Octant 34 West
+            // x is major axis
+            maj_d = -ed;
+            if (sd < 0) {
+                // Problem here?
+                // Octant 3
+                bltcon1 = SUD | SUL | AUL | ONEDOT | LINEMODE;
+                min_d = -sd;
+                bltsize = (maj_d << 6) + 2;
+            } else {
+                // Problem here?
+                // Octant 4
+                bltcon1 = SUD | AUL | ONEDOT | LINEMODE;
+                min_d = sd;
+                bltsize = (maj_d << 6) + 2;
+            }
+        } else {
+            // Octant 12 North predominant
+            // SUD = 0
+            maj_d = -sd;
+            if (ed < 0) {
+                // Octant 2
+                bltcon1 = SUL | AUL | LINEMODE;
+                min_d = -ed;
+                bltsize = (maj_d << 6) + 2;
+            } else {
+                // Octant 1
+                bltcon1 = AUL | LINEMODE;
+                min_d = ed;
+                bltsize = (maj_d << 6) + 2;
+            }
+        }
+    } else {
+        // Octant 0567 Southeast
+        // AUL = 0
+        if (ne < 0) {
+            // South predominant
+            // Octant 5 6
+            // SUD = 0
+            maj_d = sd;
+            if (ed < 0) {
+                // Octant 5
+                bltcon1 = SUL | LINEMODE;
+                min_d = -ed;
+                bltsize = (maj_d << 6) + 2;
+            } else {
+                // Octant 6
+                bltcon1 = LINEMODE;
+                min_d = ed;
+                bltsize = (maj_d << 6) + 2;
+            }
+        } else {
+            // East predominant
+            // Octant 0 7
+            maj_d = ed;
+            if (sd < 0) {
+                // Problem here?
+                // Octant 0 SUL = 1
+                bltcon1 = SUD | SUL | ONEDOT | LINEMODE;
+                min_d = -sd;
+                bltsize = (maj_d << 6) + 2;
+            } else {
+                // Problem here?
+                // Octant 7 SUL = 0
+                bltcon1 = SUD | ONEDOT | LINEMODE;
+                min_d = sd;
+                bltsize = (maj_d << 6) + 2;// - (1<<6); // This improves things
+            }
+        }
+    }
+    // After that, majd is pixel distance on dominant axis,
+    // mind is pixel distance on minor axis. Both are guaranteed zero/positive.
+    // Preshift max_d, min_d
+
+    maj_d <<= 1;
+    WORD bltbmod = min_d << 2; // 4min_d
+    WORD bltaptl = bltbmod - maj_d; // 4 min_d - 2 maj_d
+    WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
+    // if (use_bmod) {
+    //     bltaptl = bltbmod;
+    // } else {
+        bltaptl = bltamod;
+    // }
+    if (bltaptl < 0) bltcon1 |= SIGNFLAG;
+
+    // Set starting word, DMA channels and logic function
+    UWORD bltcon0 = (
+        (x0 & 0xf) << 12 // Starting bit within word
+        | BC0B_DEST 
+        | BC0F_SRCC | BC0F_SRCA
+        | ABNC | NABC | NANBC // 4a xor
+    );
+    // Spin until blitter free
+    blit_wait();
+    // Set up
+    custom->bltadat = 0x8000;
+    custom->bltbdat = 0xffff;
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltamod = bltamod;
+    custom->bltbmod = bltbmod;
+    custom->bltcmod = SCREEN_WIDTH_BYTES;
+    custom->bltdmod = SCREEN_WIDTH_BYTES;
+    custom->bltapt = (APTR)((ULONG)bltaptl);
+    custom->bltcpt = startpt;
+    custom->bltdpt = startpt;
+    custom->bltcon0 = bltcon0;
+    custom->bltcon1 = bltcon1;
+    custom->bltsize = bltsize;
+}
+
+void blit_line(
+    UWORD x0, UWORD y0,
+    UWORD x1, UWORD y1,
+    void *bitplane
+) {
+    // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
+    // Calculate word address of start point
+    APTR startpt = (
+        bitplane
+        + SCREEN_WIDTH_BYTES * y0
+        + ((x0 >> 4) << 1)
+    );
+    WORD ed = x1 - x0; // Positive in east direction
+    WORD sd = y1 - y0; // Positive in south direction
+    WORD ne = ed - sd; // Positive in ne direction
+    WORD se = ed + sd; // Positive in se direction
+    UWORD bltcon1;
+    UWORD maj_d;
+    UWORD min_d;
+
+    UWORD shorten = 0; // Short 1 pixel
 
     if (se < 0) {
         // Octant 1234 Northwest
@@ -648,17 +821,15 @@ void blit_line(
     WORD bltbmod = min_d << 2; // 4min_d
     WORD bltaptl = bltbmod - maj_d; // 4 min_d - 2 maj_d
     WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
-    if (bltaptl < 0) {
-        //bltaptl = -bltaptl;
-        bltcon1 |= SIGNFLAG;
-    }
+    if (bltaptl < 0) bltcon1 |= SIGNFLAG;
+
     // Set starting word
     // Set starting bit
     UWORD bltcon0 = (x0 & 0xf) << 12;
     // Set DMA channels
     bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABC | ABNC | NABC | NANBC;  // or
     //bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABNC | NABC | NANBC;  // xor
-
+    //bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABNC | NABC | NANBC;  // xor
     // Spin until blitter free
     blit_wait();
     // Set up
@@ -675,115 +846,39 @@ void blit_line(
     custom->bltdpt = startpt;
     custom->bltcon0 = bltcon0;
     custom->bltcon1 = bltcon1;
-    custom->bltsize = ((maj_d + 1) << 6) | 2;
+    custom->bltsize = (maj_d << 5) + ((1 << 6) + 2); // Remember maj_d was doubled above
 }
 
 __attribute__((always_inline)) inline
 void blit_cls(void *bitplane) {
-    register volatile const void* _a0 ASM("a0") = bitplane;
-    register volatile const struct Custom* _a6 ASM("a6") = custom;
-    __asm volatile (
-        "        move.w  #0xc000,0x96(%%a6)\n" // Turn on BLITHOG
-        "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,2(%%a6)\n" // 14-8, dmaconr
-        "        bne.b   1b\n"
-        "        move.w  #0x4000,0x96(%%a6)\n" // Turn off BLITHOG
-        "        move.w  #0x0100,0x40(%%a6)\n" // bltcon0
-        "        move.w  #0x0000,0x42(%%a6)\n" // bltcon1
-        "        move.w  #0xffff,0x44(%%a6)\n" // bltafwm
-        "        move.w  #0xffff,0x46(%%a6)\n" // bltalwm
-        "        move.l  %%a0,0x54(%%a6)\n" // bltdpt
-        "        move.w  #0x0000,0x66(%%a6)\n" // bltdmod
-        "        move.w  #0x3c14,0x58(%%a6)\n" // bltsize 320x240
-        :
-        : "r"(_a0), "r"(_a6)
-        : "cc", "memory"
-    );
+    blit_wait();
+    custom->bltcon0 = BC0F_DEST;
+    custom->bltcon1 = 0;
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltdpt = bitplane;
+    custom->bltdmod = 0;
+    custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
 
 __attribute__((always_inline)) inline
-void blit_fill(void *bitplane) {
-    // Blit fill works backwards. Point to last word in screen buffer.
-    register volatile const void* _a0 ASM("a0") = bitplane + (40*240-2);
-    register volatile const struct Custom* _a6 ASM("a6") = custom;
-    // Must use DESC mode
-    // Use FILL_XOR mode
-    // BLTCON0 0000_1001_1111_0000
-    // BLTCON1 0000_0000_0000_1010
-    __asm volatile (
-        "        move.w  #0xc000,0x96(%%a6)\n" // Turn on BLITHOG
-        "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,2(%%a6)\n" // 14-8, dmaconr
-        "        bne.b   1b\n"
-        "        move.w  #0x4000,0x96(%%a6)\n" // Turn off BLITHOG
-        "        move.l  #0x000a09f0,0x40(%%a6)\n" // bltcon0/1
-        "        move.l  #0xffffffff,0x44(%%a6)\n" // bltafwm/bltalwm
-        "        move.l  %%a0,0x50(%%a6)\n" // bltapt
-        "        move.l  %%a0,0x54(%%a6)\n" // bltdpt
-        "        move.l  #0x00000000,0x64(%%a6)\n" // bltamod/bltdmod
-        "        move.w  #0x3c14,0x58(%%a6)\n" // bltsize 320x240
-        :
-        : "r"(_a0), "r"(_a6)
-        : "cc", "memory"
-    );
-}
-
-__attribute__((always_inline)) inline
-void blit_fill_even(void *bitplane) {
-    // Blit fill works backwards. Point to last word in screen buffer.
-    register volatile const void* _a0 ASM("a0") = bitplane + (40*240-40-2);
-    register volatile const struct Custom* _a6 ASM("a6") = custom;
-    // Must use DESC mode
-    // Use FILL_XOR mode
-    // BLTCON0 0000_1001_1111_0000
-    // BLTCON1 0000_0000_0000_1010
-    __asm volatile (
-        "        move.w  #0xc000,0x96(%%a6)\n" // Turn on BLITHOG
-        "        btst.b  #6,2(%%a6)\n" // 14-8, dmaconr Thin Agnus compability
-        "1:      btst.b  #6,2(%%a6)\n" // 14-8, dmaconr
-        "        bne.b   1b\n"
-        "        move.w  #0x4000,0x96(%%a6)\n" // Turn off BLITHOG
-        "        move.l  #0xa09f0,0x40(%%a6)\n" // bltcon0/1
-        "        move.l  #0xffffffff,0x44(%%a6)\n" // bltafwm/bltalwm
-        "        move.l  %%a0,0x50(%%a6)\n" // bltapt
-        "        move.l  %%a0,0x54(%%a6)\n" // bltdpt
-        "        move.l  #0x280028,0x64(%%a6)\n" // bltamod/bltdmod = 40 (320 bits = 1 line)
-        "        move.w  #0x1e14,0x58(%%a6)\n" // bltsize 320x120
-        :
-        : "r"(_a0), "r"(_a6)
-        : "cc", "memory"
-    );
+void blit_fill(void *bitplane, void *bitplane2) {
+    APTR start = bitplane + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
+    APTR start2 = bitplane2 + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
+    blit_wait();
+    custom->bltcon0 = BC0F_SRCA | BC0F_DEST | A_TO_D;
+    custom->bltcon1 = FILL_XOR | BLITREVERSE;
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltapt = start;
+    custom->bltdpt = start2;
+    custom->bltamod = 0;
+    custom->bltdmod = 0;
+    custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
 
 void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
-    *y = (sin_table[angle & 0x3ff] * length) >> 14;
+    angle >>= 6; // Sin table has 1023 entries
+    *y = (sin_table[angle] * length) >> 14;
     *x = (sin_table[(angle + 0x100) & 0x3ff] * length) >> 14;
 }
-
-void background_outlines() {
-    // Draw solid around segments 1, 3, 5    
-}
-
-void render(void * bitplane_bg, void * bitplane_fg) {
-    // Update rotations
-    gamestate.field_angle += gamestate.field_rotation;
-
-    // Frame takes 160k cycles.
-    BLITHOG_ON;
-    blit_cls(bitplane_bg); // 4.8k DMAs
-    blit_cls(bitplane_fg); // 4.8k DMAs
-    BLITHOG_OFF;
-
-    // Draw background
-
-    BLITHOG_ON;
-    blit_fill(bitplane_bg); // 9.6k DMAs
-    blit_fill(bitplane_fg); // 9.6k DMAs
-    BLITHOG_OFF;
-    // Set player sprite position.
-    // Setup score sprites.
-}
-
-// Top left display: BEST: XXX:XX also shows level progress
-// Top right display: TIME XXX:XX
-
