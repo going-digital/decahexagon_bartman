@@ -76,7 +76,6 @@ GameState gamestate = {
     .record_subsecond_frames = 10
 };
 
-
 __attribute__((always_inline)) inline void blit_cls(void *bitplane);
 __attribute__((always_inline)) inline void blit_line_onedot(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
@@ -487,29 +486,34 @@ int main() {
         //     SCREEN_WIDTH/2 + x, SCREEN_HEIGHT/2 + y,
         //     bitplane_fg2
         // );
-        UWORD draw_angle = 0;
-        radial_to_cartesian(field_angle, (SCREEN_HEIGHT/2-2), &x, &y);
-        WORD end_x = x;
-        WORD end_y = y;
-        while (1) {
-            UWORD new_angle = draw_angle + gamestate.segment_angle;
-            if (new_angle < draw_angle) break;
-            radial_to_cartesian(new_angle + field_angle, (SCREEN_HEIGHT/2-2), &new_x, &new_y);
+        UWORD scale = (SCREEN_HEIGHT/2-2) - ((frameCounter>>1) & 0xf);
+        for (WORD i = 6; i>0; i--) {
+            UWORD draw_angle = 0;
+            radial_to_cartesian(field_angle, scale, &x, &y);
+            WORD end_x = x;
+            WORD end_y = y;
+            while (1) {
+                UWORD new_angle = draw_angle + gamestate.segment_angle;
+                if (new_angle < draw_angle) break;
+                radial_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
+                blit_line_onedot(
+                    SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
+                    SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
+                    bitplane_bg2
+                );
+                x = new_x;
+                y = new_y;
+                draw_angle = new_angle;
+            }
+            // Draw last line back to start point
             blit_line_onedot(
                 SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
-                SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
+                SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
                 bitplane_bg2
             );
-            x = new_x;
-            y = new_y;
-            draw_angle = new_angle;
+
+            scale -= 10;
         }
-        // Draw last line back to start point
-        blit_line_onedot(
-            SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
-            SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
-            bitplane_bg2
-        );
         //custom->color[0] = 0x008; // Blue raster - done
         blit_fill(bitplane_bg2, bitplane_fg2);
 
@@ -609,100 +613,48 @@ void blit_line_onedot(
     // Calculate word address of start point
     APTR startpt = bitplane + SCREEN_WIDTH_BYTES * y0 + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
-    WORD sd = y1 - y0; // Positive in south direction
+    WORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
     WORD ne = ed - sd; // Positive in ne direction
     WORD se = ed + sd; // Positive in se direction
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
-    UWORD bltsize;
     BOOL use_bmod = 0;
     if (se < 0) {
-        // Octant 1234 Northwest
-        if (ne < 0) {
-            // Octant 34 West
-            // x is major axis
-            maj_d = -ed;
-            if (sd < 0) {
-                // Problem here?
-                // Octant 3
-                bltcon1 = SUD | SUL | AUL | ONEDOT | LINEMODE;
-                min_d = -sd;
-                bltsize = (maj_d << 6) + 2;
-            } else {
-                // Problem here?
-                // Octant 4
-                bltcon1 = SUD | AUL | ONEDOT | LINEMODE;
-                min_d = sd;
-                bltsize = (maj_d << 6) + 2;
-            }
-        } else {
-            // Octant 12 North predominant
-            // SUD = 0
-            maj_d = -sd;
-            if (ed < 0) {
-                // Octant 2
-                bltcon1 = SUL | AUL | LINEMODE;
-                min_d = -ed;
-                bltsize = (maj_d << 6) + 2;
-            } else {
-                // Octant 1
-                bltcon1 = AUL | LINEMODE;
-                min_d = ed;
-                bltsize = (maj_d << 6) + 2;
-            }
-        }
+        // Octant 4
+        maj_d = -ed;
+        bltcon1 = SUD | AUL | ONEDOT | LINEMODE;
+        min_d = sd;
     } else {
         // Octant 0567 Southeast
-        // AUL = 0
         if (ne < 0) {
             // South predominant
-            // Octant 5 6
-            // SUD = 0
             maj_d = sd;
             if (ed < 0) {
                 // Octant 5
                 bltcon1 = SUL | LINEMODE;
                 min_d = -ed;
-                bltsize = (maj_d << 6) + 2;
             } else {
                 // Octant 6
                 bltcon1 = LINEMODE;
                 min_d = ed;
-                bltsize = (maj_d << 6) + 2;
             }
         } else {
             // East predominant
-            // Octant 0 7
+            // Octant 7
             maj_d = ed;
-            if (sd < 0) {
-                // Problem here?
-                // Octant 0 SUL = 1
-                bltcon1 = SUD | SUL | ONEDOT | LINEMODE;
-                min_d = -sd;
-                bltsize = (maj_d << 6) + 2;
-            } else {
-                // Problem here?
-                // Octant 7 SUL = 0
-                bltcon1 = SUD | ONEDOT | LINEMODE;
-                min_d = sd;
-                bltsize = (maj_d << 6) + 2;// - (1<<6); // This improves things
-            }
+            bltcon1 = SUD | ONEDOT | LINEMODE;
+            min_d = sd;
         }
     }
     // After that, majd is pixel distance on dominant axis,
     // mind is pixel distance on minor axis. Both are guaranteed zero/positive.
     // Preshift max_d, min_d
 
-    maj_d <<= 1;
     WORD bltbmod = min_d << 2; // 4min_d
-    WORD bltaptl = bltbmod - maj_d; // 4 min_d - 2 maj_d
-    WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
-    // if (use_bmod) {
-    //     bltaptl = bltbmod;
-    // } else {
-        bltaptl = bltamod;
-    // }
+    maj_d <<= 2;
+    WORD bltamod = bltbmod - maj_d; // 4 min_d - 4 maj_d
+    WORD bltaptl = bltamod; // This goes against HRM, but seems to work well.
     if (bltaptl < 0) bltcon1 |= SIGNFLAG;
 
     // Set starting word, DMA channels and logic function
@@ -728,7 +680,7 @@ void blit_line_onedot(
     custom->bltdpt = startpt;
     custom->bltcon0 = bltcon0;
     custom->bltcon1 = bltcon1;
-    custom->bltsize = bltsize;
+    custom->bltsize = (maj_d << 4) + 2;
 }
 
 void blit_line(
