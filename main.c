@@ -41,10 +41,9 @@ struct View *ActiView;
 
 #define BITPLANE_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH_BYTES)
 
-UWORD *bitplane_bg1;
 UWORD *bitplane_fg1;
-UWORD *bitplane_bg2;
 UWORD *bitplane_fg2;
+UWORD *bitplane_fg3;
 
 typedef struct sGameState {
     UWORD field_angle;
@@ -63,7 +62,7 @@ typedef struct sGameState {
 
 GameState gamestate = {
     .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE / 6, // 1 degree per 60Hz frame
+    .field_rotation = 65536 / FRAME_RATE * 2 / 6, // 1 degree per 60Hz frame
     .segment_angle = ((65536+NUM_SIDES-1) / NUM_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536+NUM_SIDES-1) / NUM_SIDES),
     .player_angle = 0,
@@ -77,6 +76,7 @@ GameState gamestate = {
 };
 
 __attribute__((always_inline)) inline void blit_cls(void *bitplane);
+__attribute__((always_inline)) inline void cpu_cls(void *bitplane);
 __attribute__((always_inline)) inline void blit_line_onedot(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_wait();
@@ -214,15 +214,10 @@ __attribute__((always_inline)) inline short MouseRight(){
     return !(custom->potinp & POTINF_L_MOUSE_BUT2);
 }
 
-// DEMO - INCBIN
 volatile short frameCounter = 0;
-//INCBIN(colors, "image.pal")
-//INCBIN_CHIP(image, "image.bpl") // load image into chipmem so we can use it without copying
-//INCBIN_CHIP(bob, "bob.bpl")
 
 // put copperlist into chip mem so we can use it without copying
 const UWORD copper2[] __attribute__((section (".MEMF_CHIP"))) = {
-    //offsetof(struct Custom, color[0]), 0x0fff,
     0xffff, 0xfffe // end copper list
 };
 
@@ -410,14 +405,12 @@ int main() {
     WaitVbl();
 
     // Allocate bitplanes
-    bitplane_bg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
-    bitplane_bg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
-    debug_register_bitmap(bitplane_bg1, "BG1", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
+    bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     debug_register_bitmap(bitplane_fg1, "FG1", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
-    debug_register_bitmap(bitplane_bg2, "BG2", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg2, "FG2", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
+    debug_register_bitmap(bitplane_fg3, "FG3", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
 
     USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP);
     USHORT* copPtr = copper1;
@@ -431,7 +424,7 @@ int main() {
 
     copPtr = screenScanDefault(copPtr);
     //enable bitplanes	
-    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (2*BPLCON0F_BPU210));
+    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (1*BPLCON0F_BPU210));
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon1), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon2), BPLCON2F_PF2PRI);
 
@@ -441,14 +434,11 @@ int main() {
 
     // set bitplane pointers
     void* copListSetBpl = copPtr;
-    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bitplane_bg1);
-    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg1);
+    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bitplane_fg1);
 
     // set colors
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), 0x000); // Even sector background / border
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0xff0); // Odd sector background
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), 0x00f); // Even sector wall
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), 0xfff); // Odd sector wall
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), 0x000); // Background
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x30f); // Object
 
     // jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
@@ -469,23 +459,18 @@ int main() {
 
     custom->intreq=(1<<INTB_VERTB);//reset vbl req
 
+    custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     while(!MouseLeft()) {
         Wait10();
         int f = frameCounter & 255;
 
         // clear
         custom->color[0] = 0x200; // Red raster - starter render
-        blit_cls(bitplane_bg2);
-        blit_cls(bitplane_fg2);
+        //blit_cls(bitplane_fg2);
         UWORD field_angle = gamestate.field_angle;
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
-        // radial_to_cartesian(field_angle, (SCREEN_HEIGHT/2-2), &x, &y);    
-        // blit_line(
-        //     SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
-        //     SCREEN_WIDTH/2 + x, SCREEN_HEIGHT/2 + y,
-        //     bitplane_fg2
-        // );
+
         UWORD scale = (SCREEN_HEIGHT/2-2) - ((frameCounter>>1) & 0xf);
         for (WORD i = 6; i>0; i--) {
             UWORD draw_angle = 0;
@@ -499,7 +484,7 @@ int main() {
                 blit_line_onedot(
                     SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                     SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
-                    bitplane_bg2
+                    bitplane_fg2
                 );
                 x = new_x;
                 y = new_y;
@@ -509,24 +494,26 @@ int main() {
             blit_line_onedot(
                 SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                 SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
-                bitplane_bg2
+                bitplane_fg2
             );
 
             scale -= 10;
         }
         //custom->color[0] = 0x008; // Blue raster - done
-        blit_fill(bitplane_bg2, bitplane_fg2);
+        blit_fill(bitplane_fg2, bitplane_fg2);
+        cpu_cls(bitplane_fg3);
 
         // Flip render buffers on next frame
-        copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_bg2);
-        copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg2);
+        copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_fg2);
 
-        void* tmp = bitplane_bg1;
-        bitplane_bg1 = bitplane_bg2;
-        bitplane_bg2 = tmp;
-        tmp = bitplane_fg1;
+        // Bitplane fg3: Blank bitplane
+        // Bitplane fg2: Line rendering and fill
+        // Bitplane fg1: Display
+        
+        void* tmp = bitplane_fg1;
         bitplane_fg1 = bitplane_fg2;
-        bitplane_fg2 = tmp;
+        bitplane_fg2 = bitplane_fg3;
+        bitplane_fg3 = tmp;
 
         // WinUAE debug overlay test
         // debug_clear();
@@ -577,10 +564,12 @@ void init_tables() {
 
 __attribute__((always_inline)) inline
 void blit_wait() {
-    custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
+    custom->color[0] = 0xc00;
+    //custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     UWORD dummy = custom->dmaconr; // Dummy read for thin Agnus compatibility
     while (custom->dmaconr & DMAF_BLTDONE);
-    custom->dmacon = DMAF_BLITHOG;
+    //custom->dmacon = DMAF_BLITHOG;
+    custom->color[0] = 0x200;
 }
 
 void blit_line_subpixel_onedot(
@@ -602,7 +591,11 @@ void blit_line_onedot(
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
+    // Horizontal lines already have a pixel at start and end from other edges.
+    // No drawing required.
     if (y0 == y1) return;
+
+    // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
     if (y0 > y1) {
         UWORD tmp;
         tmp = y0; y0 = y1; y1 = tmp;
@@ -611,9 +604,10 @@ void blit_line_onedot(
 
     // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
     // Calculate word address of start point
+    // Note octants 0, 1, 2, 3 are omitted as they are never drawn.
     APTR startpt = bitplane + SCREEN_WIDTH_BYTES * y0 + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
-    WORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
+    UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
     WORD ne = ed - sd; // Positive in ne direction
     WORD se = ed + sd; // Positive in se direction
     UWORD bltcon1;
@@ -660,7 +654,7 @@ void blit_line_onedot(
     // Set starting word, DMA channels and logic function
     UWORD bltcon0 = (
         (x0 & 0xf) << 12 // Starting bit within word
-        | BC0B_DEST 
+        //| BC0B_DEST 
         | BC0F_SRCC | BC0F_SRCA
         | ABNC | NABC | NANBC // 4a xor
     );
@@ -814,6 +808,35 @@ void blit_cls(void *bitplane) {
 }
 
 __attribute__((always_inline)) inline
+void cpu_cls(void *bitplane) {
+    register volatile const UWORD _d0 ASM("d0") = ((SCREEN_HEIGHT * SCREEN_WIDTH_BYTES) / 160) - 1;
+    // This assumes 320 pixels wide and HEIGHT is a multiple of 4 lines
+    register volatile const void* _a0 ASM("a0") = bitplane + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES;
+    __asm volatile (
+        "   movem.l %%d1-%%d7/%%a1-%%a3,-(%%sp)\n"
+        "   moveq.l #0,%%d1\n"
+        "   moveq.l #0,%%d2\n"
+        "   moveq.l #0,%%d3\n"
+        "   moveq.l #0,%%d4\n"
+        "   moveq.l #0,%%d5\n"
+        "   moveq.l #0,%%d6\n"
+        "   moveq.l #0,%%d7\n"
+        "   movea.l %%d1,%%a1\n"
+        "   movea.l %%d1,%%a2\n"
+        "   movea.l %%d1,%%a3\n"
+        "1: movem.l %%d1-%%d7/%%a1-%%a3,-(%%a0)\n"// 40 bytes
+        "   movem.l %%d1-%%d7/%%a1-%%a3,-(%%a0)\n"// 40 bytes
+        "   movem.l %%d1-%%d7/%%a1-%%a3,-(%%a0)\n"// 40 bytes
+        "   movem.l %%d1-%%d7/%%a1-%%a3,-(%%a0)\n"// 40 bytes
+        "   dbra    %%d0,1b\n"
+        "   movem.l (%%sp)+,%%d1-%%d7/%%a1-%%a3\n"
+        :
+        : "rf"(_d0), "rf"(_a0)
+        : "cc", "memory"
+    );
+}
+
+__attribute__((always_inline)) inline
 void blit_fill(void *bitplane, void *bitplane2) {
     APTR start = bitplane + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
     APTR start2 = bitplane2 + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
@@ -834,3 +857,35 @@ void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     *y = (sin_table[angle] * length) >> 14;
     *x = (sin_table[(angle + 0x100) & 0x3ff] * length) >> 14;
 }
+
+#if 0
+// Cohen-Sutherland line clipping
+UWORD outcode(x, y) {
+    WORD result = 0;
+    if (x < 0) {
+        result |= CODE_LEFT;
+    } else {
+        if (x >= SCREEN_WIDTH) {
+            result |= CODE_RIGHT;
+        }
+    }
+    if (y < 0) {
+        result |= CODE_BOTTOM_REALLY_TOP;
+    } else if (y >= SCREEN_HEIGHT)
+        result |= CODE_TOP_REALLY_BOTTOM;
+    }
+    return result;
+}
+
+void lineclip(UWORD* x0, UWORD* y0, UWORD* x1, UWORD* y1) {
+    WORD outcode = 0;
+    WORD outcode0 = outcode(*x0, *y0);
+    WORD outcode1 = outcode(*x1, *y1);
+    WORD accept = 0;
+    while(1) {
+        if (!(outcode0 | outcode1)) {
+            
+        }
+    }
+}
+#endif
