@@ -18,10 +18,22 @@
 //#define MUSIC_LSP
 #define NUM_SIDES (6)
 
-#define SCREEN_WIDTH (320)
-#define SCREEN_HEIGHT (200)
-#define FRAME_RATE (50)
+#define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
+#define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine
+#define FRAME_RATE (50) // To keep difficulty consistent between PAL and NTSC
 #define SCREEN_WIDTH_BYTES (SCREEN_WIDTH >> 3)
+
+// Pixel aspect correction for NTSC
+#if FRAME_RATE == 60
+// Should be *0.8333
+// n - (n>>2) = 0.75
+// n - (n>>2) + (n>>4) = 0.8125 close enough
+
+#define PIXEL_ASPECT_CORRECT_Y(n) (n * 5 / 6)
+#else
+// Strictly this is 15/16, but 1 is close enough
+#define PIXEL_ASPECT_CORRECT_Y(n) (n)
+#endif
 
 struct ExecBase *SysBase;
 struct Custom *custom = (struct Custom*)0xdff000;
@@ -86,7 +98,7 @@ WORD sin_table[1024];
 
 void init_tables();
 __attribute__((always_inline)) inline USHORT* copWrite(USHORT* copListEnd, UWORD offset, UWORD data);
-void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y);
+void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y);
 
 static APTR GetVBR(void) {
     APTR vbr = 0;
@@ -372,13 +384,11 @@ int main() {
 
     // We will use the graphics library only to locate and restore the system copper list once we are through.
     GfxBase = (struct GfxBase *)OpenLibrary((CONST_STRPTR)"graphics.library",0);
-    if (!GfxBase)
-        Exit(0);
+    if (!GfxBase) Exit(0);
 
     // used for printing
     DOSBase = (struct DosLibrary*)OpenLibrary((CONST_STRPTR)"dos.library", 0);
-    if (!DOSBase)
-        Exit(0);
+    if (!DOSBase) Exit(0);
 
 #ifdef __cplusplus
     KPrintF("Hello debugger from Amiga: %ld!\n", staticClass.i);
@@ -386,12 +396,12 @@ int main() {
     KPrintF("Hello debugger from Amiga!\n");
 #endif
     Write(Output(), (APTR)"\nDecahexagon debug build\n", 25);
+
     Delay(50);
 
     warpmode(1);
     // Precalc start
 
-    // TODO: precalc stuff here
     init_tables();
     #ifdef MUSIC
     if(p61Init(module) != 0)
@@ -408,17 +418,14 @@ int main() {
     bitplane_fg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
+    
+    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP);
+    USHORT* copPtr = copper1;
+    
+    // register graphics resources with WinUAE for nicer gfx debugger experience
     debug_register_bitmap(bitplane_fg1, "FG1", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg2, "FG2", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg3, "FG3", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
-
-    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP);
-    USHORT* copPtr = copper1;
-
-    // register graphics resources with WinUAE for nicer gfx debugger experience
-    //debug_register_bitmap(image, "image.bpl", 320, 256, 5, debug_resource_bitmap_interleaved);
-    //debug_register_bitmap(bob, "bob.bpl", 32, 96, 5, debug_resource_bitmap_interleaved | debug_resource_bitmap_masked);
-    //debug_register_palette(colors, "image.pal", 32, 0);
     debug_register_copperlist(copper1, "copper1", 1024, 0);
     debug_register_copperlist(copper2, "copper2", sizeof(copper2), 0);
 
@@ -438,7 +445,7 @@ int main() {
 
     // set colors
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), 0x000); // Background
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x30f); // Object
+    //copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x30f); // Object
 
     // jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
@@ -457,7 +464,7 @@ int main() {
     custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
 #endif
 
-    custom->intreq=(1<<INTB_VERTB);//reset vbl req
+    custom->intreq = (1<<INTB_VERTB); // Reset vbl req
 
     custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     while(!MouseLeft()) {
@@ -465,22 +472,55 @@ int main() {
         int f = frameCounter & 255;
 
         // clear
-        custom->color[0] = 0x200; // Red raster - starter render
-        //blit_cls(bitplane_fg2);
+        //custom->color[0] = 0x200; // Red raster - starter render // RED
         UWORD field_angle = gamestate.field_angle;
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
 
-        UWORD scale = (SCREEN_HEIGHT/2-2) - ((frameCounter>>1) & 0xf);
+        UWORD scale = (SCREEN_HEIGHT/2-2) - ((frameCounter>>2) & 0x7);
+        // Calculate unit vectors
+
+        #if 0
+        // Maintain an array of precalculated angle constants to reduce per-line computation
+        WORD origin_x[6];
+        WORD origin_y[6];
+        WORD step_x[6];
+        WORD step_y[6];
+
+        WORD angle = gamestate.field_angle;
+        for (WORD i = 0; i < 6; i++) {
+            WORD origin_scalar = (frameCounter >> 1) & 0xf;
+            WORD ang_idx = angle >> 6;
+
+            WORD sin = sin_table[angle];
+            origin_x[i] = (sin * origin_scalar) >> 14;
+            step_x[i] = (sin * step_scalar) >> 14;
+
+            WORD cos = sin_table[(angle + 0x100) & 0x3ff]
+            cos -= (cos >> 4); // Y scalar goes -0.75 to 0.75
+            origin_y[i] = (cos * origin_scalar) >> 14;
+            step_y[i] = (cos * step_scalar) >> 14;
+
+            // TODO: For given angle, define parameters for line to next segment.
+            
+            // TODO: Precalculate some of the blitter registers too.
+            // BLTCON1 SUD, SUL, AUL, ONEDOT, LINEMODE, SIGNFLAG
+            // Which is major dimension (for size)
+            // BLTAPT, BLTAMOD, BLTBMOD
+
+            angle += gamestate.segment_angle;
+        }
+        #endif
+
         for (WORD i = 6; i>0; i--) {
             UWORD draw_angle = 0;
-            radial_to_cartesian(field_angle, scale, &x, &y);
+            polar_to_cartesian(field_angle, scale, &x, &y);
             WORD end_x = x;
             WORD end_y = y;
             while (1) {
                 UWORD new_angle = draw_angle + gamestate.segment_angle;
                 if (new_angle < draw_angle) break;
-                radial_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
+                polar_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
                 blit_line_onedot(
                     SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                     SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
@@ -500,16 +540,26 @@ int main() {
             scale -= 10;
         }
         //custom->color[0] = 0x008; // Blue raster - done
+        //custom->color[0] = 0x080;
         blit_fill(bitplane_fg2, bitplane_fg2);
+        //custom->color[0] = 0x008;
         cpu_cls(bitplane_fg3);
 
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_fg2);
 
+        UWORD new_palette_angle = frameCounter & 0x3ff;
+        UWORD new_palette_red = 8 + ((sin_table[new_palette_angle] * 7) >> 14);
+        UWORD new_palette_green = 8 + ((sin_table[(new_palette_angle + 1024/3) & 0x3ff] * 7) >> 14);
+        UWORD new_palette_blue = 8 + ((sin_table[(new_palette_angle + 2 * 1024 / 3) & 0x3ff] * 7) >> 14);
+        UWORD palette = ((new_palette_red & 0xf) << 8) + ((new_palette_green & 0xf) << 4) + (new_palette_blue & 0xf);
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), (palette>>1)&0x777);
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), palette);
+        
         // Bitplane fg3: Blank bitplane
         // Bitplane fg2: Line rendering and fill
         // Bitplane fg1: Display
-        
+
         void* tmp = bitplane_fg1;
         bitplane_fg1 = bitplane_fg2;
         bitplane_fg2 = bitplane_fg3;
@@ -521,8 +571,9 @@ int main() {
         // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
         // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
 
+        //custom->color[0] = 0x800; // Black raster - all done
         blit_wait();
-        custom->color[0] = 0x000; // Black raster - all done
+        //custom->color[0] = 0x000; // Black raster - all done
     }
 
 #ifdef MUSIC
@@ -564,12 +615,10 @@ void init_tables() {
 
 __attribute__((always_inline)) inline
 void blit_wait() {
-    custom->color[0] = 0xc00;
     //custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     UWORD dummy = custom->dmaconr; // Dummy read for thin Agnus compatibility
     while (custom->dmaconr & DMAF_BLTDONE);
     //custom->dmacon = DMAF_BLITHOG;
-    custom->color[0] = 0x200;
 }
 
 void blit_line_subpixel_onedot(
@@ -654,12 +703,12 @@ void blit_line_onedot(
     // Set starting word, DMA channels and logic function
     UWORD bltcon0 = (
         (x0 & 0xf) << 12 // Starting bit within word
-        //| BC0B_DEST 
         | BC0F_SRCC | BC0F_SRCA
         | ABNC | NABC | NANBC // 4a xor
     );
     // Spin until blitter free
     blit_wait();
+
     // Set up
     custom->bltadat = 0x8000;
     custom->bltbdat = 0xffff;
@@ -677,11 +726,62 @@ void blit_line_onedot(
     custom->bltsize = (maj_d << 4) + 2;
 }
 
+void blit_fill_fix(
+    WORD y0, WORD y1, void *bitplane
+) {
+    if (y0 > y1) {
+        WORD tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+    }
+    // Skip offscreen
+    if (y1 < 0) return;
+    if (y0 > (SCREEN_HEIGHT-1)) return;
+    // Clip to screen
+    if (y0 < 0) y0 = 0;
+    if (y1 > (SCREEN_HEIGHT-1)) y1 = SCREEN_HEIGHT - 1;
+    APTR startpt = (
+        bitplane
+        + SCREEN_WIDTH_BYTES * y0  // TODO: Remove this multiply
+        + (SCREEN_WIDTH >> 3) - 2
+    ); // Location of rightmost word
+    UWORD bltcon1 = LINEMODE | SIGNFLAG;
+    UWORD maj_d = (y1 - y0) << 1;
+    WORD bltbmod = 0;
+    WORD bltaptl = -maj_d; // 4 min_d - 2 maj_d
+    WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
+    UWORD bltcon0 = 0xf << 12;
+    // Set DMA channels
+    bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABC | ABNC | NABC | NANBC;  // or
+    // Spin until blitter free
+    blit_wait();
+    // Set up
+    custom->bltadat = 0x8000;
+    custom->bltbdat = 0xffff;
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltamod = bltamod;
+    custom->bltbmod = bltbmod;
+    custom->bltcmod = SCREEN_WIDTH_BYTES;
+    custom->bltdmod = SCREEN_WIDTH_BYTES;
+    custom->bltapt = (APTR)((ULONG)bltaptl);
+    custom->bltcpt = startpt;
+    custom->bltdpt = startpt;
+    custom->bltcon0 = bltcon0;
+    custom->bltcon1 = bltcon1;
+    custom->bltsize = (maj_d << 5) + ((1 << 6) + 2); // Remember maj_d was doubled above
+}
+
 void blit_line(
     UWORD x0, UWORD y0,
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
+    if (y0 > y1) {
+        UWORD tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+    }
+
     // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
     // Calculate word address of start point
     APTR startpt = (
@@ -690,44 +790,19 @@ void blit_line(
         + ((x0 >> 4) << 1)
     );
     WORD ed = x1 - x0; // Positive in east direction
-    WORD sd = y1 - y0; // Positive in south direction
+    UWORD sd = y1 - y0; // Positive in south direction
     WORD ne = ed - sd; // Positive in ne direction
     WORD se = ed + sd; // Positive in se direction
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
 
-    UWORD shorten = 0; // Short 1 pixel
-
     if (se < 0) {
-        // Octant 1234 Northwest
-        if (ne < 0) {
-            // Octant 34 West
-            // x is major axis
-            maj_d = -ed;
-            if (sd < 0) {
-                // Octant 3
-                bltcon1 = SUD | SUL | AUL | LINEMODE;
-                min_d = -sd;
-            } else {
-                // Octant 4
-                bltcon1 = SUD | AUL | LINEMODE;
-                min_d = sd;
-            }
-        } else {
-            // Octant 12 North predominant
-            // SUD = 0
-            maj_d = -sd;
-            if (ed < 0) {
-                // Octant 2
-                bltcon1 = SUL | AUL | LINEMODE;
-                min_d = -ed;
-            } else {
-                // Octant 1
-                bltcon1 = AUL | LINEMODE;
-                min_d = ed;
-            }
-        }
+        // x is major axis
+        maj_d = -ed;
+        // Octant 4
+        bltcon1 = SUD | AUL | LINEMODE;
+        min_d = sd;
     } else {
         // Octant 0567 Southeast
         // AUL = 0
@@ -747,17 +822,10 @@ void blit_line(
             }
         } else {
             // East predominant
-            // Octant 0 7
             maj_d = ed;
-            if (sd < 0) {
-                // Octant 0 SUL = 1
-                bltcon1 = SUD | SUL | LINEMODE;
-                min_d = -sd;
-            } else {
-                // Octant 7 SUL = 0
-                bltcon1 = SUD | LINEMODE;
-                min_d = sd;
-            }
+            // Octant 7
+            bltcon1 = SUD | LINEMODE;
+            min_d = sd;
         }
     }
     // After that, majd is pixel distance on dominant axis,
@@ -852,40 +920,13 @@ void blit_fill(void *bitplane, void *bitplane2) {
     custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
 
-void radial_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
+void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     angle >>= 6; // Sin table has 1023 entries
-    *y = (sin_table[angle] * length) >> 14;
+    WORD result = (sin_table[angle] * length) >> 14;
+    result -= result >> 2;
+    *y = result;
     *x = (sin_table[(angle + 0x100) & 0x3ff] * length) >> 14;
 }
 
-#if 0
-// Cohen-Sutherland line clipping
-UWORD outcode(x, y) {
-    WORD result = 0;
-    if (x < 0) {
-        result |= CODE_LEFT;
-    } else {
-        if (x >= SCREEN_WIDTH) {
-            result |= CODE_RIGHT;
-        }
-    }
-    if (y < 0) {
-        result |= CODE_BOTTOM_REALLY_TOP;
-    } else if (y >= SCREEN_HEIGHT)
-        result |= CODE_TOP_REALLY_BOTTOM;
-    }
-    return result;
-}
-
-void lineclip(UWORD* x0, UWORD* y0, UWORD* x1, UWORD* y1) {
-    WORD outcode = 0;
-    WORD outcode0 = outcode(*x0, *y0);
-    WORD outcode1 = outcode(*x1, *y1);
-    WORD accept = 0;
-    while(1) {
-        if (!(outcode0 | outcode1)) {
-            
-        }
-    }
-}
-#endif
+// TODO: Line clipping
+// TODO: Add player
