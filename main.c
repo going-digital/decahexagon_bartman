@@ -621,20 +621,6 @@ void blit_wait() {
     //custom->dmacon = DMAF_BLITHOG;
 }
 
-void blit_line_subpixel_onedot(
-    UWORD x0, UWORD y0,
-    UWORD x1, UWORD y1,
-    void* bitplane
-) {
-    // Initialisation
-    // BLTAPT = 4*minordelta - 2 * majordelta
-    // BLTAMOD = 4*minordelta - 4 * majordelta
-    // BLTBMOD = 4*minordelta
-    // BLTCON1.SIGN = BLTAPT < 0
-
-    // 
-}
-
 void blit_line_onedot(
     UWORD x0, UWORD y0,
     UWORD x1, UWORD y1,
@@ -726,7 +712,7 @@ void blit_line_onedot(
     custom->bltsize = (maj_d << 4) + 2;
 }
 
-void blit_fill_fix(
+void blit_fill_fix_onedot(
     WORD y0, WORD y1, void *bitplane
 ) {
     if (y0 > y1) {
@@ -744,14 +730,9 @@ void blit_fill_fix(
         + SCREEN_WIDTH_BYTES * y0  // TODO: Remove this multiply
         + (SCREEN_WIDTH >> 3) - 2
     ); // Location of rightmost word
-    UWORD bltcon1 = LINEMODE | SIGNFLAG;
     UWORD maj_d = (y1 - y0) << 1;
-    WORD bltbmod = 0;
     WORD bltaptl = -maj_d; // 4 min_d - 2 maj_d
     WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
-    UWORD bltcon0 = 0xf << 12;
-    // Set DMA channels
-    bltcon0 |= BC0F_DEST | BC0F_SRCC | BC0F_SRCA | ABC | ABNC | NABC | NANBC;  // or
     // Spin until blitter free
     blit_wait();
     // Set up
@@ -760,14 +741,18 @@ void blit_fill_fix(
     custom->bltafwm = 0xffff;
     custom->bltalwm = 0xffff;
     custom->bltamod = bltamod;
-    custom->bltbmod = bltbmod;
+    custom->bltbmod = 0;
     custom->bltcmod = SCREEN_WIDTH_BYTES;
     custom->bltdmod = SCREEN_WIDTH_BYTES;
     custom->bltapt = (APTR)((ULONG)bltaptl);
     custom->bltcpt = startpt;
     custom->bltdpt = startpt;
-    custom->bltcon0 = bltcon0;
-    custom->bltcon1 = bltcon1;
+    custom->bltcon0 = (
+        (0xf << 12)             // Rightmost word
+        | BC0F_SRCC | BC0F_SRCA // Set DMA channels
+        | ABNC | NABC | NANBC   // 4a xor
+    );
+    custom->bltcon1 = LINEMODE | SIGNFLAG;
     custom->bltsize = (maj_d << 5) + ((1 << 6) + 2); // Remember maj_d was doubled above
 }
 
@@ -786,7 +771,7 @@ void blit_line(
     // Calculate word address of start point
     APTR startpt = (
         bitplane
-        + SCREEN_WIDTH_BYTES * y0
+        + SCREEN_WIDTH_BYTES * y0  // TODO: Remove this multiply
         + ((x0 >> 4) << 1)
     );
     WORD ed = x1 - x0; // Positive in east direction
