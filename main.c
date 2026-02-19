@@ -481,7 +481,7 @@ int main() {
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
 
-        UWORD scale = (SCREEN_HEIGHT/2+50) - ((frameCounter>>2) & 0x7);
+        UWORD scale = (SCREEN_HEIGHT/4) - ((frameCounter>>2) & 0x7);
         // Calculate unit vectors
 
         #if 0
@@ -558,7 +558,7 @@ int main() {
                 bitplane_fg2
             );
             #endif
-            scale -= 10;
+            scale += 25;
         }
         //custom->color[0] = 0x008; // Blue raster - done
         //custom->color[0] = 0x080;
@@ -644,6 +644,7 @@ void blit_wait() {
 
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)
+#define FRACBITS 8
 
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
@@ -660,8 +661,8 @@ void blit_clipped_line_onedot(
     if (y1 < 0) {
         return;
     } else if (y0 < 0) {
-        LONG mxy = ((x1 - x0) << 16) / (y1 - y0);
-        WORD new_x = x0 - y0 * mxy;
+        LONG mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
         if (new_x >= 0 && new_x <= XMAX) {
             x0 = new_x;
             y0 = 0;
@@ -675,8 +676,8 @@ void blit_clipped_line_onedot(
     if (y0 > YMAX) {
         return;
     } else if (y1 > YMAX) {
-        LONG mxy = ((x1 - x0) << 16) / (y1 - y0);
-        WORD new_x = x1 + (YMAX - y1) * mxy;
+        LONG mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
         if (new_x >= 0 && new_x <= XMAX) {
             x1 = new_x;
             y1 = YMAX;
@@ -696,8 +697,8 @@ void blit_clipped_line_onedot(
     if (x1 < 0) {
         return;
     } else if (x0 < 0) {
-        LONG myx = (y1 - y0) / (x1 - x0);
-        WORD new_y = y0 - x0 * myx;
+        LONG myx = ((y1 - y0)<< FRACBITS) / (x1 - x0);
+        WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             x0 = 0;
             y0 = new_y;
@@ -711,8 +712,8 @@ void blit_clipped_line_onedot(
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
-        LONG myx = (y1 - y0) / (x1 - x0);
-        WORD new_y = y0 + (XMAX - x1) * myx;
+        LONG myx = ((y1 - y0)<<FRACBITS) / (x1 - x0);
+        WORD new_y = y0 + (((XMAX - x1) * myx)>>FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             blit_fill_fix_onedot(new_y, y1, bitplane);
             x1 = XMAX;
