@@ -93,6 +93,10 @@ __attribute__((always_inline)) inline void blit_line_onedot(UWORD x0, UWORD y0, 
 __attribute__((always_inline)) inline void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 __attribute__((always_inline)) inline void blit_wait();
 __attribute__((always_inline)) inline void blit_fill(void *bitplane, void* bitplane2);
+void blit_fill_fix_onedot(WORD y0, WORD y1, void *bitplane);
+void blit_clipped_line_onedot(
+    WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
+);
 
 WORD sin_table[1024];
 
@@ -477,7 +481,7 @@ int main() {
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
 
-        UWORD scale = (SCREEN_HEIGHT/2-2) - ((frameCounter>>2) & 0x7);
+        UWORD scale = (SCREEN_HEIGHT/2+50) - ((frameCounter>>2) & 0x7);
         // Calculate unit vectors
 
         #if 0
@@ -521,22 +525,39 @@ int main() {
                 UWORD new_angle = draw_angle + gamestate.segment_angle;
                 if (new_angle < draw_angle) break;
                 polar_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
+                #if 1
+                blit_clipped_line_onedot(
+                    SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
+                    SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
+                    0,
+                    bitplane_fg2
+                );
+                #else
                 blit_line_onedot(
                     SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                     SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
                     bitplane_fg2
                 );
+                #endif
                 x = new_x;
                 y = new_y;
                 draw_angle = new_angle;
             }
             // Draw last line back to start point
+            #if 1
+            blit_clipped_line_onedot(
+                SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
+                SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
+                0,
+                bitplane_fg2
+            );
+            #else
             blit_line_onedot(
                 SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                 SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
                 bitplane_fg2
             );
-
+            #endif
             scale -= 10;
         }
         //custom->color[0] = 0x008; // Blue raster - done
@@ -619,6 +640,91 @@ void blit_wait() {
     UWORD dummy = custom->dmaconr; // Dummy read for thin Agnus compatibility
     while (custom->dmaconr & DMAF_BLTDONE);
     //custom->dmacon = DMAF_BLITHOG;
+}
+
+#define XMAX (SCREEN_WIDTH-1)
+#define YMAX (SCREEN_HEIGHT-1)
+
+void blit_clipped_line_onedot(
+    WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
+) {
+    WORD outside_viewport = 4;
+    WORD viewport_intersection = 0;
+
+    // Clip at y=0
+    if (y0 > y1) {
+        WORD tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+    }
+    if (y1 < 0) {
+        return;
+    } else if (y0 < 0) {
+        LONG mxy = ((x1 - x0) << 16) / (y1 - y0);
+        WORD new_x = x0 - y0 * mxy;
+        if (new_x >= 0 && new_x <= XMAX) {
+            x0 = new_x;
+            y0 = 0;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+
+    // Clip at y=YMAX
+    if (y0 > YMAX) {
+        return;
+    } else if (y1 > YMAX) {
+        LONG mxy = ((x1 - x0) << 16) / (y1 - y0);
+        WORD new_x = x1 + (YMAX - y1) * mxy;
+        if (new_x >= 0 && new_x <= XMAX) {
+            x1 = new_x;
+            y1 = YMAX;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+
+    // Clip at x=0
+    if (x0 > x1) {
+        WORD tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+    }
+    // TODO: Continue from cliptest.py L63
+    if (x1 < 0) {
+        return;
+    } else if (x0 < 0) {
+        LONG myx = (y1 - y0) / (x1 - x0);
+        WORD new_y = y0 - x0 * myx;
+        if (new_y >= 0 && new_y <= YMAX) {
+            x0 = 0;
+            y0 = new_y;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+    if (x0 > XMAX) {
+        // line is offscreen right, but fill still needs updating
+        blit_fill_fix_onedot(y0, y1, bitplane);
+        return;
+    } else if (x1 > XMAX) {
+        LONG myx = (y1 - y0) / (x1 - x0);
+        WORD new_y = y0 + (XMAX - x1) * myx;
+        if (new_y >= 0 && new_y <= YMAX) {
+            blit_fill_fix_onedot(new_y, y1, bitplane);
+            x1 = XMAX;
+            y1 = new_y;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+    if (outside_viewport == 0 || viewport_intersection) {
+        blit_line_onedot(x0, y0, x1, y1, bitplane);
+    }
 }
 
 void blit_line_onedot(
