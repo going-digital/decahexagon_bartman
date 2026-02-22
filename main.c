@@ -563,7 +563,7 @@ int main() {
 void init_tables() {
     register volatile const void* _a0 ASM("a0") = sin_table;
     __asm volatile (
-        "    eor.w   %%d0,%%d0\n"
+        "    moveq   #0,%%d0\n"
         "    moveq   #5,%%d1\n"
         "    swap    %%d1\n"
         "    move.w  #511+2,%%a1\n"
