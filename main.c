@@ -74,7 +74,7 @@ typedef struct sGameState {
 
 GameState gamestate = {
     .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE * 2 / 6, // 1 degree per 60Hz frame
+    .field_rotation = 65536 / FRAME_RATE * 4 / 6, // 1 degree per 60Hz frame
     .segment_angle = ((65536+NUM_SIDES-1) / NUM_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536+NUM_SIDES-1) / NUM_SIDES),
     .player_angle = 0,
@@ -481,7 +481,7 @@ int main() {
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
 
-        UWORD scale = (SCREEN_HEIGHT/4) - ((frameCounter>>2) & 0x7);
+        UWORD scale = (SCREEN_HEIGHT/4) + ((frameCounter>>2) & 0x1f);
         // Calculate unit vectors
 
         for (WORD i = 6; i>0; i--) {
@@ -544,7 +544,7 @@ int main() {
         // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
         // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
 
-        //custom->color[0] = 0x800; // Black raster - all done
+        custom->color[0] = 0x800; // Black raster - all done
         blit_wait();
         //custom->color[0] = 0x000; // Black raster - all done
     }
