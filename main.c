@@ -484,38 +484,6 @@ int main() {
         UWORD scale = (SCREEN_HEIGHT/4) - ((frameCounter>>2) & 0x7);
         // Calculate unit vectors
 
-        #if 0
-        // Maintain an array of precalculated angle constants to reduce per-line computation
-        WORD origin_x[6];
-        WORD origin_y[6];
-        WORD step_x[6];
-        WORD step_y[6];
-
-        WORD angle = gamestate.field_angle;
-        for (WORD i = 0; i < 6; i++) {
-            WORD origin_scalar = (frameCounter >> 1) & 0xf;
-            WORD ang_idx = angle >> 6;
-
-            WORD sin = sin_table[angle];
-            origin_x[i] = (sin * origin_scalar) >> 14;
-            step_x[i] = (sin * step_scalar) >> 14;
-
-            WORD cos = sin_table[(angle + 0x100) & 0x3ff]
-            cos -= (cos >> 4); // Y scalar goes -0.75 to 0.75
-            origin_y[i] = (cos * origin_scalar) >> 14;
-            step_y[i] = (cos * step_scalar) >> 14;
-
-            // TODO: For given angle, define parameters for line to next segment.
-            
-            // TODO: Precalculate some of the blitter registers too.
-            // BLTCON1 SUD, SUL, AUL, ONEDOT, LINEMODE, SIGNFLAG
-            // Which is major dimension (for size)
-            // BLTAPT, BLTAMOD, BLTBMOD
-
-            angle += gamestate.segment_angle;
-        }
-        #endif
-
         for (WORD i = 6; i>0; i--) {
             UWORD draw_angle = 0;
             polar_to_cartesian(field_angle, scale, &x, &y);
@@ -525,39 +493,23 @@ int main() {
                 UWORD new_angle = draw_angle + gamestate.segment_angle;
                 if (new_angle < draw_angle) break;
                 polar_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
-                #if 1
                 blit_clipped_line_onedot(
                     SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                     SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
                     0,
                     bitplane_fg2
                 );
-                #else
-                blit_line_onedot(
-                    SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
-                    SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
-                    bitplane_fg2
-                );
-                #endif
                 x = new_x;
                 y = new_y;
                 draw_angle = new_angle;
             }
             // Draw last line back to start point
-            #if 1
             blit_clipped_line_onedot(
                 SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
                 SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
                 0,
                 bitplane_fg2
             );
-            #else
-            blit_line_onedot(
-                SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
-                SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
-                bitplane_fg2
-            );
-            #endif
             scale += 25;
         }
         //custom->color[0] = 0x008; // Blue raster - done
@@ -644,7 +596,7 @@ void blit_wait() {
 
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)
-#define FRACBITS 8
+#define FRACBITS 9
 
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
@@ -713,9 +665,13 @@ void blit_clipped_line_onedot(
         return;
     } else if (x1 > XMAX) {
         LONG myx = ((y1 - y0)<<FRACBITS) / (x1 - x0);
-        WORD new_y = y0 + (((XMAX - x1) * myx)>>FRACBITS);
+        WORD new_y = y1 + (((XMAX - x1) * myx)>>FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
-            blit_fill_fix_onedot(new_y, y1, bitplane);
+            if (new_y > y1) {
+                blit_fill_fix_onedot(y1, new_y-1, bitplane);
+            } else {
+                blit_fill_fix_onedot(new_y, y1-1, bitplane);
+            }
             x1 = XMAX;
             y1 = new_y;
             viewport_intersection = 1;
