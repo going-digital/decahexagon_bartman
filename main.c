@@ -97,6 +97,7 @@ void blit_fill_fix_onedot(WORD y0, WORD y1, void *bitplane);
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
 );
+void blit_line_mode();
 
 WORD sin_table[1024];
 
@@ -484,6 +485,10 @@ int main() {
         UWORD scale = (SCREEN_HEIGHT/4) + ((frameCounter>>2) & 0x1f);
         // Calculate unit vectors
 
+        // TODO: This whole section only uses the blitter for line drawing.
+        // Move some of the blitter register setting back to here so it only needs to happen once.
+
+        blit_line_mode();
         for (WORD i = 6; i>0; i--) {
             UWORD draw_angle = 0;
             polar_to_cartesian(field_angle, scale, &x, &y);
@@ -594,6 +599,17 @@ void blit_wait() {
     //custom->dmacon = DMAF_BLITHOG;
 }
 
+void blit_line_mode() {
+    blit_wait();
+    // Preload registers for line mode activities
+    // Saves resetting them every line.
+    custom->bltbdat = 0xffff;
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltcmod = SCREEN_WIDTH_BYTES;
+    custom->bltdmod = SCREEN_WIDTH_BYTES;
+}
+
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)
 #define FRACBITS 9
@@ -603,6 +619,8 @@ void blit_clipped_line_onedot(
 ) {
     WORD outside_viewport = 4;
     WORD viewport_intersection = 0;
+    LONG mxy = 0;
+    LONG myx = 0;
 
     // Clip at y=0
     if (y0 > y1) {
@@ -613,7 +631,7 @@ void blit_clipped_line_onedot(
     if (y1 < 0) {
         return;
     } else if (y0 < 0) {
-        LONG mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
         WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
         if (new_x >= 0 && new_x <= XMAX) {
             x0 = new_x;
@@ -628,7 +646,7 @@ void blit_clipped_line_onedot(
     if (y0 > YMAX) {
         return;
     } else if (y1 > YMAX) {
-        LONG mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        if (!mxy) mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
         WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
         if (new_x >= 0 && new_x <= XMAX) {
             x1 = new_x;
@@ -649,7 +667,7 @@ void blit_clipped_line_onedot(
     if (x1 < 0) {
         return;
     } else if (x0 < 0) {
-        LONG myx = ((y1 - y0)<< FRACBITS) / (x1 - x0);
+        myx = ((y1 - y0)<< FRACBITS) / (x1 - x0);
         WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             x0 = 0;
@@ -664,7 +682,7 @@ void blit_clipped_line_onedot(
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
-        LONG myx = ((y1 - y0)<<FRACBITS) / (x1 - x0);
+        if (!myx) myx = ((y1 - y0)<<FRACBITS) / (x1 - x0);
         WORD new_y = y1 + (((XMAX - x1) * myx)>>FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             if (new_y > y1) {
@@ -760,13 +778,8 @@ void blit_line_onedot(
 
     // Set up
     custom->bltadat = 0x8000;
-    custom->bltbdat = 0xffff;
-    custom->bltafwm = 0xffff;
-    custom->bltalwm = 0xffff;
     custom->bltamod = bltamod;
     custom->bltbmod = bltbmod;
-    custom->bltcmod = SCREEN_WIDTH_BYTES;
-    custom->bltdmod = SCREEN_WIDTH_BYTES;
     custom->bltapt = (APTR)((ULONG)bltaptl);
     custom->bltcpt = startpt;
     custom->bltdpt = startpt;
@@ -800,13 +813,8 @@ void blit_fill_fix_onedot(
     blit_wait();
     // Set up
     custom->bltadat = 0x8000;
-    custom->bltbdat = 0xffff;
-    custom->bltafwm = 0xffff;
-    custom->bltalwm = 0xffff;
     custom->bltamod = bltamod;
     custom->bltbmod = 0;
-    custom->bltcmod = SCREEN_WIDTH_BYTES;
-    custom->bltdmod = SCREEN_WIDTH_BYTES;
     custom->bltapt = (APTR)((ULONG)bltaptl);
     custom->bltcpt = startpt;
     custom->bltdpt = startpt;
@@ -896,13 +904,8 @@ void blit_line(
     blit_wait();
     // Set up
     custom->bltadat = 0x8000;
-    custom->bltbdat = 0xffff;
-    custom->bltafwm = 0xffff;
-    custom->bltalwm = 0xffff;
     custom->bltamod = bltamod;
     custom->bltbmod = bltbmod;
-    custom->bltcmod = SCREEN_WIDTH_BYTES;
-    custom->bltdmod = SCREEN_WIDTH_BYTES;
     custom->bltapt = (APTR)((ULONG)bltaptl);
     custom->bltcpt = startpt;
     custom->bltdpt = startpt;
@@ -976,5 +979,4 @@ void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     *x = (sin_table[(angle + 0x100) & 0x3ff] * length) >> 14;
 }
 
-// TODO: Line clipping
 // TODO: Add player
