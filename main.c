@@ -1,13 +1,13 @@
 #include "support/gcc8_c_support.h"
 #include <proto/exec.h>
+#include "custom2.h"
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <graphics/gfxbase.h>
 #include <graphics/view.h>
 #include <exec/execbase.h>
 #include <graphics/gfxmacros.h>
-#include "custom.h"
-#include <hardware/custom.h>
+//#include <hardware/custom.h>
 #include <hardware/dmabits.h>
 #include <hardware/intbits.h>
 #include <hardware/cia.h>
@@ -75,8 +75,8 @@ typedef struct sGameState {
 GameState gamestate = {
     .field_angle = 0,
     .field_rotation = 65536 / FRAME_RATE * 4 / 6, // 1 degree per 60Hz frame
-    .segment_angle = ((65536+NUM_SIDES-1) / NUM_SIDES), // Ensure overflow after last segment
-    .segment_angle_target = ((65536+NUM_SIDES-1) / NUM_SIDES),
+    .segment_angle = ((65536 + NUM_SIDES - 1) / NUM_SIDES), // Ensure overflow after last segment
+    .segment_angle_target = ((65536 + NUM_SIDES - 1) / NUM_SIDES),
     .player_angle = 0,
     .wall_fraction = 0,
     .draw_distance = 0x500,
@@ -116,11 +116,11 @@ static APTR GetVBR(void) {
 }
 
 void SetInterruptHandler(APTR interrupt) {
-    *(volatile APTR*)(((UBYTE*)VBR)+0x6c) = interrupt;
+    *(volatile APTR*)(((UBYTE*)VBR) + 0x6c) = interrupt;
 }
 
 APTR GetInterruptHandler() {
-    return *(volatile APTR*)(((UBYTE*)VBR)+0x6c);
+    return *(volatile APTR*)(((UBYTE*)VBR) + 0x6c);
 }
 
 //vblank begins at vpos 312 hpos 1 and ends at vpos 25 hpos 1
@@ -136,7 +136,7 @@ void WaitVbl() {
     while (1) {
         ULONG vpos = *(volatile ULONG*)&custom->vposr;
         vpos &= 0x1ff00;
-        if (vpos == (311<<8))
+        if (vpos == (311 << 8))
             break;
     }
     debug_stop_idle();
@@ -145,7 +145,7 @@ void WaitVbl() {
 void WaitLine(USHORT line) {
     while (1) {
         ULONG vpos = *(volatile ULONG*)&custom->vposr;
-        if(((vpos >> 8) & 511) == line)
+        if (((vpos >> 8) & 511) == line)
                 break;
     }
 }
@@ -159,10 +159,10 @@ __attribute__((always_inline)) inline void WaitBlt() {
 void TakeSystem() {
     Forbid();
     //Save current interrupts and DMA settings so we can restore them upon exit. 
-    SystemADKCON=custom->adkconr;
-    SystemInts=custom->intenar;
-    SystemDMA=custom->dmaconr;
-    ActiView=GfxBase->ActiView; //store current view
+    SystemADKCON = custom->adkconr;
+    SystemInts = custom->intenar;
+    SystemDMA = custom->dmaconr;
+    ActiView = GfxBase->ActiView; //store current view
 
     LoadView(0);
     WaitTOF();
@@ -207,9 +207,9 @@ void FreeSystem() {
     custom->copjmp1 = 0x7fff; //start coppper
 
     /*Restore all interrupts and DMA settings. */
-    custom->intena = SystemInts|0x8000;
-    custom->dmacon = SystemDMA|0x8000;
-    custom->adkcon = SystemADKCON|0x8000;
+    custom->intena = SystemInts | 0x8000;
+    custom->dmacon = SystemDMA | 0x8000;
+    custom->adkcon = SystemADKCON | 0x8000;
 
     WaitBlit();	
     DisownBlitter();
@@ -243,7 +243,7 @@ void* doynaxdepack(const void* input, void* output) { // returns end of output d
     register volatile       void* _a1 ASM("a1") = output;
     __asm volatile (
         "movem.l %%d0-%%d7/%%a2-%%a6,-(%%sp)\n"
-        "jsr _doynaxdepack_vasm\n"
+        "jsr     _doynaxdepack_vasm\n"
         "movem.l (%%sp)+,%%d0-%%d7/%%a2-%%a6"
     : "+rf"(_a0), "+rf"(_a1)
     :
@@ -323,12 +323,12 @@ USHORT* copWritePtr(USHORT* copListEnd, UWORD offset, void* pointer) {
 
 __attribute__((always_inline)) inline
 USHORT* copWaitXY(USHORT *copListEnd, USHORT x, USHORT i) {
-    return copWrite(copListEnd, (i<<8) | (x<<1) | 1, 0xfffe);
+    return copWrite(copListEnd, (i << 8) | (x << 1) | 1, 0xfffe);
 }
 
 __attribute__((always_inline)) inline
 USHORT* copWaitY(USHORT* copListEnd, USHORT i) {
-    return copWrite(copListEnd, (i<<8) | 4 | 1, 0xfffe);
+    return copWrite(copListEnd, (i << 8) | 4 | 1, 0xfffe);
 }
 
 static __attribute__((interrupt)) void interruptHandler() {
@@ -436,7 +436,7 @@ int main() {
 
     copPtr = screenScanDefault(copPtr);
     //enable bitplanes	
-    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (1*BPLCON0F_BPU210));
+    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (1 * BPLCON0F_BPU210));
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon1), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon2), BPLCON2F_PF2PRI);
 
@@ -469,7 +469,7 @@ int main() {
     custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
 #endif
 
-    custom->intreq = (1<<INTB_VERTB); // Reset vbl req
+    custom->intreq = (1 << INTB_VERTB); // Reset vbl req
 
     custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     while(!MouseLeft()) {
@@ -482,11 +482,8 @@ int main() {
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
 
-        UWORD scale = (SCREEN_HEIGHT/4) + ((frameCounter>>2) & 0x1f);
+        UWORD scale = (SCREEN_HEIGHT / 4) + ((frameCounter >> 2) & 0x1f);
         // Calculate unit vectors
-
-        // TODO: This whole section only uses the blitter for line drawing.
-        // Move some of the blitter register setting back to here so it only needs to happen once.
 
         blit_line_mode();
         for (WORD i = 6; i>0; i--) {
@@ -499,8 +496,8 @@ int main() {
                 if (new_angle < draw_angle) break;
                 polar_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
                 blit_clipped_line_onedot(
-                    SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
-                    SCREEN_WIDTH/2+new_x, SCREEN_HEIGHT/2+new_y,
+                    SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
+                    SCREEN_WIDTH / 2 + new_x, SCREEN_HEIGHT / 2 + new_y,
                     0,
                     bitplane_fg2
                 );
@@ -510,8 +507,8 @@ int main() {
             }
             // Draw last line back to start point
             blit_clipped_line_onedot(
-                SCREEN_WIDTH/2+x, SCREEN_HEIGHT/2+y,
-                SCREEN_WIDTH/2+end_x, SCREEN_HEIGHT/2+end_y,
+                SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
+                SCREEN_WIDTH / 2 + end_x, SCREEN_HEIGHT / 2 + end_y,
                 0,
                 bitplane_fg2
             );
@@ -528,10 +525,10 @@ int main() {
 
         UWORD new_palette_angle = frameCounter & 0x3ff;
         UWORD new_palette_red = 8 + ((sin_table[new_palette_angle] * 7) >> 14);
-        UWORD new_palette_green = 8 + ((sin_table[(new_palette_angle + 1024/3) & 0x3ff] * 7) >> 14);
+        UWORD new_palette_green = 8 + ((sin_table[(new_palette_angle + 1024 / 3) & 0x3ff] * 7) >> 14);
         UWORD new_palette_blue = 8 + ((sin_table[(new_palette_angle + 2 * 1024 / 3) & 0x3ff] * 7) >> 14);
         UWORD palette = ((new_palette_red & 0xf) << 8) + ((new_palette_green & 0xf) << 4) + (new_palette_blue & 0xf);
-        copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), (palette>>1)&0x777);
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), (palette >> 1) & 0x777);
         copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), palette);
         
         // Bitplane fg3: Blank bitplane
@@ -572,7 +569,7 @@ void init_tables() {
         "    moveq   #5,%%d1\n"
         "    swap    %%d1\n"
         "    move.w  #511+2,%%a1\n"
-        "1:  move.l %%d0,%%d3\n"
+        "1:  move.l  %%d0,%%d3\n"
         "    move.l  %%d1,%%d2\n"
         "    lsl.l   #8,%%d3\n"
         "    lsl.l   #8-3,%%d3\n"
@@ -604,10 +601,8 @@ void blit_line_mode() {
     // Preload registers for line mode activities
     // Saves resetting them every line.
     custom->bltbdat = 0xffff;
-    custom->bltafwm = 0xffff;
-    custom->bltalwm = 0xffff;
-    custom->bltcmod = SCREEN_WIDTH_BYTES;
-    custom->bltdmod = SCREEN_WIDTH_BYTES;
+    custom->bltafwm_lwm = 0xffffffff;
+    custom->bltcmod_bmod = (SCREEN_WIDTH_BYTES << 16) | SCREEN_WIDTH_BYTES;
 }
 
 #define XMAX (SCREEN_WIDTH-1)
@@ -667,7 +662,7 @@ void blit_clipped_line_onedot(
     if (x1 < 0) {
         return;
     } else if (x0 < 0) {
-        myx = ((y1 - y0)<< FRACBITS) / (x1 - x0);
+        myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
         WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             x0 = 0;
@@ -682,8 +677,8 @@ void blit_clipped_line_onedot(
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
-        if (!myx) myx = ((y1 - y0)<<FRACBITS) / (x1 - x0);
-        WORD new_y = y1 + (((XMAX - x1) * myx)>>FRACBITS);
+        if (!myx) myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+        WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             if (new_y > y1) {
                 blit_fill_fix_onedot(y1, new_y-1, bitplane);
@@ -780,7 +775,7 @@ void blit_line_onedot(
     custom->bltadat = 0x8000;
     custom->bltamod = bltamod;
     custom->bltbmod = bltbmod;
-    custom->bltapt = (APTR)((ULONG)bltaptl);
+    custom->bltapt_l = bltaptl;
     custom->bltcpt = startpt;
     custom->bltdpt = startpt;
     custom->bltcon0 = bltcon0;

@@ -1,5 +1,5 @@
-#ifndef HARDWARE_CUSTOM2_H
-#define HARDWARE_CUSTOM2_H
+#ifndef HARDWARE_CUSTOM_H
+#define HARDWARE_CUSTOM_H
 /*
 **	$Filename: hardware/custom.h $
 **	$Release: 1.3 $
@@ -16,7 +16,7 @@
  */
 
 
-struct Custom2 {
+struct Custom {
     volatile UWORD   bltddat;
     volatile UWORD   dmaconr;
     union {
@@ -67,8 +67,13 @@ struct Custom2 {
     volatile UWORD   strlong;
     volatile UWORD   bltcon0;
     volatile UWORD   bltcon1;
-    volatile UWORD   bltafwm;
-    volatile UWORD   bltalwm;
+    union {
+      volatile ULONG bltafwm_lwm;
+      struct {
+        volatile UWORD bltafwm;
+        volatile UWORD bltalwm;
+      };
+    };
     union {
       volatile APTR bltcpt;
       struct {
@@ -106,8 +111,13 @@ struct Custom2 {
     #else
     volatile UWORD   pad2d[3];
     #endif // AGA
-    volatile UWORD   bltcmod;
-    volatile UWORD   bltbmod;
+    union {
+      volatile ULONG bltcmod_bmod;
+      struct {
+        volatile UWORD   bltcmod;
+        volatile UWORD   bltbmod;
+      };
+    };
     volatile UWORD   bltamod;
     volatile UWORD   bltdmod;
     volatile UWORD   pad34[4];
