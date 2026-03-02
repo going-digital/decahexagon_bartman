@@ -17,6 +17,11 @@
 //#define MUSIC
 //#define MUSIC_LSP
 #define NUM_SIDES (6)
+#define OPT1
+#define OPT2 broken
+#define OPT3
+#define OPT4 broken
+#define OPT5
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
 #define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine
@@ -74,7 +79,7 @@ typedef struct sGameState {
 
 GameState gamestate = {
     .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE * 4 / 6, // 1 degree per 60Hz frame
+    .field_rotation = 65536 / FRAME_RATE * 1 / 6, // 1 degree per 60Hz frame
     .segment_angle = ((65536 + NUM_SIDES - 1) / NUM_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536 + NUM_SIDES - 1) / NUM_SIDES),
     .player_angle = 0,
@@ -607,15 +612,15 @@ void blit_line_mode() {
 
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)
-#define FRACBITS 2
+#define FRACBITS 8
 
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
 ) {
     WORD outside_viewport = 4;
     WORD viewport_intersection = 0;
-    LONG mxy = 0;
-    LONG myx = 0;
+    WORD mxy = 0;
+    WORD myx = 0;
 
     // Clip at y=0
     if (y0 > y1) {
@@ -627,7 +632,7 @@ void blit_clipped_line_onedot(
         return;
     } else if (y0 < 0) {
         mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
-        #if 1
+        //WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
         WORD result;
         asm(
             "move.w %[mxy],%[result]\n"
@@ -638,9 +643,6 @@ void blit_clipped_line_onedot(
             : "cc"
         );
         WORD new_x = x0 - result;
-        #else
-        WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
-        #endif
         if (new_x >= 0 && new_x <= XMAX) {
             x0 = new_x;
             y0 = 0;
@@ -674,22 +676,30 @@ void blit_clipped_line_onedot(
     if (x1 < 0) {
         return;
     } else if (x0 < 0) {
-        myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
-
-        #if 1
+        //myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+        myx = y1 - y0;
+        WORD xd = x1 - x0;
+        asm(
+            "ext.l %[myx]\n"
+            "asl.l %[fracbits],%[myx]\n"
+            "divs.w %[xd],%[myx]\n"
+            : [myx]"+&d"(myx)
+            : [xd]"d"(xd),[fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        
+        //WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
         WORD result;
         asm(
             "move.w %[myx],%[result]\n"
             "muls.w %[x0],%[result]\n"
+            //"asr.l #8,%[result]\n"
             "asr.l %[fracbits],%[result]\n"
             : [result]"=&d"(result)
             : [myx]"d"(myx),[x0]"d"(x0),[fracbits]"I"(FRACBITS)
             : "cc"
         );
         WORD new_y = y0 - result;
-        #else
-        WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
-        #endif
 
         if (new_y >= 0 && new_y <= YMAX) {
             x0 = 0;
@@ -996,25 +1006,26 @@ void blit_fill(void *bitplane, void *bitplane2) {
 
 void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     angle >>= 6; // Sin table has 1023 entries
-    long result = sin_table[angle];
-    // result = (result * length) >> 14
+    WORD result = sin_table[angle];
+    //result = (result * length) >> 14;
     asm(
         "muls.w %[length],%[result]\n"
         "lsl.l #2,%[result]\n"
         "swap %[result]\n"
-        : [result]"+d"(result)
+        : [result]"+&d"(result)
         : [length]"d"(length)
         : "cc"
     );
+    result -= result >> 2;
     *y = result;
 
     result = sin_table[(angle + 0x100) & 0x3ff];
-    // result = (result * length) >> 14
+    //result = (result * length) >> 14;
     asm(
         "muls.w %[length],%[result]\n"
         "lsl.l #2,%[result]\n"
         "swap %[result]\n"
-        : [result]"+d"(result)
+        : [result]"+&d"(result)
         : [length]"d"(length)
         : "cc"
     );
