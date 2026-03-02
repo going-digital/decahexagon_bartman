@@ -631,7 +631,18 @@ void blit_clipped_line_onedot(
     if (y1 < 0) {
         return;
     } else if (y0 < 0) {
-        mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        //mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        mxy = x1 - x0;
+        WORD yd = y1 - y0;
+        asm(
+            "ext.l %[mxy]\n"
+            "asl.l %[fracbits],%[mxy]\n"
+            "divs.w %[yd],%[mxy]\n"
+            : [mxy]"+&d"(mxy)
+            : [yd]"d"(yd),[fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        
         //WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
         WORD result;
         asm(
@@ -656,7 +667,19 @@ void blit_clipped_line_onedot(
     if (y0 > YMAX) {
         return;
     } else if (y1 > YMAX) {
-        if (!mxy) mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        if (!mxy) {
+            //mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+            mxy = x1 - x0;
+            WORD yd = y1 - y0;
+            asm(
+                "ext.l %[mxy]\n"
+                "asl.l %[fracbits],%[mxy]\n"
+                "divs.w %[yd],%[mxy]\n"
+                : [mxy]"+&d"(mxy)
+                : [yd]"d"(yd),[fracbits]"I"(FRACBITS)
+                : "cc"
+            );
+        }
         WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
         if (new_x >= 0 && new_x <= XMAX) {
             x1 = new_x;
@@ -714,7 +737,19 @@ void blit_clipped_line_onedot(
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
-        if (!myx) myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+        if (!myx) {
+            //myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+            myx = y1 - y0;
+            WORD xd = x1 - x0;
+            asm(
+                "ext.l %[myx]\n"
+                "asl.l %[fracbits],%[myx]\n"
+                "divs.w %[xd],%[myx]\n"
+                : [myx]"+&d"(myx)
+                : [xd]"d"(xd),[fracbits]"I"(FRACBITS)
+                : "cc"
+            );
+        }
         WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
         if (new_y >= 0 && new_y <= YMAX) {
             if (new_y > y1) {
