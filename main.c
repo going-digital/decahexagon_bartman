@@ -680,7 +680,19 @@ void blit_clipped_line_onedot(
                 : "cc"
             );
         }
-        WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
+
+        //WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
+        WORD result;
+        asm(
+            "move.w %[mxy],%[result]\n"
+            "muls.w %[y1],%[result]\n"
+            "asr.l %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [mxy]"d"(mxy),[y1]"d"(YMAX - y1),[fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_x = x1 + result;
+
         if (new_x >= 0 && new_x <= XMAX) {
             x1 = new_x;
             y1 = YMAX;
@@ -750,7 +762,19 @@ void blit_clipped_line_onedot(
                 : "cc"
             );
         }
-        WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
+
+        //WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
+        WORD result;
+        asm(
+            "move.w %[myx],%[result]\n"
+            "muls.w %[x1],%[result]\n"
+            "asr.l %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [myx]"d"(myx),[x1]"d"(XMAX - x1),[fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_y = y1 + result;
+        
         if (new_y >= 0 && new_y <= YMAX) {
             if (new_y > y1) {
                 blit_fill_fix_onedot(y1, new_y-1, bitplane);
