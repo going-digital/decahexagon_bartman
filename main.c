@@ -607,7 +607,7 @@ void blit_line_mode() {
 
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)
-#define FRACBITS 9
+#define FRACBITS 2
 
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
@@ -627,7 +627,20 @@ void blit_clipped_line_onedot(
         return;
     } else if (y0 < 0) {
         mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        #if 1
+        WORD result;
+        asm(
+            "move.w %[mxy],%[result]\n"
+            "muls.w %[y0],%[result]\n"
+            "asr.l %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [mxy]"d"(mxy),[y0]"d"(y0),[fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_x = x0 - result;
+        #else
         WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
+        #endif
         if (new_x >= 0 && new_x <= XMAX) {
             x0 = new_x;
             y0 = 0;
@@ -658,12 +671,26 @@ void blit_clipped_line_onedot(
         tmp = x0; x0 = x1; x1 = tmp;
         tmp = y0; y0 = y1; y1 = tmp;
     }
-    // TODO: Continue from cliptest.py L63
     if (x1 < 0) {
         return;
     } else if (x0 < 0) {
         myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+
+        #if 1
+        WORD result;
+        asm(
+            "move.w %[myx],%[result]\n"
+            "muls.w %[x0],%[result]\n"
+            "asr.l %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [myx]"d"(myx),[x0]"d"(x0),[fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_y = y0 - result;
+        #else
         WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
+        #endif
+
         if (new_y >= 0 && new_y <= YMAX) {
             x0 = 0;
             y0 = new_y;
@@ -716,6 +743,7 @@ void blit_line_onedot(
     // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
     // Calculate word address of start point
     // Note octants 0, 1, 2, 3 are omitted as they are never drawn.
+
     APTR startpt = bitplane + SCREEN_WIDTH_BYTES * y0 + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
     UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
@@ -724,7 +752,6 @@ void blit_line_onedot(
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
-    BOOL use_bmod = 0;
     if (se < 0) {
         // Octant 4
         maj_d = -ed;
@@ -796,9 +823,10 @@ void blit_fill_fix_onedot(
     // Clip to screen
     if (y0 < 0) y0 = 0;
     if (y1 > (SCREEN_HEIGHT-1)) y1 = SCREEN_HEIGHT - 1;
+
     APTR startpt = (
         bitplane
-        + SCREEN_WIDTH_BYTES * y0  // TODO: Remove this multiply
+        + SCREEN_WIDTH_BYTES * y0
         + (SCREEN_WIDTH >> 3) - 2
     ); // Location of rightmost word
     UWORD maj_d = (y1 - y0) << 1;
@@ -837,7 +865,7 @@ void blit_line(
     // Calculate word address of start point
     APTR startpt = (
         bitplane
-        + SCREEN_WIDTH_BYTES * y0  // TODO: Remove this multiply
+        + SCREEN_WIDTH_BYTES * y0
         + ((x0 >> 4) << 1)
     );
     WORD ed = x1 - x0; // Positive in east direction
@@ -968,10 +996,29 @@ void blit_fill(void *bitplane, void *bitplane2) {
 
 void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     angle >>= 6; // Sin table has 1023 entries
-    WORD result = (sin_table[angle] * length) >> 14;
-    result -= result >> 2;
+    long result = sin_table[angle];
+    // result = (result * length) >> 14
+    asm(
+        "muls.w %[length],%[result]\n"
+        "lsl.l #2,%[result]\n"
+        "swap %[result]\n"
+        : [result]"+d"(result)
+        : [length]"d"(length)
+        : "cc"
+    );
     *y = result;
-    *x = (sin_table[(angle + 0x100) & 0x3ff] * length) >> 14;
+
+    result = sin_table[(angle + 0x100) & 0x3ff];
+    // result = (result * length) >> 14
+    asm(
+        "muls.w %[length],%[result]\n"
+        "lsl.l #2,%[result]\n"
+        "swap %[result]\n"
+        : [result]"+d"(result)
+        : [length]"d"(length)
+        : "cc"
+    );
+    *x = result;
 }
 
 // TODO: Add player
