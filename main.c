@@ -789,7 +789,7 @@ void blit_line_onedot(
     // Calculate word address of start point
     // Note octants 0, 1, 2, 3 are omitted as they are never drawn.
 
-    APTR startpt = bitplane + SCREEN_WIDTH_BYTES * y0 + ((x0 >> 4) << 1);
+    APTR startpt = bitplane + muluw(y0, SCREEN_WIDTH_BYTES) + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
     UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
     WORD ne = ed - sd; // Positive in ne direction
@@ -871,7 +871,7 @@ void blit_fill_fix_onedot(
 
     APTR startpt = (
         bitplane
-        + SCREEN_WIDTH_BYTES * y0
+        + muluw(y0, SCREEN_WIDTH_BYTES)
         + (SCREEN_WIDTH >> 3) - 2
     ); // Location of rightmost word
     UWORD maj_d = (y1 - y0) << 1;
@@ -910,7 +910,7 @@ void blit_line(
     // Calculate word address of start point
     APTR startpt = (
         bitplane
-        + SCREEN_WIDTH_BYTES * y0
+        + muluw(y0, SCREEN_WIDTH_BYTES)
         + ((x0 >> 4) << 1)
     );
     WORD ed = x1 - x0; // Positive in east direction
