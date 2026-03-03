@@ -17,11 +17,6 @@
 //#define MUSIC
 //#define MUSIC_LSP
 #define NUM_SIDES (6)
-#define OPT1
-#define OPT2 broken
-#define OPT3
-#define OPT4 broken
-#define OPT5
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
 #define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine
@@ -193,25 +188,25 @@ void TakeSystem() {
     WaitVbl();
 
     VBR = GetVBR();
-    SystemIrq = GetInterruptHandler(); //store interrupt register
+    SystemIrq = GetInterruptHandler(); // Store interrupt register
 }
 
 void FreeSystem() { 
     WaitVbl();
     WaitBlit();
-    custom->intena = 0x7fff;//disable all interrupts
-    custom->intreq = 0x7fff;//Clear any interrupts that were pending
-    custom->dmacon = 0x7fff;//Clear all DMA channels
+    custom->intena = 0x7fff; // Disable all interrupts
+    custom->intreq = 0x7fff; // Clear any interrupts that were pending
+    custom->dmacon = 0x7fff; // Clear all DMA channels
 
-    //restore interrupts
+    // Restore interrupts
     SetInterruptHandler(SystemIrq);
 
-    /*Restore system copper list(s). */
+    /* Restore system copper list(s). */
     custom->cop1lc = (ULONG)GfxBase->copinit;
     custom->cop2lc = (ULONG)GfxBase->LOFlist;
-    custom->copjmp1 = 0x7fff; //start coppper
+    custom->copjmp1 = 0x7fff; // Start coppper
 
-    /*Restore all interrupts and DMA settings. */
+    /* Restore all interrupts and DMA settings. */
     custom->intena = SystemInts | 0x8000;
     custom->dmacon = SystemDMA | 0x8000;
     custom->adkcon = SystemADKCON | 0x8000;
@@ -238,9 +233,9 @@ __attribute__((always_inline)) inline short MouseRight(){
 
 volatile short frameCounter = 0;
 
-// put copperlist into chip mem so we can use it without copying
+// Put copperlist into chip mem so we can use it without copying
 const UWORD copper2[] __attribute__((section (".MEMF_CHIP"))) = {
-    0xffff, 0xfffe // end copper list
+    0xffff, 0xfffe // End copper list
 };
 
 void* doynaxdepack(const void* input, void* output) { // returns end of output data, input needs to be 16-bit aligned!
@@ -338,7 +333,7 @@ USHORT* copWaitY(USHORT* copListEnd, USHORT i) {
 
 static __attribute__((interrupt)) void interruptHandler() {
     custom->intreq = INTF_VERTB;
-    custom->intreq = INTF_VERTB; //reset vbl req. twice for a4000 bug.
+    custom->intreq = INTF_VERTB; // Reset vbl req. twice for a4000 bug.
 #ifdef MUSIC
     // DEMO - ThePlayer
     p61Music();
@@ -396,7 +391,7 @@ int main() {
     GfxBase = (struct GfxBase *)OpenLibrary((CONST_STRPTR)"graphics.library",0);
     if (!GfxBase) Exit(0);
 
-    // used for printing
+    // Used for printing
     DOSBase = (struct DosLibrary*)OpenLibrary((CONST_STRPTR)"dos.library", 0);
     if (!DOSBase) Exit(0);
 
@@ -412,7 +407,9 @@ int main() {
     warpmode(1);
     // Precalc start
 
+    // Generate sin table
     init_tables();
+
     #ifdef MUSIC
     if(p61Init(module) != 0)
         KPrintF("p61Init failed!\n");
@@ -432,7 +429,7 @@ int main() {
     USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP);
     USHORT* copPtr = copper1;
     
-    // register graphics resources with WinUAE for nicer gfx debugger experience
+    // Register graphics resources with WinUAE for nicer gfx debugger experience
     debug_register_bitmap(bitplane_fg1, "FG1", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg2, "FG2", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg3, "FG3", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
@@ -440,32 +437,28 @@ int main() {
     debug_register_copperlist(copper2, "copper2", sizeof(copper2), 0);
 
     copPtr = screenScanDefault(copPtr);
-    //enable bitplanes	
+    // Enable bitplanes	
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (1 * BPLCON0F_BPU210));
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon1), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon2), BPLCON2F_PF2PRI);
 
-    //set bitplane modulo
+    // Set bitplane modulo
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl1mod), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl2mod), 0);
 
-    // set bitplane pointers
+    // Set bitplane pointers
     void* copListSetBpl = copPtr;
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bitplane_fg1);
 
-    // set colors
-    copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), 0x000); // Background
-    //copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), 0x30f); // Object
-
-    // jump to copper2
+    // Jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
     *copPtr++ = 0x7fff;
 
     custom->cop1lc = (ULONG)copper1;
     custom->cop2lc = (ULONG)copper2;
-    custom->dmacon = DMAF_BLITTER;//disable blitter dma for copjmp bug
-    custom->copjmp1 = 0x7fff; //start coppper
-    custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER;
+    custom->dmacon = DMAF_BLITTER; // Disable blitter dma for copjmp bug
+    custom->copjmp1 = 0x7fff; // Start coppper
+    custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER | DMAF_BLITHOG;
 
     // DEMO
     SetInterruptHandler((APTR)interruptHandler);
@@ -476,13 +469,10 @@ int main() {
 
     custom->intreq = (1 << INTB_VERTB); // Reset vbl req
 
-    custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     while(!MouseLeft()) {
         Wait10();
         int f = frameCounter & 255;
 
-        // clear
-        //custom->color[0] = 0x200; // Red raster - starter render // RED
         UWORD field_angle = gamestate.field_angle;
         gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
@@ -519,10 +509,8 @@ int main() {
             );
             scale += 25;
         }
-        //custom->color[0] = 0x008; // Blue raster - done
-        //custom->color[0] = 0x080;
+
         blit_fill(bitplane_fg2, bitplane_fg2);
-        //custom->color[0] = 0x008;
         cpu_cls(bitplane_fg3);
 
         // Flip render buffers on next frame
@@ -553,7 +541,6 @@ int main() {
 
         custom->color[0] = 0x800; // Black raster - all done
         blit_wait();
-        //custom->color[0] = 0x000; // Black raster - all done
     }
 
 #ifdef MUSIC
@@ -567,6 +554,7 @@ int main() {
     CloseLibrary((struct Library*)GfxBase);
 }
 
+__attribute__((always_inline)) inline
 void init_tables() {
     register volatile const void* _a0 ASM("a0") = sin_table;
     __asm volatile (
@@ -595,10 +583,8 @@ void init_tables() {
 
 __attribute__((always_inline)) inline
 void blit_wait() {
-    //custom->dmacon = DMAF_SETCLR | DMAF_BLITHOG;
     UWORD dummy = custom->dmaconr; // Dummy read for thin Agnus compatibility
     while (custom->dmaconr & DMAF_BLTDONE);
-    //custom->dmacon = DMAF_BLITHOG;
 }
 
 void blit_line_mode() {
@@ -635,11 +621,11 @@ void blit_clipped_line_onedot(
         mxy = x1 - x0;
         WORD yd = y1 - y0;
         asm(
-            "ext.l %[mxy]\n"
-            "asl.l %[fracbits],%[mxy]\n"
+            "ext.l  %[mxy]\n"
+            "asl.l  %[fracbits],%[mxy]\n"
             "divs.w %[yd],%[mxy]\n"
             : [mxy]"+&d"(mxy)
-            : [yd]"d"(yd),[fracbits]"I"(FRACBITS)
+            : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
             : "cc"
         );
         
@@ -648,12 +634,13 @@ void blit_clipped_line_onedot(
         asm(
             "move.w %[mxy],%[result]\n"
             "muls.w %[y0],%[result]\n"
-            "asr.l %[fracbits],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
             : [result]"=&d"(result)
-            : [mxy]"d"(mxy),[y0]"d"(y0),[fracbits]"I"(FRACBITS)
+            : [mxy]"d"(mxy), [y0]"d"(y0), [fracbits]"I"(FRACBITS)
             : "cc"
         );
         WORD new_x = x0 - result;
+
         if (new_x >= 0 && new_x <= XMAX) {
             x0 = new_x;
             y0 = 0;
@@ -672,11 +659,11 @@ void blit_clipped_line_onedot(
             mxy = x1 - x0;
             WORD yd = y1 - y0;
             asm(
-                "ext.l %[mxy]\n"
-                "asl.l %[fracbits],%[mxy]\n"
+                "ext.l  %[mxy]\n"
+                "asl.l  %[fracbits],%[mxy]\n"
                 "divs.w %[yd],%[mxy]\n"
                 : [mxy]"+&d"(mxy)
-                : [yd]"d"(yd),[fracbits]"I"(FRACBITS)
+                : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
                 : "cc"
             );
         }
@@ -686,9 +673,9 @@ void blit_clipped_line_onedot(
         asm(
             "move.w %[mxy],%[result]\n"
             "muls.w %[y1],%[result]\n"
-            "asr.l %[fracbits],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
             : [result]"=&d"(result)
-            : [mxy]"d"(mxy),[y1]"d"(YMAX - y1),[fracbits]"I"(FRACBITS)
+            : [mxy]"d"(mxy), [y1]"d"(YMAX - y1), [fracbits]"I"(FRACBITS)
             : "cc"
         );
         WORD new_x = x1 + result;
@@ -715,11 +702,11 @@ void blit_clipped_line_onedot(
         myx = y1 - y0;
         WORD xd = x1 - x0;
         asm(
-            "ext.l %[myx]\n"
-            "asl.l %[fracbits],%[myx]\n"
+            "ext.l  %[myx]\n"
+            "asl.l  %[fracbits],%[myx]\n"
             "divs.w %[xd],%[myx]\n"
             : [myx]"+&d"(myx)
-            : [xd]"d"(xd),[fracbits]"I"(FRACBITS)
+            : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
             : "cc"
         );
         
@@ -728,10 +715,9 @@ void blit_clipped_line_onedot(
         asm(
             "move.w %[myx],%[result]\n"
             "muls.w %[x0],%[result]\n"
-            //"asr.l #8,%[result]\n"
-            "asr.l %[fracbits],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
             : [result]"=&d"(result)
-            : [myx]"d"(myx),[x0]"d"(x0),[fracbits]"I"(FRACBITS)
+            : [myx]"d"(myx), [x0]"d"(x0), [fracbits]"I"(FRACBITS)
             : "cc"
         );
         WORD new_y = y0 - result;
@@ -754,11 +740,11 @@ void blit_clipped_line_onedot(
             myx = y1 - y0;
             WORD xd = x1 - x0;
             asm(
-                "ext.l %[myx]\n"
-                "asl.l %[fracbits],%[myx]\n"
+                "ext.l  %[myx]\n"
+                "asl.l  %[fracbits],%[myx]\n"
                 "divs.w %[xd],%[myx]\n"
                 : [myx]"+&d"(myx)
-                : [xd]"d"(xd),[fracbits]"I"(FRACBITS)
+                : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
                 : "cc"
             );
         }
@@ -768,9 +754,9 @@ void blit_clipped_line_onedot(
         asm(
             "move.w %[myx],%[result]\n"
             "muls.w %[x1],%[result]\n"
-            "asr.l %[fracbits],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
             : [result]"=&d"(result)
-            : [myx]"d"(myx),[x1]"d"(XMAX - x1),[fracbits]"I"(FRACBITS)
+            : [myx]"d"(myx), [x1]"d"(XMAX - x1), [fracbits]"I"(FRACBITS)
             : "cc"
         );
         WORD new_y = y1 + result;
@@ -816,36 +802,34 @@ void blit_line_onedot(
     APTR startpt = bitplane + muluw(y0, SCREEN_WIDTH_BYTES) + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
     UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
-    WORD ne = ed - sd; // Positive in ne direction
-    WORD se = ed + sd; // Positive in se direction
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
-    if (se < 0) {
+    if (ed + sd < 0) {
         // Octant 4
         maj_d = -ed;
-        bltcon1 = SUD | AUL | ONEDOT | LINEMODE;
         min_d = sd;
+        bltcon1 = SUD | AUL | ONEDOT | LINEMODE;
     } else {
         // Octant 0567 Southeast
-        if (ne < 0) {
+        if (ed - sd < 0) {
             // South predominant
             maj_d = sd;
             if (ed < 0) {
                 // Octant 5
-                bltcon1 = SUL | LINEMODE;
                 min_d = -ed;
+                bltcon1 = SUL | LINEMODE;
             } else {
                 // Octant 6
-                bltcon1 = LINEMODE;
                 min_d = ed;
+                bltcon1 = LINEMODE;
             }
         } else {
             // East predominant
             // Octant 7
             maj_d = ed;
-            bltcon1 = SUD | ONEDOT | LINEMODE;
             min_d = sd;
+            bltcon1 = SUD | ONEDOT | LINEMODE;
         }
     }
     // After that, majd is pixel distance on dominant axis,
@@ -939,22 +923,20 @@ void blit_line(
     );
     WORD ed = x1 - x0; // Positive in east direction
     UWORD sd = y1 - y0; // Positive in south direction
-    WORD ne = ed - sd; // Positive in ne direction
-    WORD se = ed + sd; // Positive in se direction
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
 
-    if (se < 0) {
+    if (ed + sd < 0) {
         // x is major axis
         maj_d = -ed;
         // Octant 4
-        bltcon1 = SUD | AUL | LINEMODE;
         min_d = sd;
+        bltcon1 = SUD | AUL | LINEMODE;
     } else {
         // Octant 0567 Southeast
         // AUL = 0
-        if (ne < 0) {
+        if (ed - sd < 0) {
             // South predominant
             // Octant 5 6
             // SUD = 0
@@ -1011,8 +993,8 @@ void blit_cls(void *bitplane) {
     blit_wait();
     custom->bltcon0 = BC0F_DEST;
     custom->bltcon1 = 0;
-    custom->bltafwm = 0xffff;
-    custom->bltalwm = 0xffff;
+    //custom->bltafwm = 0xffff; Not required because propogated from line mode
+    //custom->bltalwm = 0xffff; Not required because propogated from line mode
     custom->bltdpt = bitplane;
     custom->bltdmod = 0;
     custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
