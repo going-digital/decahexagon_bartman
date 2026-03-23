@@ -16,7 +16,14 @@
 //config
 //#define MUSIC
 //#define MUSIC_LSP
-#define NUM_SIDES (6)
+//#define SPEEDUP_TEST // Use frame specific trig table
+#define ASM_OPT
+//#define SHOW_DRAW_PLANE
+//#define SKIP_FILL
+#define DEBUG_NGD
+
+#define MAX_NUM_SIDES (6)
+#define NUM_SIDES MAX_NUM_SIDES
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
 #define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine
@@ -151,8 +158,7 @@ void WaitLine(USHORT line) {
 }
 
 __attribute__((always_inline)) inline void WaitBlt() {
-    UWORD tst = *(volatile UWORD*)&custom->dmaconr;
-    (void)tst;
+    *(volatile UWORD*)&custom->dmaconr;
     while (*(volatile UWORD*)&custom->dmaconr & DMAF_BLTDONE);
 }
 
@@ -364,8 +370,8 @@ static __attribute__((interrupt)) void interruptHandler() {
 __attribute__((always_inline)) inline USHORT* screenScanDefault(USHORT* copListEnd) {
     const USHORT width = SCREEN_WIDTH;
     const USHORT height = SCREEN_HEIGHT;
-    const USHORT x = 129 + (SCREEN_WIDTH-320)/2;
-    const USHORT y = 44 + (SCREEN_WIDTH-256)/2;
+    const USHORT x = 129 + (SCREEN_WIDTH - 320) / 2;
+    const USHORT y = 44 + (SCREEN_WIDTH - 256) / 2;
     const USHORT RES = 8; //8=lowres,4=hires
     USHORT xstop = x + width;
     USHORT ystop = y + height;
@@ -382,6 +388,11 @@ static void Wait10() { WaitLine(0x10); }
 static void Wait11() { WaitLine(0x11); }
 static void Wait12() { WaitLine(0x12); }
 static void Wait13() { WaitLine(0x13); }
+
+#ifdef SPEEDUP_TEST
+WORD frame_sin[MAX_NUM_SIDES];
+WORD frame_cos[MAX_NUM_SIDES];
+#endif
 
 int main() {
 
@@ -400,7 +411,12 @@ int main() {
 #else
     KPrintF("Hello debugger from Amiga!\n");
 #endif
-    Write(Output(), (APTR)"\nDecahexagon debug build\n", 25);
+
+#ifdef DEBUG_NAG
+    Write(Output(), (APTR)"\nDecahexagon debug build for Norwich Amiga Group\n", 50);
+#elif defined(DEBUG_NGD)
+    Write(Output(), (APTR)"\nDecahexagon debug build for Norfolk Game Developers\n", 54);
+#endif
 
     Delay(50);
 
@@ -438,7 +454,11 @@ int main() {
 
     copPtr = screenScanDefault(copPtr);
     // Enable bitplanes	
+    #ifdef SHOW_DRAW_PLANE
+    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (2 * BPLCON0F_BPU210));
+    #else
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (1 * BPLCON0F_BPU210));
+    #endif
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon1), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon2), BPLCON2F_PF2PRI);
 
@@ -449,6 +469,9 @@ int main() {
     // Set bitplane pointers
     void* copListSetBpl = copPtr;
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bitplane_fg1);
+    #ifdef SHOW_DRAW_PLANE
+    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg2);
+    #endif
 
     // Jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
@@ -480,9 +503,72 @@ int main() {
         UWORD scale = (SCREEN_HEIGHT / 4) + ((frameCounter >> 2) & 0x1f);
         // Calculate unit vectors
 
+        #ifdef SPEEDUP_TEST
+        // Build frame specific sin/cos table
+        UWORD angle = field_angle;
+        for (WORD i = 0; i < MAX_NUM_SIDES; i++) {
+            UWORD ang_shift = angle >> 6;
+            frame_sin[i] = sin_table[ang_shift];
+            WORD tmp = sin_table[(ang_shift + 0x100) & 0x3ff];
+            frame_cos[i] = tmp - (tmp >> 2);
+            angle += gamestate.segment_angle;
+        }
+        #endif
+
         blit_line_mode();
         for (WORD i = 6; i>0; i--) {
             UWORD draw_angle = 0;
+
+            #ifdef SPEEDUP_TEST
+            x = frame_sin[0];
+            asm(
+                "mulsw %[scale],%[x]\n"
+                "lsl.l #2,%[x]\n"
+                "swap %[x]\n"
+                : [x]"+&d"(x)
+                : [scale]"d"(scale)
+                : "cc"
+            );
+            WORD end_x = x;
+            y = frame_cos[0];
+            asm(
+                "mulsw %[scale],%[y]\n"
+                "lsl.l #2,%[y]\n"
+                "swap %[y]\n"
+                : [y]"+&d"(y)
+                : [scale]"d"(scale)
+                : "cc"
+            );
+            WORD end_y = y;
+            for (WORD j = 1; j<NUM_SIDES; j++) {
+                new_x = frame_sin[j];
+                asm(
+                    "mulsw %[scale],%[new_x]\n"
+                    "lsl.l #2,%[new_x]\n"
+                    "swap %[new_x]\n"
+                    : [new_x]"+&d"(new_x)
+                    : [scale]"d"(scale)
+                    : "cc"
+                );
+                new_y = frame_cos[j];
+                asm(
+                    "mulsw %[scale],%[new_y]\n"
+                    "lsl.l #2,%[new_y]\n"
+                    "swap %[new_y]\n"
+                    : [new_y]"+&d"(new_y)
+                    : [scale]"d"(scale)
+                    : "cc"
+                );
+                blit_clipped_line_onedot(
+                    SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
+                    SCREEN_WIDTH / 2 + new_x, SCREEN_HEIGHT / 2 + new_y,
+                    0,
+                    bitplane_fg2
+                );
+                x = new_x;
+                y = new_y;
+            }
+            #else
             polar_to_cartesian(field_angle, scale, &x, &y);
             WORD end_x = x;
             WORD end_y = y;
@@ -500,6 +586,7 @@ int main() {
                 y = new_y;
                 draw_angle = new_angle;
             }
+            #endif
             // Draw last line back to start point
             blit_clipped_line_onedot(
                 SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
@@ -510,11 +597,16 @@ int main() {
             scale += 25;
         }
 
+        #ifndef SKIP_FILL
         blit_fill(bitplane_fg2, bitplane_fg2);
+        #endif
         cpu_cls(bitplane_fg3);
 
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_fg2);
+        #ifdef SHOW_DRAW_PLANE
+        copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg3);
+        #endif
 
         UWORD new_palette_angle = frameCounter & 0x3ff;
         UWORD new_palette_red = 8 + ((sin_table[new_palette_angle] * 7) >> 14);
@@ -603,6 +695,7 @@ void blit_line_mode() {
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
 ) {
+    // Draws from x0/y0 to x1/y1. Inclusive of lowest y, exclusive of largest y.
     WORD outside_viewport = 4;
     WORD viewport_intersection = 0;
     WORD mxy = 0;
@@ -615,9 +708,11 @@ void blit_clipped_line_onedot(
         tmp = y0; y0 = y1; y1 = tmp;
     }
     if (y1 < 0) {
+        // Entire line is above screen. Discard.
         return;
     } else if (y0 < 0) {
-        //mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        // Test for intersection with top of screen
+        #ifdef ASM_OPT
         mxy = x1 - x0;
         WORD yd = y1 - y0;
         asm(
@@ -628,8 +723,6 @@ void blit_clipped_line_onedot(
             : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
             : "cc"
         );
-        
-        //WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
         WORD result;
         asm(
             "move.w %[mxy],%[result]\n"
@@ -640,8 +733,13 @@ void blit_clipped_line_onedot(
             : "cc"
         );
         WORD new_x = x0 - result;
-
+        #else
+        mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
+        #endif
+        
         if (new_x >= 0 && new_x <= XMAX) {
+            // Line intersects top of screen. Move x0/y0 point onscreen and flag the intersection.
             x0 = new_x;
             y0 = 0;
             viewport_intersection = 1;
@@ -652,10 +750,11 @@ void blit_clipped_line_onedot(
 
     // Clip at y=YMAX
     if (y0 > YMAX) {
+        // Entire line is below screen. Discard.
         return;
     } else if (y1 > YMAX) {
         if (!mxy) {
-            //mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+            #ifdef ASM_OPT
             mxy = x1 - x0;
             WORD yd = y1 - y0;
             asm(
@@ -666,9 +765,12 @@ void blit_clipped_line_onedot(
                 : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
                 : "cc"
             );
+            #else
+            mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+            #endif
         }
 
-        //WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
+        #ifdef ASM_OPT
         WORD result;
         asm(
             "move.w %[mxy],%[result]\n"
@@ -679,8 +781,12 @@ void blit_clipped_line_onedot(
             : "cc"
         );
         WORD new_x = x1 + result;
+        #else
+        WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
+        #endif
 
         if (new_x >= 0 && new_x <= XMAX) {
+            // Line intersects bottom of screen. Move x1/y1 point onscreen and flag the intersection.
             x1 = new_x;
             y1 = YMAX;
             viewport_intersection = 1;
@@ -696,9 +802,10 @@ void blit_clipped_line_onedot(
         tmp = y0; y0 = y1; y1 = tmp;
     }
     if (x1 < 0) {
+        // Entire line is left of screen. Discard.
         return;
     } else if (x0 < 0) {
-        //myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+        #ifdef ASM_OPT
         myx = y1 - y0;
         WORD xd = x1 - x0;
         asm(
@@ -709,8 +816,6 @@ void blit_clipped_line_onedot(
             : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
             : "cc"
         );
-        
-        //WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
         WORD result;
         asm(
             "move.w %[myx],%[result]\n"
@@ -721,8 +826,13 @@ void blit_clipped_line_onedot(
             : "cc"
         );
         WORD new_y = y0 - result;
-
+        #else
+        myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+        WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
+        #endif
+        
         if (new_y >= 0 && new_y <= YMAX) {
+            // Line intersects left of screen. Move x0/y0 point onscreen and flag the intersection.
             x0 = 0;
             y0 = new_y;
             viewport_intersection = 1;
@@ -731,12 +841,12 @@ void blit_clipped_line_onedot(
         outside_viewport -= 1;
     }
     if (x0 > XMAX) {
-        // line is offscreen right, but fill still needs updating
+        // Entire line is right of screen. But still need to get fill state correct.
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
         if (!myx) {
-            //myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+            #ifdef ASM_OPT
             myx = y1 - y0;
             WORD xd = x1 - x0;
             asm(
@@ -747,9 +857,11 @@ void blit_clipped_line_onedot(
                 : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
                 : "cc"
             );
+            #else
+            myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+            #endif
         }
-
-        //WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
+        #ifdef ASM_OPT
         WORD result;
         asm(
             "move.w %[myx],%[result]\n"
@@ -760,13 +872,13 @@ void blit_clipped_line_onedot(
             : "cc"
         );
         WORD new_y = y1 + result;
+        #else
+        WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
+        #endif
         
         if (new_y >= 0 && new_y <= YMAX) {
-            if (new_y > y1) {
-                blit_fill_fix_onedot(y1, new_y-1, bitplane);
-            } else {
-                blit_fill_fix_onedot(new_y, y1-1, bitplane);
-            }
+//            blit_fill_fix_onedot(y1, new_y-1, bitplane);
+            blit_fill_fix_onedot(y1, new_y, bitplane);
             x1 = XMAX;
             y1 = new_y;
             viewport_intersection = 1;
@@ -784,8 +896,17 @@ void blit_line_onedot(
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
+    // TODO: First pixel? Last pixel?
+
+    // Draws a line from x0,y0 to x1,y1.
+    // Pixels x0,y0 and x1,y1 are guaranteed to be drawn.
+    // 
+    // See http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
+    //
+
     // Horizontal lines already have a pixel at start and end from other edges.
     // No drawing required.
+    // TODO: Confirm this is always valid. What about single pixel lines?
     if (y0 == y1) return;
 
     // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
@@ -818,11 +939,11 @@ void blit_line_onedot(
             if (ed < 0) {
                 // Octant 5
                 min_d = -ed;
-                bltcon1 = SUL | LINEMODE;
+                bltcon1 = SUL | LINEMODE; // ONEDOT doesn't actually do anything for this octant
             } else {
                 // Octant 6
                 min_d = ed;
-                bltcon1 = LINEMODE;
+                bltcon1 = LINEMODE; // ONEDOT doesn't actually do anything for this octant
             }
         } else {
             // East predominant
@@ -843,9 +964,14 @@ void blit_line_onedot(
     if (bltaptl < 0) bltcon1 |= SIGNFLAG;
 
     // Set starting word, DMA channels and logic function
+    // TODO: Does this skip the first pixel? BC0F_DEST is not set.
+    // See https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
+    // https://eab.abime.net/showpost.php?p=206412&postcount=6
+    //
+    // FIXME: This appears to draw the first pixel, but does not draw the last pixel. 
     UWORD bltcon0 = (
         (x0 & 0xf) << 12 // Starting bit within word
-        | BC0F_SRCC | BC0F_SRCA
+        | BC0F_SRCC | BC0F_SRCA // Missing DEST here
         | ABNC | NABC | NANBC // 4a xor
     );
     // Spin until blitter free
@@ -866,16 +992,19 @@ void blit_line_onedot(
 void blit_fill_fix_onedot(
     WORD y0, WORD y1, void *bitplane
 ) {
+    // Draws from ymin (inclusive) to ymax (exclusive)
     if (y0 > y1) {
         WORD tmp;
         tmp = y0; y0 = y1; y1 = tmp;
     }
     // Skip offscreen
     if (y1 < 0) return;
-    if (y0 > (SCREEN_HEIGHT-1)) return;
+    if (y0 > YMAX) return;
     // Clip to screen
     if (y0 < 0) y0 = 0;
-    if (y1 > (SCREEN_HEIGHT-1)) y1 = SCREEN_HEIGHT - 1;
+    if (y1 > YMAX) y1 = YMAX;
+    // Skip zero length lines
+    if (y1 == y0) return;
 
     APTR startpt = (
         bitplane
@@ -900,7 +1029,7 @@ void blit_fill_fix_onedot(
         | ABNC | NABC | NANBC   // 4a xor
     );
     custom->bltcon1 = LINEMODE | SIGNFLAG;
-    custom->bltsize = (maj_d << 5) + ((1 << 6) + 2); // Remember maj_d was doubled above
+    custom->bltsize = (maj_d << 5) + 2; // Remember maj_d was doubled above
 }
 
 void blit_line(
@@ -908,6 +1037,13 @@ void blit_line(
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
+    // TODO: First pixel? Last pixel?
+
+    // Draws a line from x0,y0 to x1,y1.
+    // Pixels x0,y0 and x1,y1 are guaranteed to be drawn.
+    // 
+    // See http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
+    //
     if (y0 > y1) {
         UWORD tmp;
         tmp = y0; y0 = y1; y1 = tmp;
@@ -1045,6 +1181,7 @@ void blit_fill(void *bitplane, void *bitplane2) {
     custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
 
+__attribute__((always_inline)) inline
 void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     angle >>= 6; // Sin table has 1023 entries
     WORD result = sin_table[angle];
