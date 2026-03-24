@@ -10,6 +10,7 @@
 //#include <hardware/custom.h>
 #include <hardware/dmabits.h>
 #include <hardware/intbits.h>
+#include <hardware/adkbits.h>
 #include <hardware/cia.h>
 #include "paulabits.h"
 
@@ -213,9 +214,9 @@ void FreeSystem() {
     custom->copjmp1 = 0x7fff; // Start coppper
 
     /* Restore all interrupts and DMA settings. */
-    custom->intena = SystemInts | 0x8000;
-    custom->dmacon = SystemDMA | 0x8000;
-    custom->adkcon = SystemADKCON | 0x8000;
+    custom->intena = SystemInts | INTF_SETCLR;
+    custom->dmacon = SystemDMA | DMAF_SETCLR;
+    custom->adkcon = SystemADKCON | ADKF_SETCLR;
 
     WaitBlit();	
     DisownBlitter();
@@ -510,7 +511,7 @@ int main() {
     custom->cop1lc = (ULONG)copper1;
     custom->cop2lc = (ULONG)copper2;
     custom->dmacon = DMAF_BLITTER; // Disable blitter dma for copjmp bug
-    custom->copjmp1 = 0x7fff; // Start coppper
+    custom->copjmp1 = 0x7fff; // Start copper
     custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER | DMAF_BLITHOG;
 
     // DEMO
@@ -520,7 +521,7 @@ int main() {
     custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
 #endif
 #ifdef MUSIC_LSP
-    custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
+    custom->intena = INTF_SETCLR | INTF_EXTER; // LightSpeed Player CIA mode needs INTF_EXTER
 #endif
 
     custom->intreq = (1 << INTB_VERTB); // Reset vbl req
