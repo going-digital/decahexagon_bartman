@@ -15,7 +15,7 @@
 
 //config
 //#define MUSIC
-//#define MUSIC_LSP
+#define MUSIC_LSP
 //#define SPEEDUP_TEST // Use frame specific trig table
 #define ASM_OPT
 //#define SHOW_DRAW_PLANE
@@ -81,7 +81,7 @@ typedef struct sGameState {
 
 GameState gamestate = {
     .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE * 1 / 6, // 1 degree per 60Hz frame
+    .field_rotation = 65536 / FRAME_RATE * 3 / 6, // 1 degree per 60Hz frame
     .segment_angle = ((65536 + NUM_SIDES - 1) / NUM_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536 + NUM_SIDES - 1) / NUM_SIDES),
     .player_angle = 0,
@@ -257,6 +257,33 @@ void* doynaxdepack(const void* input, void* output) { // returns end of output d
     return (void*)_a1;
 }
 
+#ifdef MUSIC_LSP
+INCBIN_CHIP(LSPMusic, "technova_main.lsmusic");
+INCBIN_CHIP(LSPBank, "technova_main.lsbank");
+
+int p61Init() {
+    register volatile void* _a0 ASM("a0") = (void*) LSPMusic;
+    register volatile void* _a1 ASM("a1") = (void*) LSPBank;
+    register volatile void* _a2 ASM("a2") = 0; // VBR
+    register volatile void* _d0 ASM("d0") = 0; // PAL
+    __asm volatile (
+        "movem.l %%d1/%%a3/%%a5,-(%%sp)\n"
+        "jsr LSP_MusicDriver_CIA_Start\n"
+        "movem.l (%%sp)+,%%d1/%%a3/%%a5\n"
+        : "+rf"(_a0), "+rf"(_a1), "+rf"(_a2), "+rf"(_d0)
+        : 
+        : "cc", "memory"
+    );
+    return 0;
+}
+
+int p61Music() {
+    // Not needed for LSP CIA
+}
+
+int p61End() {
+}
+#endif
 #ifdef MUSIC
     // Demo - Module Player - ThePlayer 6.1a: https://www.pouet.net/prod.php?which=19922
     // The Player® 6.1A: Copyright © 1992-95 Jarno Paananen
@@ -430,6 +457,9 @@ int main() {
     if(p61Init(module) != 0)
         KPrintF("p61Init failed!\n");
     #endif
+    #ifdef MUSIC_LSP
+    p61Init();
+    #endif
 
     // Precalc end
     warpmode(0);
@@ -487,6 +517,9 @@ int main() {
     SetInterruptHandler((APTR)interruptHandler);
     custom->intena = INTF_SETCLR | INTF_INTEN | INTF_VERTB;
 #ifdef MUSIC
+    custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
+#endif
+#ifdef MUSIC_LSP
     custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
 #endif
 
@@ -876,13 +909,20 @@ void blit_clipped_line_onedot(
         WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
         #endif
         
-        if (new_y >= 0 && new_y <= YMAX) {
-//            blit_fill_fix_onedot(y1, new_y-1, bitplane);
+        if (new_y < 0) {
+            // TODO: Is this needed?
+            blit_fill_fix_onedot(0, y1, bitplane);
+        } else if (new_y > YMAX) {
+            // TODO: Is this needed?
+            blit_fill_fix_onedot(y1, YMAX, bitplane);
+        } else {
             blit_fill_fix_onedot(y1, new_y, bitplane);
             x1 = XMAX;
             y1 = new_y;
             viewport_intersection = 1;
         }
+        // TODO: What kind of lines are in the else clause here? Do they also need a fillfix?
+        // They cross the x=XMAX line, but not on-screen.
     } else {
         outside_viewport -= 1;
     }
@@ -896,8 +936,6 @@ void blit_line_onedot(
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
-    // TODO: First pixel? Last pixel?
-
     // Draws a line from x0,y0 to x1,y1.
     // Pixels x0,y0 and x1,y1 are guaranteed to be drawn.
     // 
@@ -906,7 +944,6 @@ void blit_line_onedot(
 
     // Horizontal lines already have a pixel at start and end from other edges.
     // No drawing required.
-    // TODO: Confirm this is always valid. What about single pixel lines?
     if (y0 == y1) return;
 
     // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
