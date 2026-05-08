@@ -16,12 +16,16 @@
 
 //config
 //#define MUSIC
-#define MUSIC_LSP
+//#define MUSIC_LSP
+//#define MUSIC_LSP_VBLANK
+
 //#define SPEEDUP_TEST // Use frame specific trig table
 #define ASM_OPT
 //#define SHOW_DRAW_PLANE
 //#define SKIP_FILL
-#define DEBUG_NGD
+//#define DEBUG_NGD
+#define DEBUG_NAG
+#define COPBLIT // Copper driven blitter
 
 #define MAX_NUM_SIDES (6)
 #define NUM_SIDES MAX_NUM_SIDES
@@ -30,6 +34,10 @@
 #define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine
 #define FRAME_RATE (50) // To keep difficulty consistent between PAL and NTSC
 #define SCREEN_WIDTH_BYTES (SCREEN_WIDTH >> 3)
+#define COP_WAIT_BLIT(copperList) {\
+    *copperList++ = 0xffff; /* Wait/Skip, VP=255 HP=127 */\
+    *copperList++ = 0x0000; /* Blitter finished enabled, VE=0, HE=0 */\
+}
 
 // Pixel aspect correction for NTSC
 #if FRAME_RATE == 60
@@ -106,6 +114,12 @@ void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
 );
 void blit_line_mode();
+
+#ifdef COPBLIT
+inline UWORD* cblit_clipped_line_onedot(UWORD* copperList, WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane);
+inline UWORD* cblit_fill_fix_onedot(UWORD* copperList, WORD y0, WORD y1, void *bitplane);
+inline UWORD* cblit_line_onedot(UWORD* copperList, UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
+#endif
 
 WORD sin_table[1024];
 
@@ -258,11 +272,123 @@ void* doynaxdepack(const void* input, void* output) { // returns end of output d
     return (void*)_a1;
 }
 
+#ifdef MUSIC_LSP_VBLANK
+INCBIN(LSPMusic, "technova_main.lsmusic");
+INCBIN_CHIP(LSPBank, "technova_main.lsbank");
+
+// Scratchpad
+void copperInterrupt() {
+    custom->color[0] = 0xf00;
+    LSP_MusicPlayTick();
+    custom->color[0] = 0;
+    custom->intreq = INTF_COPER;
+    custom->intreq = INTF_VERTB;
+}
+
+void clearSprites() {
+    for (int i=7; i>0; i--) {
+        custom->spr[i].ctl = 0;
+        custom->spr[i].dataa = 0;
+        custom->spr[i].datab = 0;
+        custom->spr[i].pos = 0;
+    }
+}
+
+void test() {
+    custom->adkcon = 0x7fff;
+    custom->dmacon = DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER | DMAF_SPRITE;
+    custom->intena = INTF_EXTER | INTF_BLIT | INTF_VERTB;
+    clearSprites();
+    //lspInit(LSPMusic, LSPBank, copperDMAConPatch+3);
+    *(LONG *)0x6c = copperInterrupt;
+    //custom->cop1lc = &copperMain;
+    custom->adkcon = ADKF_USE0P1;
+    custom->intena = INTF_SETCLR | INTF_INTEN | INTF_COPER;
+    custom->dmacon = DMAF_SETCLR | DMAF_COPPER;
+}
+
+UWORD copperMain[] = {
+        offsetof(struct Custom, fmode), 0x0000,
+        offsetof(struct Custom, bplcon0), 0x0200,
+        (50<<8) | 8 | 1, 0xfffe, //Wait for scanline 50
+        offsetof(struct Custom, intreq), INTF_COPER,
+        (61<<8) | 8 | 1, 0xfffe, // Wait for line 61
+        offsetof(struct Custom, color), 0x00f,
+//copperDMAConPatch:
+        offsetof(struct Custom, dmacon), DMAF_SETCLR,
+        offsetof(struct Custom, color), 0x0000,
+        0xffff, 0xfffe
+}
+
+// copperMain:
+// 			dc.l	$01fc0000
+// 			dc.l	$01000200
+			
+// 			dc.l	(50<<24)|($09fffe)			; wait scanline 50
+// 			dc.l	$009c8000|(1<<4)			; fire copper interrupt
+
+// 			dc.l	((50+11)<<24)|($09fffe)		; wait scanline 50+11
+// 			dc.l	$0180000f
+// copperDMAConPatch:
+// 			dc.l	$00968000
+// 			dc.l	$01800000
+// 			dc.l	-2
+// /scratchpad
+
+void lspInit() {
+    register volatile const void* _a0 ASM("a0") = LSPMusic;
+    register volatile const void* _a1 ASM("a1") = LSPBank;
+    register volatile void* _a2 ASM("a2") = dmacon_patch;
+    register volatile UWORD _d0 ASM("d0");
+    __asm volatile (
+        "jsr LSP_MusicInit\n"
+        : "+rf"(_a0), "+rf"(_a1), "rf"(_d0)
+        : "r"(_a2)
+        : "cc", "memory"
+    );
+}
+
+void lspMusicPlayTick() {
+    register volatile const void* _a6 ASM("a6") = &(custom->aud[0].ac_ptr);
+    __asm volatile(
+        "movem.l %%d0-%%d2/%%a0-%%a5,-(%%sp)\n"
+        "jsr LSP_MusicPlayTick\n"
+        "movem.l (%%sp)+,%%d0-%%d2/%%a0-%%a5\n"
+        :
+        : "r"(_a6)
+        : "cc", "memory"
+    );
+}
+
+void lspMusicGetPos(UWORD position) {
+    register volatile UWORD _d0 ASM("d0") = position;
+    __asm volatile(
+        "movem.l %%d1/%%a0/%%a3,-(%%sp)\n"
+        "jsr LSP_MusicSetPos\n"
+        "movem.l (%%sp)+,%%d1/%%a0/%%a3\n"
+        :
+        : "r"(_d0)
+        : "cc", "memory"
+    );
+}
+
+UWORD lspMusicSetPos() {
+    register volatile UWORD position ASM("d0");
+    __asm volatile(
+        "jsr LSP_MusicGetPos\n"
+        : "r"(_d0)
+        :
+        :
+    );
+    return position;
+}
+#endif
+
 #ifdef MUSIC_LSP
 INCBIN_CHIP(LSPMusic, "technova_main.lsmusic");
 INCBIN_CHIP(LSPBank, "technova_main.lsbank");
 
-int p61Init() {
+int lspInit() {
     register volatile void* _a0 ASM("a0") = (void*) LSPMusic;
     register volatile void* _a1 ASM("a1") = (void*) LSPBank;
     register volatile void* _a2 ASM("a2") = 0; // VBR
@@ -282,7 +408,15 @@ int p61Music() {
     // Not needed for LSP CIA
 }
 
-int p61End() {
+
+void p61End() {
+    __asm volatile (
+        "jsr LSP_MusicDriver_CIA_Stop\n"
+        :
+        : 
+        : "memory"
+    );
+    return;
 }
 #endif
 #ifdef MUSIC
@@ -372,6 +506,9 @@ static __attribute__((interrupt)) void interruptHandler() {
     // DEMO - ThePlayer
     p61Music();
 #endif
+#ifdef MUSIC_LSP_INT
+    p61Music();
+#endif
     // DEMO - increment frameCounter
     frameCounter++;
 }
@@ -459,7 +596,7 @@ int main() {
         KPrintF("p61Init failed!\n");
     #endif
     #ifdef MUSIC_LSP
-    p61Init();
+    lspInit();
     #endif
 
     // Precalc end
@@ -631,16 +768,17 @@ int main() {
             scale += 25;
         }
 
-        #ifndef SKIP_FILL
-        blit_fill(bitplane_fg2, bitplane_fg2);
-        #endif
-        cpu_cls(bitplane_fg3);
-
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_fg2);
         #ifdef SHOW_DRAW_PLANE
         copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg3);
         #endif
+
+        #ifndef SKIP_FILL
+        blit_fill(bitplane_fg2, bitplane_fg2);
+        #endif
+        cpu_cls(bitplane_fg3);
+
 
         UWORD new_palette_angle = frameCounter & 0x3ff;
         UWORD new_palette_red = 8 + ((sin_table[new_palette_angle] * 7) >> 14);
@@ -665,8 +803,8 @@ int main() {
         // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
         // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
 
-        custom->color[0] = 0x800; // Black raster - all done
         blit_wait();
+        custom->color[0] = 0x800; // Black raster - all done
     }
 
 #ifdef MUSIC
@@ -713,6 +851,24 @@ void blit_wait() {
     while (custom->dmaconr & DMAF_BLTDONE);
 }
 
+#ifdef COPBLIT
+inline UWORD* cblit_line_mode(UWORD* copperList) {
+    // TODO: This adds 12 words to the copperlist, and they are all fixed. Verify this is compiled optimally.
+    COP_WAIT_BLIT(copperList);
+    *copperList++ = offsetof(struct Custom, bltbdat);
+    *copperList++ = 0xffff;
+    *copperList++ = offsetof(struct Custom, bltafwm);
+    *copperList++ = 0xffff;
+    *copperList++ = offsetof(struct Custom, bltalwm);
+    *copperList++ = 0xffff;
+    *copperList++ = offsetof(struct Custom, bltbmod);
+    *copperList++ = SCREEN_WIDTH_BYTES;
+    *copperList++ = offsetof(struct Custom, bltcmod);
+    *copperList++ = SCREEN_WIDTH_BYTES;
+    return copperList;
+}
+#endif
+
 void blit_line_mode() {
     blit_wait();
     // Preload registers for line mode activities
@@ -736,7 +892,10 @@ void blit_clipped_line_onedot(
     WORD myx = 0;
 
     // Clip at y=0
-    if (y0 > y1) {
+    if (y0 == y1) {
+        // Line is horizontal. Just skip it.
+        return;
+    } else if (y0 > y1) {
         WORD tmp;
         tmp = x0; x0 = x1; x1 = tmp;
         tmp = y0; y0 = y1; y1 = tmp;
@@ -932,6 +1091,216 @@ void blit_clipped_line_onedot(
     }
 }
 
+#ifdef COPBLIT
+inline UWORD* cblit_clipped_line_onedot(UWORD* copperList, WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane) {
+    // Draws from x0/y0 to x1/y1. Inclusive of lowest y, exclusive of largest y.
+    WORD outside_viewport = 4;
+    WORD viewport_intersection = 0;
+    WORD mxy = 0;
+    WORD myx = 0;
+
+    // Clip at y=0
+    if (y0 == y1) {
+        // Line is horizontal. Just skip it.
+        return copperList;
+    } else if (y0 > y1) {
+        WORD tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+    }
+    if (y1 < 0) {
+        // Entire line is above screen. Discard.
+        return copperList;
+    } else if (y0 < 0) {
+        // Test for intersection with top of screen
+        #ifdef ASM_OPT
+        mxy = x1 - x0;
+        WORD yd = y1 - y0;
+        asm(
+            "ext.l  %[mxy]\n"
+            "asl.l  %[fracbits],%[mxy]\n"
+            "divs.w %[yd],%[mxy]\n"
+            : [mxy]"+&d"(mxy)
+            : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD result;
+        asm(
+            "move.w %[mxy],%[result]\n"
+            "muls.w %[y0],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [mxy]"d"(mxy), [y0]"d"(y0), [fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_x = x0 - result;
+        #else
+        mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+        WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
+        #endif
+        
+        if (new_x >= 0 && new_x <= XMAX) {
+            // Line intersects top of screen. Move x0/y0 point onscreen and flag the intersection.
+            x0 = new_x;
+            y0 = 0;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+
+    // Clip at y=YMAX
+    if (y0 > YMAX) {
+        // Entire line is below screen. Discard.
+        return copperList;
+    } else if (y1 > YMAX) {
+        if (!mxy) {
+            #ifdef ASM_OPT
+            mxy = x1 - x0;
+            WORD yd = y1 - y0;
+            asm(
+                "ext.l  %[mxy]\n"
+                "asl.l  %[fracbits],%[mxy]\n"
+                "divs.w %[yd],%[mxy]\n"
+                : [mxy]"+&d"(mxy)
+                : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
+                : "cc"
+            );
+            #else
+            mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
+            #endif
+        }
+
+        #ifdef ASM_OPT
+        WORD result;
+        asm(
+            "move.w %[mxy],%[result]\n"
+            "muls.w %[y1],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [mxy]"d"(mxy), [y1]"d"(YMAX - y1), [fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_x = x1 + result;
+        #else
+        WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
+        #endif
+
+        if (new_x >= 0 && new_x <= XMAX) {
+            // Line intersects bottom of screen. Move x1/y1 point onscreen and flag the intersection.
+            x1 = new_x;
+            y1 = YMAX;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+
+    // Clip at x=0
+    if (x0 > x1) {
+        WORD tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+    }
+    if (x1 < 0) {
+        // Entire line is left of screen. Discard.
+        return copperList;
+    } else if (x0 < 0) {
+        #ifdef ASM_OPT
+        myx = y1 - y0;
+        WORD xd = x1 - x0;
+        asm(
+            "ext.l  %[myx]\n"
+            "asl.l  %[fracbits],%[myx]\n"
+            "divs.w %[xd],%[myx]\n"
+            : [myx]"+&d"(myx)
+            : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD result;
+        asm(
+            "move.w %[myx],%[result]\n"
+            "muls.w %[x0],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [myx]"d"(myx), [x0]"d"(x0), [fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_y = y0 - result;
+        #else
+        myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+        WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
+        #endif
+        
+        if (new_y >= 0 && new_y <= YMAX) {
+            // Line intersects left of screen. Move x0/y0 point onscreen and flag the intersection.
+            x0 = 0;
+            y0 = new_y;
+            viewport_intersection = 1;
+        }
+    } else {
+        outside_viewport -= 1;
+    }
+    if (x0 > XMAX) {
+        // Entire line is right of screen. But still need to get fill state correct.
+        copperList = cblit_fill_fix_onedot(copperList, y0, y1, bitplane);
+        return copperList;
+    } else if (x1 > XMAX) {
+        if (!myx) {
+            #ifdef ASM_OPT
+            myx = y1 - y0;
+            WORD xd = x1 - x0;
+            asm(
+                "ext.l  %[myx]\n"
+                "asl.l  %[fracbits],%[myx]\n"
+                "divs.w %[xd],%[myx]\n"
+                : [myx]"+&d"(myx)
+                : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
+                : "cc"
+            );
+            #else
+            myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
+            #endif
+        }
+        #ifdef ASM_OPT
+        WORD result;
+        asm(
+            "move.w %[myx],%[result]\n"
+            "muls.w %[x1],%[result]\n"
+            "asr.l  %[fracbits],%[result]\n"
+            : [result]"=&d"(result)
+            : [myx]"d"(myx), [x1]"d"(XMAX - x1), [fracbits]"I"(FRACBITS)
+            : "cc"
+        );
+        WORD new_y = y1 + result;
+        #else
+        WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
+        #endif
+        
+        if (new_y < 0) {
+            // TODO: Is this needed?
+            copperList = cblit_fill_fix_onedot(copperList, 0, y1, bitplane);
+        } else if (new_y > YMAX) {
+            // TODO: Is this needed?
+            copperList = cblit_fill_fix_onedot(copperList, y1, YMAX, bitplane);
+        } else {
+            copperList = cblit_fill_fix_onedot(copperList, y1, new_y, bitplane);
+            x1 = XMAX;
+            y1 = new_y;
+            viewport_intersection = 1;
+        }
+        // TODO: What kind of lines are in the else clause here? Do they also need a fillfix?
+        // They cross the x=XMAX line, but not on-screen.
+    } else {
+        outside_viewport -= 1;
+    }
+    if (outside_viewport == 0 || viewport_intersection) {
+        copperList = cblit_line_onedot(copperList, x0, y0, x1, y1, bitplane);
+    }
+    return copperList;
+}
+#endif
+
 void blit_line_onedot(
     UWORD x0, UWORD y0,
     UWORD x1, UWORD y1,
@@ -1027,6 +1396,105 @@ void blit_line_onedot(
     custom->bltsize = (maj_d << 4) + 2;
 }
 
+#ifdef COPBLIT
+inline UWORD* cblit_line_onedot(
+    UWORD* copperList,
+    UWORD x0, UWORD y0,
+    UWORD x1, UWORD y1,
+    void *bitplane
+) {
+    // Draws a line from x0,y0 to x1,y1.
+    // Pixels x0,y0 and x1,y1 are guaranteed to be drawn.
+    // 
+    // See http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
+    //
+
+    // Horizontal lines already have a pixel at start and end from other edges.
+    // No drawing required.
+    if (y0 == y1) return copperList;
+
+    // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
+    if (y0 > y1) {
+        UWORD tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+        tmp = x0; x0 = x1; x1 = tmp;
+    }
+
+    // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
+    // Calculate word address of start point
+    // Note octants 0, 1, 2, 3 are omitted as they are never drawn.
+
+    COP_WAIT_BLIT(copperList);
+    APTR startpt = bitplane + muluw(y0, SCREEN_WIDTH_BYTES) + ((x0 >> 4) << 1);
+    *copperList++ = offsetof(struct Custom, bltcpt_h);
+    *copperList++ = (ULONG)startpt >> 16;
+    *copperList++ = offsetof(struct Custom, bltdpt_h);
+    *copperList++ = (ULONG)startpt >> 16;
+    *copperList++ = offsetof(struct Custom, bltcpt_l);
+    *copperList++ = (ULONG)startpt & 0xffff;
+    *copperList++ = offsetof(struct Custom, bltdpt_l);
+    *copperList++ = (ULONG)startpt & 0xffff;
+    WORD ed = x1 - x0; // Positive in east direction
+    UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
+    UWORD bltcon1;
+    UWORD maj_d;
+    UWORD min_d;
+    if (ed + sd < 0) {
+        // Octant 4
+        maj_d = -ed;
+        min_d = sd;
+        bltcon1 = SUD | AUL | ONEDOT | LINEMODE;
+    } else {
+        // Octant 0567 Southeast
+        if (ed - sd < 0) {
+            // South predominant
+            maj_d = sd;
+            if (ed < 0) {
+                // Octant 5
+                min_d = -ed;
+                bltcon1 = SUL | LINEMODE; // ONEDOT doesn't actually do anything for this octant
+            } else {
+                // Octant 6
+                min_d = ed;
+                bltcon1 = LINEMODE; // ONEDOT doesn't actually do anything for this octant
+            }
+        } else {
+            // East predominant
+            // Octant 7
+            maj_d = ed;
+            min_d = sd;
+            bltcon1 = SUD | ONEDOT | LINEMODE;
+        }
+    }
+    // After that, majd is pixel distance on dominant axis,
+    // mind is pixel distance on minor axis. Both are guaranteed zero/positive.
+    // Preshift max_d, min_d
+    WORD bltbmod = min_d << 2; // 4min_d
+    *copperList++ = offsetof(struct Custom, bltbmod);
+    *copperList++ = bltbmod;
+    maj_d <<= 2;
+    WORD bltamod = bltbmod - maj_d; // 4 min_d - 4 maj_d
+    *copperList++ = offsetof(struct Custom, bltamod);
+    *copperList++ = bltamod;
+    *copperList++ = offsetof(struct Custom, bltapt_l);
+    *copperList++ = bltamod;
+    if (bltamod < 0) bltcon1 |= SIGNFLAG;
+    *copperList++ = offsetof(struct Custom, bltcon1);
+    *copperList++ = bltcon1;
+    *copperList++ = offsetof(struct Custom, bltcon0);
+    *copperList++ = (
+        (x0 & 0xf) << 12 // Starting bit within word
+        | BC0F_SRCC | BC0F_SRCA // Missing DEST here
+        | ABNC | NABC | NANBC // 4a xor
+    );
+    *copperList++ = offsetof(struct Custom, bltadat);
+    *copperList++ = 0x8000;
+    *copperList++ = offsetof(struct Custom, bltsize);
+    *copperList++ = (maj_d << 4) + 2;
+    return copperList;
+}
+#endif
+
 void blit_fill_fix_onedot(
     WORD y0, WORD y1, void *bitplane
 ) {
@@ -1069,6 +1537,63 @@ void blit_fill_fix_onedot(
     custom->bltcon1 = LINEMODE | SIGNFLAG;
     custom->bltsize = (maj_d << 5) + 2; // Remember maj_d was doubled above
 }
+
+#ifdef COPBLIT
+inline UWORD* cblit_fill_fix_onedot(
+    UWORD* copperList, WORD y0, WORD y1, void *bitplane
+) {
+    // Draws from ymin (inclusive) to ymax (exclusive)
+    if (y0 > y1) {
+        WORD tmp;
+        tmp = y0; y0 = y1; y1 = tmp;
+    }
+    // Skip offscreen
+    if (y1 < 0) return copperList;
+    if (y0 > YMAX) return copperList;
+    // Clip to screen
+    if (y0 < 0) y0 = 0;
+    if (y1 > YMAX) y1 = YMAX;
+    // Skip zero length lines
+    if (y1 == y0) return copperList;
+
+    COP_WAIT_BLIT(copperList);
+    *copperList++ = offsetof(struct Custom, bltadat);
+    *copperList++ = 0x8000;
+    *copperList++ = offsetof(struct Custom, bltbmod);
+    *copperList++ = 0;
+    APTR startpt = (
+        bitplane
+        + muluw(y0, SCREEN_WIDTH_BYTES)
+        + (SCREEN_WIDTH >> 3) - 2
+    ); // Location of rightmost word
+    *copperList++ = offsetof(struct Custom, bltcpt_l);
+    *copperList++ = (ULONG)startpt >> 16;
+    *copperList++ = offsetof(struct Custom, bltdpt_l);
+    *copperList++ = (ULONG)startpt >> 16;
+    *copperList++ = offsetof(struct Custom, bltcpt_h);
+    *copperList++ = (ULONG)startpt & 0xffff;
+    *copperList++ = offsetof(struct Custom, bltdpt_h);
+    *copperList++ = (ULONG)startpt & 0xffff;
+    UWORD maj_d = (y1 - y0) << 1;
+    WORD bltaptl = -maj_d; // 4 min_d - 2 maj_d
+    *copperList++ = offsetof(struct Custom, bltapt_l);
+    *copperList++ = bltaptl;
+    WORD bltamod = bltaptl - maj_d; // 4 min_d - 4 maj_d
+    *copperList++ = offsetof(struct Custom, bltamod);
+    *copperList++ = bltamod;
+    *copperList++ = offsetof(struct Custom, bltcon0);
+    *copperList++ = (
+        (0xf << 12)             // Rightmost word
+        | BC0F_SRCC | BC0F_SRCA // Set DMA channels
+        | ABNC | NABC | NANBC   // 4a xor
+    );
+    *copperList++ = offsetof(struct Custom, bltcon1);
+    *copperList++ = LINEMODE | SIGNFLAG;
+    *copperList++ = offsetof(struct Custom, bltsize);
+    *copperList++ = (maj_d << 5) + 2; // Remember maj_d was doubled above
+    return copperList;
+}
+#endif
 
 void blit_line(
     UWORD x0, UWORD y0,
@@ -1174,6 +1699,26 @@ void blit_cls(void *bitplane) {
     custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
 
+#ifdef COPBLIT
+__attribute__((always_inline)) inline
+UWORD* cblit_cls(UWORD* copperList, void *bitplane) {
+    // TODO: The next few lines write 9 fixed words to the copperlist. Verify it is compiled optimally.
+    COP_WAIT_BLIT(copperList);
+    *copperList++ = offsetof(struct Custom, bltcon0);
+    *copperList++ = BC0F_DEST;
+    *copperList++ = offsetof(struct Custom, bltcon1);
+    *copperList++ = 0;
+    *copperList++ = offsetof(struct Custom, bltdmod);
+    *copperList++ = 0;
+    *copperList++ = offsetof(struct Custom, bltdpt_h);
+    *copperList++ = (ULONG)bitplane >> 16;
+    *copperList++ = offsetof(struct Custom, bltdpt_l);
+    *copperList++ = (ULONG)bitplane & 0xffff;
+    *copperList++ = offsetof(struct Custom, bltsize);
+    *copperList++ = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
+}
+#endif
+
 __attribute__((always_inline)) inline
 void cpu_cls(void *bitplane) {
     register volatile const UWORD _d0 ASM("d0") = ((SCREEN_HEIGHT * SCREEN_WIDTH_BYTES) / 160) - 1;
@@ -1218,6 +1763,39 @@ void blit_fill(void *bitplane, void *bitplane2) {
     custom->bltdmod = 0;
     custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
+
+#ifdef COPBLIT
+__attribute__((always_inline)) inline
+UWORD* cblit_fill(UWORD* copperList, void *bitplane, void *bitplane2) {
+    // TODO: Writes 15 words in a row to copperlist. Optimal compiler output?
+    COP_WAIT_BLIT(copperList);
+    *copperList++ = offsetof(struct Custom, bltcon0);
+    *copperList++ = BC0F_SRCA | BC0F_DEST | A_TO_D;
+    *copperList++ = offsetof(struct Custom, bltcon1);
+    *copperList++ = FILL_XOR | BLITREVERSE;
+    *copperList++ = offsetof(struct Custom, bltafwm);
+    *copperList++ = 0xffff;
+    *copperList++ = offsetof(struct Custom, bltalwm);
+    *copperList++ = 0xffff;
+    *copperList++ = offsetof(struct Custom, bltamod);
+    *copperList++ = 0;
+    *copperList++ = offsetof(struct Custom, bltdmod);
+    *copperList++ = 0;
+    *copperList++ = offsetof(struct Custom, bltapt_h);
+    APTR start = bitplane + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
+    *copperList++ = (ULONG)start >> 16;
+    *copperList++ = offsetof(struct Custom, bltapt_l);
+    *copperList++ = (ULONG)start & 0xffff;
+    APTR start2 = bitplane2 + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
+    *copperList++ = offsetof(struct Custom, bltdpt_h);
+    *copperList++ = (ULONG)start2 >> 16;
+    *copperList++ = offsetof(struct Custom, bltdpt_l);
+    *copperList++ = (ULONG)start2 & 0xffff;
+    *copperList++ = offsetof(struct Custom, bltsize);
+    *copperList++ = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
+}
+#endif
+
 
 __attribute__((always_inline)) inline
 void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
