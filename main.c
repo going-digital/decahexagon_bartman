@@ -18,14 +18,13 @@
 //config
 //#define MUSIC
 #define MUSIC_LSP
-//#define SPEEDUP_TEST // Use frame specific trig table
 #define ASM_OPT
 //#define SHOW_DRAW_PLANE
 //#define SKIP_FILL
 //#define DEBUG_NAG
 #define DEBUG_SPAG
 
-#define MAX_NUM_SIDES (6)
+#define MAX_NUM_SIDES (12)
 #define NUM_SIDES MAX_NUM_SIDES
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
@@ -428,10 +427,8 @@ static void Wait11() { WaitLine(0x11); }
 static void Wait12() { WaitLine(0x12); }
 static void Wait13() { WaitLine(0x13); }
 
-#ifdef SPEEDUP_TEST
 WORD frame_sin[MAX_NUM_SIDES];
 WORD frame_cos[MAX_NUM_SIDES];
-#endif
 
 int main() {
 
@@ -550,7 +547,6 @@ int main() {
         UWORD scale = (SCREEN_HEIGHT / 4) + ((frameCounter >> 2) & 0x1f);
         // Calculate unit vectors
 
-        #ifdef SPEEDUP_TEST
         // Build frame specific sin/cos table
         UWORD angle = field_angle;
         for (WORD i = 0; i < MAX_NUM_SIDES; i++) {
@@ -560,13 +556,11 @@ int main() {
             frame_cos[i] = tmp - (tmp >> 2);
             angle += gamestate.segment_angle;
         }
-        #endif
 
         blit_line_mode();
         for (WORD i = 6; i>0; i--) {
             UWORD draw_angle = 0;
 
-            #ifdef SPEEDUP_TEST
             x = frame_sin[0];
             asm(
                 "mulsw %[scale],%[x]\n"
@@ -615,25 +609,6 @@ int main() {
                 x = new_x;
                 y = new_y;
             }
-            #else
-            polar_to_cartesian(field_angle, scale, &x, &y);
-            WORD end_x = x;
-            WORD end_y = y;
-            while (1) {
-                UWORD new_angle = draw_angle + gamestate.segment_angle;
-                if (new_angle < draw_angle) break;
-                polar_to_cartesian(new_angle + field_angle, scale, &new_x, &new_y);
-                blit_clipped_line_onedot(
-                    SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
-                    SCREEN_WIDTH / 2 + new_x, SCREEN_HEIGHT / 2 + new_y,
-                    0,
-                    bitplane_fg2
-                );
-                x = new_x;
-                y = new_y;
-                draw_angle = new_angle;
-            }
-            #endif
             // Draw last line back to start point
             blit_clipped_line_onedot(
                 SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
