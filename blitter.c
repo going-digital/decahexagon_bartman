@@ -9,225 +9,160 @@ void blit_line_mode(void) {
     custom->bltcmod_bmod = (SCREEN_WIDTH_BYTES << 16) | SCREEN_WIDTH_BYTES;
 }
 
+// --- viewport-clip helpers -----------------------------------------------
+// FRACBITS fixed point. Under ASM_OPT these keep the exact 32-bit
+// intermediate / 16-bit result behaviour the clipper was tuned against
+// (ext.l -> asl.l -> divs.w, and move.w -> muls.w -> asr.l).
+
+// slope = (num << FRACBITS) / den
+static WORD clip_slope(WORD num, WORD den) {
+#ifdef ASM_OPT
+    WORD r = num;
+    asm(
+        "ext.l  %[r]\n"
+        "asl.l  %[fb],%[r]\n"
+        "divs.w %[den],%[r]\n"
+        : [r]"+&d"(r)
+        : [den]"d"(den), [fb]"I"(FRACBITS)
+        : "cc"
+    );
+    return r;
+#else
+    return ((LONG)num << FRACBITS) / den;
+#endif
+}
+
+// (slope * dist) >> FRACBITS
+static WORD clip_step(WORD slope, WORD dist) {
+#ifdef ASM_OPT
+    WORD r;
+    asm(
+        "move.w %[s],%[r]\n"
+        "muls.w %[d],%[r]\n"
+        "asr.l  %[fb],%[r]\n"
+        : [r]"=&d"(r)
+        : [s]"d"(slope), [d]"d"(dist), [fb]"I"(FRACBITS)
+        : "cc"
+    );
+    return r;
+#else
+    return (slope * dist) >> FRACBITS;
+#endif
+}
+
+// Clip x0,y0 -> x1,y1 to the 0..XMAX / 0..YMAX viewport and, if anything
+// survives, hand it to blit_line_onedot as XOR fill seeds. Where the line
+// leaves the right edge, the off-screen remainder is still walked down the
+// x=XMAX column by blit_fill_fix_onedot so the fill parity stays correct.
+// Mirrors clipline() in cliptest.py. `angle` is reserved for angled fills.
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
 ) {
-    // Draws from x0/y0 to x1/y1. Inclusive of lowest y, exclusive of largest y.
+    (void)angle;
     WORD outside_viewport = 4;
     WORD viewport_intersection = 0;
-    WORD mxy = 0;
-    WORD myx = 0;
+    WORD mxy = 0; // dx/dy, lazily computed and shared by the two y edges
+    WORD myx = 0; // dy/dx, lazily computed and shared by the two x edges
 
-    // Clip at y=0
+    // Order endpoints by y for the top/bottom tests.
     if (y0 > y1) {
-        WORD tmp;
-        tmp = x0; x0 = x1; x1 = tmp;
-        tmp = y0; y0 = y1; y1 = tmp;
+        WORD t;
+        t = x0; x0 = x1; x1 = t;
+        t = y0; y0 = y1; y1 = t;
     }
-    if (y1 < 0) {
-        // Entire line is above screen. Discard.
-        return;
-    } else if (y0 < 0) {
-        // Test for intersection with top of screen
-        #ifdef ASM_OPT
-        mxy = x1 - x0;
-        WORD yd = y1 - y0;
-        asm(
-            "ext.l  %[mxy]\n"
-            "asl.l  %[fracbits],%[mxy]\n"
-            "divs.w %[yd],%[mxy]\n"
-            : [mxy]"+&d"(mxy)
-            : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
-            : "cc"
-        );
-        WORD result;
-        asm(
-            "move.w %[mxy],%[result]\n"
-            "muls.w %[y0],%[result]\n"
-            "asr.l  %[fracbits],%[result]\n"
-            : [result]"=&d"(result)
-            : [mxy]"d"(mxy), [y0]"d"(y0), [fracbits]"I"(FRACBITS)
-            : "cc"
-        );
-        WORD new_x = x0 - result;
-        #else
-        mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
-        WORD new_x = x0 - ((y0 * mxy) >> FRACBITS);
-        #endif
 
-        if (new_x >= 0 && new_x <= XMAX) {
-            // Line intersects top of screen. Move x0/y0 point onscreen and flag the intersection.
-            x0 = new_x;
+    // Top edge (y = 0)
+    if (y1 < 0) {
+        return; // wholly above the viewport
+    } else if (y0 < 0) {
+        mxy = clip_slope(x1 - x0, y1 - y0);
+        WORD nx = x0 - clip_step(mxy, y0);
+        if (nx >= 0 && nx <= XMAX) {
+            x0 = nx;
             y0 = 0;
             viewport_intersection = 1;
         }
     } else {
-        outside_viewport -= 1;
+        outside_viewport--;
     }
 
-    // Clip at y=YMAX
+    // Bottom edge (y = YMAX)
     if (y0 > YMAX) {
-        // Entire line is below screen. Discard.
-        return;
+        return; // wholly below the viewport
     } else if (y1 > YMAX) {
-        if (!mxy) {
-            #ifdef ASM_OPT
-            mxy = x1 - x0;
-            WORD yd = y1 - y0;
-            asm(
-                "ext.l  %[mxy]\n"
-                "asl.l  %[fracbits],%[mxy]\n"
-                "divs.w %[yd],%[mxy]\n"
-                : [mxy]"+&d"(mxy)
-                : [yd]"d"(yd), [fracbits]"I"(FRACBITS)
-                : "cc"
-            );
-            #else
-            mxy = ((x1 - x0) << FRACBITS) / (y1 - y0);
-            #endif
-        }
-
-        #ifdef ASM_OPT
-        WORD result;
-        asm(
-            "move.w %[mxy],%[result]\n"
-            "muls.w %[y1],%[result]\n"
-            "asr.l  %[fracbits],%[result]\n"
-            : [result]"=&d"(result)
-            : [mxy]"d"(mxy), [y1]"d"(YMAX - y1), [fracbits]"I"(FRACBITS)
-            : "cc"
-        );
-        WORD new_x = x1 + result;
-        #else
-        WORD new_x = x1 + (((YMAX - y1) * mxy) >> FRACBITS);
-        #endif
-
-        if (new_x >= 0 && new_x <= XMAX) {
-            // Line intersects bottom of screen. Move x1/y1 point onscreen and flag the intersection.
-            x1 = new_x;
+        if (!mxy) mxy = clip_slope(x1 - x0, y1 - y0);
+        WORD nx = x1 + clip_step(mxy, YMAX - y1);
+        if (nx >= 0 && nx <= XMAX) {
+            x1 = nx;
             y1 = YMAX;
             viewport_intersection = 1;
         }
     } else {
-        outside_viewport -= 1;
+        outside_viewport--;
     }
 
-    // Clip at x=0
+    // Order endpoints by x for the left/right tests.
     if (x0 > x1) {
-        WORD tmp;
-        tmp = x0; x0 = x1; x1 = tmp;
-        tmp = y0; y0 = y1; y1 = tmp;
+        WORD t;
+        t = x0; x0 = x1; x1 = t;
+        t = y0; y0 = y1; y1 = t;
     }
-    if (x1 < 0) {
-        // Entire line is left of screen. Discard.
-        return;
-    } else if (x0 < 0) {
-        #ifdef ASM_OPT
-        myx = y1 - y0;
-        WORD xd = x1 - x0;
-        asm(
-            "ext.l  %[myx]\n"
-            "asl.l  %[fracbits],%[myx]\n"
-            "divs.w %[xd],%[myx]\n"
-            : [myx]"+&d"(myx)
-            : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
-            : "cc"
-        );
-        WORD result;
-        asm(
-            "move.w %[myx],%[result]\n"
-            "muls.w %[x0],%[result]\n"
-            "asr.l  %[fracbits],%[result]\n"
-            : [result]"=&d"(result)
-            : [myx]"d"(myx), [x0]"d"(x0), [fracbits]"I"(FRACBITS)
-            : "cc"
-        );
-        WORD new_y = y0 - result;
-        #else
-        myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
-        WORD new_y = y0 - ((x0 * myx) >> FRACBITS);
-        #endif
 
-        if (new_y >= 0 && new_y <= YMAX) {
-            // Line intersects left of screen. Move x0/y0 point onscreen and flag the intersection.
+    // Left edge (x = 0)
+    if (x1 < 0) {
+        return; // wholly left of the viewport
+    } else if (x0 < 0) {
+        myx = clip_slope(y1 - y0, x1 - x0);
+        WORD ny = y0 - clip_step(myx, x0);
+        if (ny >= 0 && ny <= YMAX) {
             x0 = 0;
-            y0 = new_y;
+            y0 = ny;
             viewport_intersection = 1;
         }
     } else {
-        outside_viewport -= 1;
+        outside_viewport--;
     }
+
+    // Right edge (x = XMAX). Done last: the part beyond XMAX still needs
+    // fill-fixup toggles down the x=XMAX column.
     if (x0 > XMAX) {
-        // Entire line is right of screen. But still need to get fill state correct.
+        // Nothing visible, but every scanline it spans still toggles the fill.
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
-        if (!myx) {
-            #ifdef ASM_OPT
-            myx = y1 - y0;
-            WORD xd = x1 - x0;
-            asm(
-                "ext.l  %[myx]\n"
-                "asl.l  %[fracbits],%[myx]\n"
-                "divs.w %[xd],%[myx]\n"
-                : [myx]"+&d"(myx)
-                : [xd]"d"(xd), [fracbits]"I"(FRACBITS)
-                : "cc"
-            );
-            #else
-            myx = ((y1 - y0) << FRACBITS) / (x1 - x0);
-            #endif
-        }
-        #ifdef ASM_OPT
-        WORD result;
-        asm(
-            "move.w %[myx],%[result]\n"
-            "muls.w %[x1],%[result]\n"
-            "asr.l  %[fracbits],%[result]\n"
-            : [result]"=&d"(result)
-            : [myx]"d"(myx), [x1]"d"(XMAX - x1), [fracbits]"I"(FRACBITS)
-            : "cc"
-        );
-        WORD new_y = y1 + result;
-        #else
-        WORD new_y = y1 + (((XMAX - x1) * myx) >> FRACBITS);
-        #endif
-
-        if (new_y < 0) {
-            // TODO: Is this needed?
-            blit_fill_fix_onedot(0, y1, bitplane);
-        } else if (new_y > YMAX) {
-            // TODO: Is this needed?
-            blit_fill_fix_onedot(y1, YMAX, bitplane);
-        } else {
-            blit_fill_fix_onedot(y1, new_y, bitplane);
+        if (!myx) myx = clip_slope(y1 - y0, x1 - x0);
+        WORD ny = y1 + clip_step(myx, XMAX - x1);
+        // Walk the beyond-XMAX part down the right column. blit_fill_fix_onedot
+        // clamps the y range to the screen, so ny < 0 / ny > YMAX are covered
+        // here too (this is what the old three-way branch was reaching for).
+        blit_fill_fix_onedot(y1, ny, bitplane);
+        if (ny >= 0 && ny <= YMAX) {
             x1 = XMAX;
-            y1 = new_y;
+            y1 = ny;
             viewport_intersection = 1;
         }
-        // TODO: What kind of lines are in the else clause here? Do they also need a fillfix?
-        // They cross the x=XMAX line, but not on-screen.
     } else {
-        outside_viewport -= 1;
+        outside_viewport--;
     }
+
     if (outside_viewport == 0 || viewport_intersection) {
         blit_line_onedot(x0, y0, x1, y1, bitplane);
     }
 }
 
+// Plots ONE toggle pixel per scanline along x0,y0 -> x1,y1 to seed the XOR
+// area fill (blit_fill). The y span is half-open: scanlines
+// [min(y0,y1), max(y0,y1)) get a pixel and the max-y endpoint does not, so a
+// vertex shared by two edges toggles exactly once.
+// Requires blit_line_mode() earlier this frame.
+// Line-mode setup after https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
+// See http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
 void blit_line_onedot(
     UWORD x0, UWORD y0,
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
-    // Draws a line from x0,y0 to x1,y1.
-    // Pixels x0,y0 and x1,y1 are guaranteed to be drawn.
-    //
-    // See http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
-    //
-
-    // Horizontal lines already have a pixel at start and end from other edges.
-    // No drawing required.
+    // Horizontal segments contribute no scanline crossings to the fill.
     if (y0 == y1) return;
 
     // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
@@ -284,15 +219,14 @@ void blit_line_onedot(
     WORD bltaptl = bltamod; // This goes against HRM, but seems to work well.
     if (bltaptl < 0) bltcon1 |= SIGNFLAG;
 
-    // Set starting word, DMA channels and logic function
-    // TODO: Does this skip the first pixel? BC0F_DEST is not set.
-    // See https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
+    // Start word/bit, DMA channels and minterm (4a XOR). BC0F_DEST is left
+    // clear deliberately: this matches the OCS-tuned setup, and bltsize height
+    // below is maj_d (not maj_d + 1), which drops the max-y pixel and gives the
+    // half-open y span the fill relies on.
     // https://eab.abime.net/showpost.php?p=206412&postcount=6
-    //
-    // FIXME: This appears to draw the first pixel, but does not draw the last pixel.
     UWORD bltcon0 = (
         (x0 & 0xf) << 12 // Starting bit within word
-        | BC0F_SRCC | BC0F_SRCA // Missing DEST here
+        | BC0F_SRCC | BC0F_SRCA
         | ABNC | NABC | NANBC // 4a xor
     );
     // Spin until blitter free
