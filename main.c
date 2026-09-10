@@ -160,23 +160,53 @@ int main() {
     input_init();
     game_init();
     InputState input;
+    short last_frame = frameCounter;
 
     for (;;) {
-        Wait10();
+        // Wait for the next vblank. If a frame was missed, frameCounter has
+        // already moved on and we fall straight through - degrading to a lower
+        // frame rate instead of the whole-frame stall Wait10() caused when
+        // work crept past raster line 16.
+        while (frameCounter == last_frame) {}
+        // white marker: if in sync it sits at a fixed line near the top;
+        // if it crawls down the screen, the loop body is over one frame.
+        short missed = (short)(frameCounter - last_frame - 1);
+        last_frame = frameCounter;
+#if BUILD_DEBUG
+        custom->color[0] = missed > 0 ? 0xf00 : 0xfff;
+#endif
 
         // --- poll -> update -------------------------------------------------
         input_poll(&input);
         if (input.quit) break;                                  // dev: both mouse buttons
         if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
         game_update(&input);
+#if BUILD_DEBUG
+        custom->color[0] = 0xf0f; // after input+update
+#endif
 
         // --- render ------------------------------------------------------
+        // BUILD_DEBUG stacks a raster-time bar down the screen:
+        // white=frame start, magenta=input+update, green=seeds, blue=fill, red=spokes.
+        // Whatever colour reaches the screen bottom is where the frame ran out.
         render_game(bitplane_fg2);
-
+#if BUILD_DEBUG
+        custom->color[0] = 0x0f0;
+#endif
         #ifndef SKIP_FILL
         blit_fill(bitplane_fg2, bitplane_fg2);
         #endif
-        cpu_cls(bitplane_fg3);
+#if BUILD_DEBUG
+        custom->color[0] = 0x00f;
+#endif
+        render_spokes(bitplane_fg2); // radial slot lines, drawn over the fill
+#if BUILD_DEBUG
+        custom->color[0] = 0xf00;
+#endif
+        // Clear next frame's draw buffer with the blitter (async): it overlaps
+        // the copper writes + Wait10 + next frame's input/update, so it's
+        // effectively free. (cpu_cls was ~2.5ms of blocking CPU time.)
+        blit_cls(bitplane_fg3);
 
         // Flip render buffers on next frame
         copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_fg2);
@@ -207,10 +237,9 @@ int main() {
         bitplane_fg2 = bitplane_fg3;
         bitplane_fg3 = tmp;
 
-#if BUILD_DEBUG
-        custom->color[0] = 0x800; // raster bar: marks where CPU work for the frame ends
-#endif
-        blit_wait();
+        // No blit_wait() here: the blit_cls above runs on into Wait10 / next
+        // frame's update, and render_game's blit_line_mode() waits for it
+        // before anything draws into the buffer.
     }
 
 #ifdef MUSIC

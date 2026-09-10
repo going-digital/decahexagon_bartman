@@ -18,28 +18,35 @@ static UBYTE k_space_edge, k_esc_edge;
 
 static UBYTE prev_fire;
 
-// Hold the keyboard handshake line low for ~3 scanlines (~190us, well over
-// the 75us minimum), independent of CPU speed.
+// Hold the keyboard handshake line low for ~2 scanlines (~130us, over the
+// 75us minimum), independent of CPU speed.
 static void kbd_delay(void) {
     UBYTE p = custom->vhposr_h;
-    for (WORD lines = 0; lines < 3; ) {
+    for (WORD lines = 0; lines < 2; ) {
         UBYTE n = custom->vhposr_h;
         if (n != p) { p = n; ++lines; }
     }
 }
 
 static void kbd_scan(void) {
-    // Reading CIA-A ICR clears its event flags; nothing else here uses them
-    // (LSP's CIA interrupt is on CIA-B).
-    for (WORD guard = 8; guard-- > 0; ) {
+    // At most 2 key events per poll: the keyboard sends one press + one
+    // release per key and gates the next on our handshake, so a real backlog
+    // is rare - and this caps the cost if the handshake ever misfires.
+    for (WORD guard = 2; guard-- > 0; ) {
+        // Reading CIA-A ICR clears its event flags; nothing else here uses
+        // them (LSP's CIA interrupt is on CIA-B).
         if (!(ciaa->ciaicr & CIAICRF_SP)) break;
 
         UBYTE raw = ciaa->ciasdr;
 
-        // Acknowledge: drive SP as output (KDAT low), wait, release.
-        ciaa->ciacra |= CIACRAF_SPMODE;
+        // Acknowledge: drive SP low as an output for the handshake pulse.
+        // Timer A must be stopped while SP is an output, otherwise its
+        // underflows shift the SDR out and re-raise the SP flag (phantom
+        // "bytes" that spin this loop and eat ~1.5ms/frame).
+        UBYTE cra = ciaa->ciacra;
+        ciaa->ciacra = (UBYTE)((cra & ~CIACRAF_START) | CIACRAF_SPMODE);
         kbd_delay();
-        ciaa->ciacra &= (UBYTE)~CIACRAF_SPMODE;
+        ciaa->ciacra = (UBYTE)(cra & ~CIACRAF_SPMODE); // SP back to input, restore START
 
         // Wire byte is bit-inverted; rotate right 1 so bit7 = up/down, 6..0 = code.
         UBYTE n = (UBYTE)~raw;
