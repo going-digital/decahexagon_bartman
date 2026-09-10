@@ -180,7 +180,7 @@ int main() {
         short missed = (short)(frameCounter - last_frame - 1);
         last_frame = frameCounter;
 #if BUILD_DEBUG
-        custom->color[0] = missed > 0 ? 0xf00 : 0xfff;
+        custom->color[0] = missed > 0 ? 0x300 : 0x333;
 #endif
 
         // --- poll -> update -------------------------------------------------
@@ -189,7 +189,7 @@ int main() {
         if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
         game_update(&input);
 #if BUILD_DEBUG
-        custom->color[0] = 0xf0f; // after input+update
+        custom->color[0] = 0x303; // after input+update
 #endif
 
         // --- render ------------------------------------------------------
@@ -198,17 +198,17 @@ int main() {
         // Whatever colour reaches the screen bottom is where the frame ran out.
         render_game(bitplane_fg2);
 #if BUILD_DEBUG
-        custom->color[0] = 0x0f0;
+        custom->color[0] = 0x030;
 #endif
         #ifndef SKIP_FILL
         blit_fill(bitplane_fg2, bitplane_fg2);
         #endif
 #if BUILD_DEBUG
-        custom->color[0] = 0x00f;
+        custom->color[0] = 0x003;
 #endif
         render_spokes(bitplane_fg2); // radial slot lines, drawn over the fill
 #if BUILD_DEBUG
-        custom->color[0] = 0xf00;
+        custom->color[0] = 0x300;
 #endif
         // Clear next frame's draw buffer with the blitter (async): it overlaps
         // the copper writes + Wait10 + next frame's input/update, so it's

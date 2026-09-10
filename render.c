@@ -148,7 +148,7 @@ void render_game(void* buf) {
             draw_wall(&walls[active_idx[k]], buf);
     }
 #if BUILD_DEBUG
-    custom->color[0] = 0x0ff; // cyan: wall seeds done
+    custom->color[0] = 0x033; // cyan: wall seeds done
 #endif
 
     draw_hub(buf);

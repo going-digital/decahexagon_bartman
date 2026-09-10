@@ -1,6 +1,7 @@
 #include "game.h"
 #include "config.h"
 #include "system.h" // frameCounter (rng entropy)
+#include "patterns.h"
 
 GameState gamestate = {
     .field_angle = 0,
@@ -32,8 +33,6 @@ Wall walls[MAX_WALLS];
 static GameMode mode;
 static UWORD mode_timer;      // ticks elapsed in the current mode
 static WORD  wall_speed;      // px / tick, ramps with time
-static UWORD spawn_interval;  // ticks between wall rings, ramps with time
-static UWORD spawn_timer;
 static WORD  shake_x, shake_y;
 
 static UWORD beat_ctr;       // counts up to BEAT_PERIOD
@@ -62,6 +61,18 @@ UWORD    game_mode_timer(void) { return mode_timer; }
 WORD     game_shake_x(void)   { return shake_x; }
 WORD     game_shake_y(void)   { return shake_y; }
 UBYTE    game_on_beat(void)   { return on_beat; }
+UWORD    game_rng(void)       { return rng(); }
+
+void game_spawn_wall(UBYTE slot, WORD dist) {
+    for (WORD i = 0; i < MAX_WALLS; i++) {
+        if (!walls[i].active) {
+            walls[i].active = 1;
+            walls[i].slot = slot;
+            walls[i].dist = dist;
+            return;
+        }
+    }
+}
 
 // Free-running beat + camera zoom breathing. Runs in every mode.
 static void update_ambient(void) {
@@ -83,38 +94,17 @@ static void pick_rotation(void) {
     UWORD r = rng();
     WORD mag = 250 + (r & 0x1ff);              // 250..761 units/tick
     field_rot_target = (r & 0x200) ? mag : -mag; // sometimes reverses
-    rot_timer = (FRAME_RATE * 2) + (rng() % (FRAME_RATE * 4)); // change again in 2..6s
+    rot_timer = (FRAME_RATE * 2) + (rng() & 0xff); // change again in ~2..7s
 }
 
 static void clear_walls(void) {
     for (WORD i = 0; i < MAX_WALLS; i++) walls[i].active = 0;
 }
 
-static Wall* alloc_wall(void) {
-    for (WORD i = 0; i < MAX_WALLS; i++)
-        if (!walls[i].active) return &walls[i];
-    return 0;
-}
-
-// Phase 1 pattern: a closing ring with a single gap the player must reach.
-static void spawn_ring(void) {
-    UBYTE gap = rng() % NUM_SIDES;
-    for (UBYTE s = 0; s < NUM_SIDES; s++) {
-        if (s == gap) continue;
-        Wall* w = alloc_wall();
-        if (!w) break;
-        w->active = 1;
-        w->slot = s;
-        w->dist = WALL_SPAWN_DIST;
-    }
-}
-
 static void update_difficulty(void) {
     UWORD t = gamestate.time_seconds;
     wall_speed = 2 + (WORD)(t / 15);
     if (wall_speed > 5) wall_speed = 5;
-    spawn_interval = 45 - (t / 4);
-    if (spawn_interval < 18) spawn_interval = 18;
 }
 
 static void reset_run(void) {
@@ -128,9 +118,8 @@ static void reset_run(void) {
     gamestate.time_seconds = 0;
     gamestate.time_subsecond_frames = 0;
     clear_walls();
-    spawn_timer = 0;
+    patterns_reset();
     wall_speed = 2;
-    spawn_interval = 45;
     shake_x = shake_y = 0;
     zoom_base = ZOOM_ONE;
     beat_ctr = beat_env = 0;
@@ -178,10 +167,7 @@ static void update_playing(const InputState* in) {
         if (walls[i].dist <= HUB_RADIUS) walls[i].active = 0;
     }
 
-    if (++spawn_timer >= spawn_interval) {
-        spawn_timer = 0;
-        spawn_ring();
-    }
+    patterns_tick();
 
     // Collision: is a wall occupying the player's slot at the player's radius?
     UWORD pslot = ((ULONG)gamestate.player_angle * NUM_SIDES) >> 16;
@@ -219,10 +205,7 @@ void game_update(const InputState* in) {
         break;
 
     case MODE_READY:
-        if (mode_timer >= READY_TICKS) {
-            spawn_timer = 0;
-            set_mode(MODE_PLAYING);
-        }
+        if (mode_timer >= READY_TICKS) set_mode(MODE_PLAYING);
         break;
 
     case MODE_PLAYING:

@@ -49,6 +49,10 @@ typedef enum {
 void game_init(void);
 void game_update(const InputState* in);  // advance one logic tick
 
+// For the pattern sequencer (patterns.c):
+UWORD game_rng(void);                        // shared 16-bit PRNG
+void  game_spawn_wall(UBYTE slot, WORD dist); // add a wall; no-op if walls[] is full
+
 GameMode game_mode(void);
 UWORD    game_mode_timer(void);          // ticks elapsed in the current mode
 WORD     game_shake_x(void);             // camera offset (non-zero during DEAD)
