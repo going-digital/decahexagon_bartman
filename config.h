@@ -29,7 +29,7 @@
 //#define SHOW_DRAW_PLANE  // show the work buffer as a 2nd bitplane
 //#define SKIP_FILL        // skip the area fill (wireframe)
 
-#define MAX_NUM_SIDES (12)
+#define MAX_NUM_SIDES (6)  // hexagon; fewer edges = less blitter line time per frame
 #define NUM_SIDES MAX_NUM_SIDES
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine

@@ -9,6 +9,7 @@
 #include "audio.h"
 #include "input.h"
 #include "game.h"
+#include "render.h"
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -98,7 +99,10 @@ int main() {
     bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
 
-    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP);
+    // MEMF_CLEAR: the loop clobbers the copjmp2 tail with palette writes and
+    // relies on the rest of the list being zero (harmless copper NOPs).
+    // TODO Phase 2: rebuild the copper list properly (needs it for the wedges).
+    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP | MEMF_CLEAR);
     USHORT* copPtr = copper1;
 
 #if BUILD_DEBUG
@@ -162,91 +166,12 @@ int main() {
 
         // --- poll -> update -------------------------------------------------
         input_poll(&input);
-        if (input.quit) break; // dev: hold both mouse buttons
+        if (input.quit) break;                                  // dev: both mouse buttons
+        if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
         game_update(&input);
 
         // --- render ------------------------------------------------------
-        // TODO Phase 1: branch on game_mode(). For now the concentric-polygon
-        // demo runs in every mode so the display is unchanged.
-        int f = frameCounter & 255;
-
-        UWORD field_angle = gamestate.field_angle;
-        WORD x, y, new_x, new_y;
-
-        UWORD scale = (SCREEN_HEIGHT / 4) + ((frameCounter >> 2) & 0x1f);
-        // Calculate unit vectors
-
-        // Build frame specific sin/cos table
-        UWORD angle = field_angle;
-        for (WORD i = 0; i < MAX_NUM_SIDES; i++) {
-            UWORD ang_shift = angle >> 6;
-            frame_sin[i] = sin_table[ang_shift];
-            WORD tmp = sin_table[(ang_shift + 0x100) & 0x3ff];
-            frame_cos[i] = tmp - (tmp >> 2);
-            angle += gamestate.segment_angle;
-        }
-
-        blit_line_mode();
-        for (WORD i = 6; i>0; i--) {
-            UWORD draw_angle = 0;
-
-            x = frame_sin[0];
-            asm(
-                "mulsw %[scale],%[x]\n"
-                "lsl.l #2,%[x]\n"
-                "swap %[x]\n"
-                : [x]"+&d"(x)
-                : [scale]"d"(scale)
-                : "cc"
-            );
-            WORD end_x = x;
-            y = frame_cos[0];
-            asm(
-                "mulsw %[scale],%[y]\n"
-                "lsl.l #2,%[y]\n"
-                "swap %[y]\n"
-                : [y]"+&d"(y)
-                : [scale]"d"(scale)
-                : "cc"
-            );
-            WORD end_y = y;
-            for (WORD j = 1; j<NUM_SIDES; j++) {
-                new_x = frame_sin[j];
-                asm(
-                    "mulsw %[scale],%[new_x]\n"
-                    "lsl.l #2,%[new_x]\n"
-                    "swap %[new_x]\n"
-                    : [new_x]"+&d"(new_x)
-                    : [scale]"d"(scale)
-                    : "cc"
-                );
-                new_y = frame_cos[j];
-                asm(
-                    "mulsw %[scale],%[new_y]\n"
-                    "lsl.l #2,%[new_y]\n"
-                    "swap %[new_y]\n"
-                    : [new_y]"+&d"(new_y)
-                    : [scale]"d"(scale)
-                    : "cc"
-                );
-                blit_clipped_line_onedot(
-                    SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
-                    SCREEN_WIDTH / 2 + new_x, SCREEN_HEIGHT / 2 + new_y,
-                    0,
-                    bitplane_fg2
-                );
-                x = new_x;
-                y = new_y;
-            }
-            // Draw last line back to start point
-            blit_clipped_line_onedot(
-                SCREEN_WIDTH / 2 + x, SCREEN_HEIGHT / 2 + y,
-                SCREEN_WIDTH / 2 + end_x, SCREEN_HEIGHT / 2 + end_y,
-                0,
-                bitplane_fg2
-            );
-            scale += 25;
-        }
+        render_game(bitplane_fg2);
 
         #ifndef SKIP_FILL
         blit_fill(bitplane_fg2, bitplane_fg2);
@@ -259,13 +184,22 @@ int main() {
         copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg3);
         #endif
 
-        UWORD new_palette_angle = frameCounter & 0x3ff;
-        UWORD new_palette_red = 8 + ((sin_table[new_palette_angle] * 7) >> 14);
-        UWORD new_palette_green = 8 + ((sin_table[(new_palette_angle + 1024 / 3) & 0x3ff] * 7) >> 14);
-        UWORD new_palette_blue = 8 + ((sin_table[(new_palette_angle + 2 * 1024 / 3) & 0x3ff] * 7) >> 14);
-        UWORD palette = ((new_palette_red & 0xf) << 8) + ((new_palette_green & 0xf) << 4) + (new_palette_blue & 0xf);
-        copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), (palette >> 1) & 0x777);
-        copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), palette);
+        // Placeholder colour cycle (Phase 2 replaces this with per-level
+        // palettes + beat pulse). White flash on the first few DEAD ticks.
+        UWORD col0, col1;
+        if (game_mode() == MODE_DEAD && game_mode_timer() < 6) {
+            col0 = 0xfff;
+            col1 = 0x000;
+        } else {
+            UWORD pa = frameCounter & 0x3ff;
+            UWORD r = 8 + ((sin_table[pa] * 7) >> 14);
+            UWORD g = 8 + ((sin_table[(pa + 1024 / 3) & 0x3ff] * 7) >> 14);
+            UWORD b = 8 + ((sin_table[(pa + 2 * 1024 / 3) & 0x3ff] * 7) >> 14);
+            col1 = ((r & 0xf) << 8) + ((g & 0xf) << 4) + (b & 0xf);
+            col0 = (col1 >> 1) & 0x777;
+        }
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
 
         // Bitplane fg3: Blank bitplane
         // Bitplane fg2: Line rendering and fill
@@ -275,12 +209,6 @@ int main() {
         bitplane_fg1 = bitplane_fg2;
         bitplane_fg2 = bitplane_fg3;
         bitplane_fg3 = tmp;
-
-        // WinUAE debug overlay test
-        // debug_clear();
-        // debug_filled_rect(f + 100, 200*2, f + 400, 220*2, 0x0000ff00); // 0x00RRGGBB
-        // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
-        // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
 
 #if BUILD_DEBUG
         custom->color[0] = 0x800; // raster bar: marks where CPU work for the frame ends
