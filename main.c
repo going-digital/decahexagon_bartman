@@ -143,7 +143,14 @@ int main() {
     custom->cop2lc = (ULONG)copper2;
     custom->dmacon = DMAF_BLITTER; // Disable blitter dma for copjmp bug
     custom->copjmp1 = 0x7fff; // Start copper
-    custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER | DMAF_BLITHOG;
+    // BLITHOG gives the blitter every bus cycle - great when the CPU has
+    // nothing to do during a blit, bad when it's spinning in blit_wait() while
+    // real work waits. Build with -DNO_BLITHOG to let the CPU interleave.
+    custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER
+#ifndef NO_BLITHOG
+        | DMAF_BLITHOG
+#endif
+        ;
 
     // DEMO
     SetInterruptHandler((APTR)interruptHandler);

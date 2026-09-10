@@ -1,5 +1,19 @@
 #include "blitter.h"
 
+// Y span touched by fill seeds this frame, so blit_fill only processes the
+// rows that actually contain toggles instead of the whole 200-line screen.
+static WORD seed_lo, seed_hi;
+
+void blit_fill_reset(void) {
+    seed_lo = YMAX;
+    seed_hi = 0;
+}
+
+static void seed_span(WORD y0, WORD y1) { // y0 <= y1, both on-screen
+    if (y0 < seed_lo) seed_lo = y0;
+    if (y1 > seed_hi) seed_hi = y1;
+}
+
 void blit_line_mode(void) {
     blit_wait();
     // Preload registers for line mode activities
@@ -9,44 +23,24 @@ void blit_line_mode(void) {
     custom->bltcmod_bmod = (SCREEN_WIDTH_BYTES << 16) | SCREEN_WIDTH_BYTES;
 }
 
-// --- viewport-clip helpers -----------------------------------------------
-// FRACBITS fixed point. Under ASM_OPT these keep the exact 32-bit
-// intermediate / 16-bit result behaviour the clipper was tuned against
-// (ext.l -> asl.l -> divs.w, and move.w -> muls.w -> asr.l).
-
-// slope = (num << FRACBITS) / den
-static WORD clip_slope(WORD num, WORD den) {
+// --- viewport-clip helper ----------------------------------------------
+// Edge-crossing offset: (c * n) / d, as a 16x16->32 multiply then 32/16->16
+// divide. Every call site guarantees |c| < |d| (the fully-off-screen cases
+// return earlier), so the quotient always fits a WORD - no divs.w overflow,
+// which previously produced a garbage coordinate and a multi-millisecond blit.
+static WORD clip_isect(WORD c, WORD n, WORD d) {
 #ifdef ASM_OPT
-    WORD r = num;
+    WORD r = c;
     asm(
-        "ext.l  %[r]\n"
-        "asl.l  %[fb],%[r]\n"
-        "divs.w %[den],%[r]\n"
+        "muls.w %[n],%[r]\n"   // r = c * n  (full 32-bit product)
+        "divs.w %[d],%[r]\n"   // r = product / d  (fits 16 bits by construction)
         : [r]"+&d"(r)
-        : [den]"d"(den), [fb]"I"(FRACBITS)
+        : [n]"d"(n), [d]"d"(d)
         : "cc"
     );
     return r;
 #else
-    return ((LONG)num << FRACBITS) / den;
-#endif
-}
-
-// (slope * dist) >> FRACBITS
-static WORD clip_step(WORD slope, WORD dist) {
-#ifdef ASM_OPT
-    WORD r;
-    asm(
-        "move.w %[s],%[r]\n"
-        "muls.w %[d],%[r]\n"
-        "asr.l  %[fb],%[r]\n"
-        : [r]"=&d"(r)
-        : [s]"d"(slope), [d]"d"(dist), [fb]"I"(FRACBITS)
-        : "cc"
-    );
-    return r;
-#else
-    return (slope * dist) >> FRACBITS;
+    return (WORD)(((LONG)c * n) / d);
 #endif
 }
 
@@ -61,8 +55,6 @@ void blit_clipped_line_onedot(
     (void)angle;
     WORD outside_viewport = 4;
     WORD viewport_intersection = 0;
-    WORD mxy = 0; // dx/dy, lazily computed and shared by the two y edges
-    WORD myx = 0; // dy/dx, lazily computed and shared by the two x edges
 
     // Order endpoints by y for the top/bottom tests.
     if (y0 > y1) {
@@ -75,8 +67,7 @@ void blit_clipped_line_onedot(
     if (y1 < 0) {
         return; // wholly above the viewport
     } else if (y0 < 0) {
-        mxy = clip_slope(x1 - x0, y1 - y0);
-        WORD nx = x0 - clip_step(mxy, y0);
+        WORD nx = x0 - clip_isect(y0, x1 - x0, y1 - y0);
         if (nx >= 0 && nx <= XMAX) {
             x0 = nx;
             y0 = 0;
@@ -90,8 +81,7 @@ void blit_clipped_line_onedot(
     if (y0 > YMAX) {
         return; // wholly below the viewport
     } else if (y1 > YMAX) {
-        if (!mxy) mxy = clip_slope(x1 - x0, y1 - y0);
-        WORD nx = x1 + clip_step(mxy, YMAX - y1);
+        WORD nx = x1 + clip_isect(YMAX - y1, x1 - x0, y1 - y0);
         if (nx >= 0 && nx <= XMAX) {
             x1 = nx;
             y1 = YMAX;
@@ -112,8 +102,7 @@ void blit_clipped_line_onedot(
     if (x1 < 0) {
         return; // wholly left of the viewport
     } else if (x0 < 0) {
-        myx = clip_slope(y1 - y0, x1 - x0);
-        WORD ny = y0 - clip_step(myx, x0);
+        WORD ny = y0 - clip_isect(x0, y1 - y0, x1 - x0);
         if (ny >= 0 && ny <= YMAX) {
             x0 = 0;
             y0 = ny;
@@ -130,8 +119,7 @@ void blit_clipped_line_onedot(
         blit_fill_fix_onedot(y0, y1, bitplane);
         return;
     } else if (x1 > XMAX) {
-        if (!myx) myx = clip_slope(y1 - y0, x1 - x0);
-        WORD ny = y1 + clip_step(myx, XMAX - x1);
+        WORD ny = y1 + clip_isect(XMAX - x1, y1 - y0, x1 - x0);
         // Walk the beyond-XMAX part down the right column. blit_fill_fix_onedot
         // clamps the y range to the screen, so ny < 0 / ny > YMAX are covered
         // here too (this is what the old three-way branch was reaching for).
@@ -171,6 +159,7 @@ void blit_line_onedot(
         tmp = y0; y0 = y1; y1 = tmp;
         tmp = x0; x0 = x1; x1 = tmp;
     }
+    seed_span((WORD)y0, (WORD)y1);
 
     // Based on https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
     // Calculate word address of start point
@@ -179,6 +168,12 @@ void blit_line_onedot(
     APTR startpt = bitplane + muluw(y0, SCREEN_WIDTH_BYTES) + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
     UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
+
+    // Safety net: on-screen endpoints can't be more than a screen apart. If a
+    // clip bug ever slips a wild coordinate through, skip the line rather than
+    // issue a giant blit that stalls the blitter for milliseconds.
+    if (ed > XMAX || ed < -XMAX || sd > (UWORD)YMAX) return;
+
     UWORD bltcon1;
     UWORD maj_d;
     UWORD min_d;
@@ -260,6 +255,7 @@ void blit_fill_fix_onedot(
     if (y1 > YMAX) y1 = YMAX;
     // Skip zero length lines
     if (y1 == y0) return;
+    seed_span(y0, y1);
 
     APTR startpt = (
         bitplane
@@ -419,8 +415,14 @@ void cpu_cls(void *bitplane) {
 }
 
 void blit_fill(void *bitplane, void *bitplane2) {
-    APTR start = bitplane + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
-    APTR start2 = bitplane2 + SCREEN_HEIGHT * SCREEN_WIDTH_BYTES - 2;
+    // Only fill the band that actually holds seeds (set by blit_fill_reset +
+    // the seed_span calls above). Full-screen is 200 rows; a typical frame is
+    // ~half that, and the fill is a fixed ~cycle/word cost.
+    WORD lo = seed_lo, hi = seed_hi;
+    if (hi < lo) return; // nothing drawn
+    UWORD rows = (UWORD)(hi - lo + 1);
+    APTR start  = bitplane  + hi * SCREEN_WIDTH_BYTES + SCREEN_WIDTH_BYTES - 2;
+    APTR start2 = bitplane2 + hi * SCREEN_WIDTH_BYTES + SCREEN_WIDTH_BYTES - 2;
     blit_wait();
     custom->bltcon0 = BC0F_SRCA | BC0F_DEST | A_TO_D;
     custom->bltcon1 = FILL_XOR | BLITREVERSE;
@@ -430,5 +432,5 @@ void blit_fill(void *bitplane, void *bitplane2) {
     custom->bltdpt = start2;
     custom->bltamod = 0;
     custom->bltdmod = 0;
-    custom->bltsize = (SCREEN_HEIGHT << 6) | (SCREEN_WIDTH_BYTES >> 1);
+    custom->bltsize = (rows << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }

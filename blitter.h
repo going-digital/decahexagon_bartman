@@ -16,6 +16,7 @@ void blit_line(UWORD x0, UWORD y0, UWORD x1, UWORD y1, void *bitplane);
 
 void blit_fill(void *bitplane, void *bitplane2);
 void blit_fill_fix_onedot(WORD y0, WORD y1, void *bitplane);
+void blit_fill_reset(void); // call before the frame's seeds so blit_fill can bound its work
 
 void blit_clipped_line_onedot(
     WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
