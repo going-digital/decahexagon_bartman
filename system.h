@@ -32,10 +32,16 @@ __attribute__((always_inline)) inline void WaitBlt(void) {
     while (*(volatile UWORD*)&custom->dmaconr & DMAF_BLTDONE);
 }
 
+// Raw button reads. Port 0 = mouse port (left socket), port 1 = joystick port.
+// Active-low: pressed => bit clears.
 __attribute__((always_inline)) inline short MouseLeft(void) {
-    return !(ciaa->ciapra & CIAB_GAMEPORT0);
+    return !(ciaa->ciapra & CIAF_GAMEPORT0);
 }
 
 __attribute__((always_inline)) inline short MouseRight(void) {
     return !(custom->potinp & POTINF_L_MOUSE_BUT2);
+}
+
+__attribute__((always_inline)) inline short JoyFire(void) {
+    return !(ciaa->ciapra & CIAF_GAMEPORT1);
 }

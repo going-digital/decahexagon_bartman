@@ -7,6 +7,7 @@
 #include "blitter.h"
 #include "trig.h"
 #include "audio.h"
+#include "input.h"
 #include "game.h"
 
 #include <proto/exec.h>
@@ -52,6 +53,7 @@ int main() {
     DOSBase = (struct DosLibrary*)OpenLibrary((CONST_STRPTR)"dos.library", 0);
     if (!DOSBase) Exit(0);
 
+#if BUILD_DEBUG
 #ifdef __cplusplus
     KPrintF("Hello debugger from Amiga: %ld!\n", staticClass.i);
 #else
@@ -65,11 +67,13 @@ int main() {
 #elif defined(DEBUG_SPAG)
     Write(Output(), (APTR)"\nDecahexagon debug build for SPAG\n", 34);
 #endif
+#endif // BUILD_DEBUG
 
     Delay(50);
 
-    warpmode(1);
-    // Precalc start
+#if BUILD_DEBUG
+    warpmode(1); // fast-forward the emulator through precalc
+#endif
 
     // Generate sin table
     init_tables();
@@ -82,8 +86,9 @@ int main() {
     p61Init();
     #endif
 
-    // Precalc end
+#if BUILD_DEBUG
     warpmode(0);
+#endif
 
     TakeSystem();
     WaitVbl();
@@ -96,12 +101,14 @@ int main() {
     USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP);
     USHORT* copPtr = copper1;
 
+#if BUILD_DEBUG
     // Register graphics resources with WinUAE for nicer gfx debugger experience
     debug_register_bitmap(bitplane_fg1, "FG1", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg2, "FG2", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg3, "FG3", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_copperlist(copper1, "copper1", 1024, 0);
     debug_register_copperlist(copper2, "copper2", sizeof(copper2), 0);
+#endif
 
     copPtr = screenScanDefault(copPtr);
     // Enable bitplanes
@@ -146,12 +153,24 @@ int main() {
 
     custom->intreq = (1 << INTB_VERTB); // Reset vbl req
 
-    while(!MouseLeft()) {
+    input_init();
+    game_init();
+    InputState input;
+
+    for (;;) {
         Wait10();
+
+        // --- poll -> update -------------------------------------------------
+        input_poll(&input);
+        if (input.quit) break; // dev: hold both mouse buttons
+        game_update(&input);
+
+        // --- render ------------------------------------------------------
+        // TODO Phase 1: branch on game_mode(). For now the concentric-polygon
+        // demo runs in every mode so the display is unchanged.
         int f = frameCounter & 255;
 
         UWORD field_angle = gamestate.field_angle;
-        gamestate.field_angle += gamestate.field_rotation;
         WORD x, y, new_x, new_y;
 
         UWORD scale = (SCREEN_HEIGHT / 4) + ((frameCounter >> 2) & 0x1f);
@@ -263,7 +282,9 @@ int main() {
         // debug_rect(f + 90, 190*2, f + 400, 220*2, 0x000000ff); // 0x00RRGGBB
         // debug_text(f+ 130, 209*2, "This is a WinUAE debug overlay", 0x00ff00ff);
 
-        custom->color[0] = 0x800; // Black raster - all done
+#if BUILD_DEBUG
+        custom->color[0] = 0x800; // raster bar: marks where CPU work for the frame ends
+#endif
         blit_wait();
     }
 
