@@ -4,13 +4,13 @@
 
 GameState gamestate = {
     .field_angle = 0,
-    .field_rotation = 65536 / FRAME_RATE * 3 / 6, // 1 degree per 60Hz frame
+    .field_rotation = 500,
     .segment_angle = ((65536 + NUM_SIDES - 1) / NUM_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536 + NUM_SIDES - 1) / NUM_SIDES),
     .player_angle = 0,
     .wall_fraction = 0,
-    .draw_distance = 0x500,
-    .draw_distance_target = 0x500,
+    .draw_distance = ZOOM_ONE,
+    .draw_distance_target = ZOOM_ONE,
     .time_seconds = 0,
     .time_subsecond_frames = 0,
     .record_seconds = 0,
@@ -25,12 +25,23 @@ Wall walls[MAX_WALLS];
 #define DEAD_TICKS       (FRAME_RATE)         // ~1s hit freeze
 #define PLAYER_TURN_RATE (1400)               // angle units / tick (~0.13 slots/tick at NUM_SIDES=6)
 
+// Placeholder beat: free-running, not synced to the music yet (Phase 4).
+#define BEAT_BPM         (132)
+#define BEAT_PERIOD      (FRAME_RATE * 60 / BEAT_BPM)
+
 static GameMode mode;
 static UWORD mode_timer;      // ticks elapsed in the current mode
 static WORD  wall_speed;      // px / tick, ramps with time
 static UWORD spawn_interval;  // ticks between wall rings, ramps with time
 static UWORD spawn_timer;
 static WORD  shake_x, shake_y;
+
+static UWORD beat_ctr;       // counts up to BEAT_PERIOD
+static UWORD beat_env;       // decays after each beat; drives the zoom pulse
+static UBYTE on_beat;        // 1 for the single tick a beat lands
+static UWORD zoom_base;      // Q8 resting zoom, eases toward draw_distance_target
+static WORD  field_rot_target;
+static UWORD rot_timer;      // ticks until the next rotation-speed change
 
 // 16-bit xorshift PRNG.
 static UWORD rng_state = 0x2545;
@@ -50,6 +61,30 @@ GameMode game_mode(void)      { return mode; }
 UWORD    game_mode_timer(void) { return mode_timer; }
 WORD     game_shake_x(void)   { return shake_x; }
 WORD     game_shake_y(void)   { return shake_y; }
+UBYTE    game_on_beat(void)   { return on_beat; }
+
+// Free-running beat + camera zoom breathing. Runs in every mode.
+static void update_ambient(void) {
+    if (++beat_ctr >= BEAT_PERIOD) {
+        beat_ctr = 0;
+        on_beat = 1;
+        beat_env = 220;
+    } else {
+        on_beat = 0;
+    }
+    beat_env -= beat_env >> 3; // exp decay, ~half-life 5 ticks
+    if (beat_env < 8) beat_env = 0;
+
+    zoom_base += ((WORD)gamestate.draw_distance_target - (WORD)zoom_base) >> 3;
+    gamestate.draw_distance = zoom_base + (beat_env >> 2); // beat pops the view toward the camera
+}
+
+static void pick_rotation(void) {
+    UWORD r = rng();
+    WORD mag = 250 + (r & 0x1ff);              // 250..761 units/tick
+    field_rot_target = (r & 0x200) ? mag : -mag; // sometimes reverses
+    rot_timer = (FRAME_RATE * 2) + (rng() % (FRAME_RATE * 4)); // change again in 2..6s
+}
 
 static void clear_walls(void) {
     for (WORD i = 0; i < MAX_WALLS; i++) walls[i].active = 0;
@@ -84,10 +119,12 @@ static void update_difficulty(void) {
 
 static void reset_run(void) {
     gamestate.field_angle = 0;
+    gamestate.field_rotation = 500;
     gamestate.player_angle = 0;
     gamestate.wall_fraction = 0;
     gamestate.segment_angle = gamestate.segment_angle_target;
-    gamestate.draw_distance = gamestate.draw_distance_target;
+    gamestate.draw_distance_target = ZOOM_ONE;
+    gamestate.draw_distance = ZOOM_ONE;
     gamestate.time_seconds = 0;
     gamestate.time_subsecond_frames = 0;
     clear_walls();
@@ -95,6 +132,10 @@ static void reset_run(void) {
     wall_speed = 2;
     spawn_interval = 45;
     shake_x = shake_y = 0;
+    zoom_base = ZOOM_ONE;
+    beat_ctr = beat_env = 0;
+    field_rot_target = gamestate.field_rotation;
+    rot_timer = FRAME_RATE * 3;
 }
 
 void game_init(void) {
@@ -117,6 +158,17 @@ static void update_playing(const InputState* in) {
         gamestate.time_seconds++;
     }
     update_difficulty();
+
+    // Rotation: ease toward a target that changes every few seconds (and can flip).
+    if (--rot_timer == 0) pick_rotation();
+    gamestate.field_rotation += (field_rot_target - gamestate.field_rotation) >> 4;
+
+    // Slowly zoom the view out as the run gets faster.
+    {
+        WORD zt = ZOOM_ONE - (WORD)(gamestate.time_seconds);
+        if (zt < 216) zt = 216;
+        gamestate.draw_distance_target = (UWORD)zt;
+    }
 
     gamestate.player_angle += (UWORD)(in->turn * PLAYER_TURN_RATE);
 
@@ -146,6 +198,7 @@ static void update_playing(const InputState* in) {
 
 void game_update(const InputState* in) {
     mode_timer++;
+    update_ambient();
 
     // Escape abandons a run / backs out to the title. From the title itself
     // main.c turns Escape into a quit.

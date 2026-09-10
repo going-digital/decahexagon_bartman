@@ -184,19 +184,16 @@ int main() {
         copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg3);
         #endif
 
-        // Placeholder colour cycle (Phase 2 replaces this with per-level
-        // palettes + beat pulse). White flash on the first few DEAD ticks.
+        // Fixed 2-colour palette (Phase 2 will grow this to per-level palettes
+        // once there's a 2nd bitplane). Foreground brightens on the beat;
+        // full white/black flash for the first few DEAD ticks.
         UWORD col0, col1;
         if (game_mode() == MODE_DEAD && game_mode_timer() < 6) {
             col0 = 0xfff;
             col1 = 0x000;
         } else {
-            UWORD pa = frameCounter & 0x3ff;
-            UWORD r = 8 + ((sin_table[pa] * 7) >> 14);
-            UWORD g = 8 + ((sin_table[(pa + 1024 / 3) & 0x3ff] * 7) >> 14);
-            UWORD b = 8 + ((sin_table[(pa + 2 * 1024 / 3) & 0x3ff] * 7) >> 14);
-            col1 = ((r & 0xf) << 8) + ((g & 0xf) << 4) + (b & 0xf);
-            col0 = (col1 >> 1) & 0x777;
+            col0 = 0x102;                          // background: near-black blue
+            col1 = game_on_beat() ? 0xfec : 0xf83; // foreground: warm orange, beat pop
         }
         copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
         copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);

@@ -10,12 +10,14 @@
 #define PLAYER_TIP_LEN   6      // how far the nose pokes past PLAYER_RADIUS
 #define PLAYER_HALF_ANG  1500   // half the triangle's angular width
 
-static WORD ox, oy; // camera shake offset applied this frame
+static WORD  ox, oy;  // camera shake offset applied this frame
+static UWORD zoom;    // Q8 camera zoom applied this frame (ZOOM_ONE = 1.0)
 
-// (worldAngle, radius) -> screen pixel, with shake offset baked in.
+// (worldAngle, radius) -> screen pixel, with zoom and shake applied.
 static void pt(UWORD ang, WORD r, WORD* sx, WORD* sy) {
     WORD x, y;
-    polar_to_cartesian(ang, (UWORD)r, &x, &y);
+    WORD rr = (WORD)(((LONG)r * zoom) >> 8);
+    polar_to_cartesian(ang, (UWORD)rr, &x, &y);
     *sx = CX + ox + x;
     *sy = CY + oy + y;
 }
@@ -65,6 +67,8 @@ static void draw_wall(const Wall* w, void* buf) {
 void render_game(void* buf) {
     ox = game_shake_x();
     oy = game_shake_y();
+    zoom = gamestate.draw_distance;
+    if (zoom < 64) zoom = 64; // guard against a collapsed view
 
     blit_line_mode();
 

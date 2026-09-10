@@ -53,3 +53,8 @@ GameMode game_mode(void);
 UWORD    game_mode_timer(void);          // ticks elapsed in the current mode
 WORD     game_shake_x(void);             // camera offset (non-zero during DEAD)
 WORD     game_shake_y(void);
+UBYTE    game_on_beat(void);             // 1 on the tick a (placeholder) beat lands
+
+// Camera zoom, Q8 fixed point (ZOOM_ONE = 1.0). Renderer scales every radius
+// by gamestate.draw_distance; it breathes on the beat and drifts with difficulty.
+#define ZOOM_ONE 256
