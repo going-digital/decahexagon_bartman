@@ -288,8 +288,6 @@ void blit_line(
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
-    // TODO: First pixel? Last pixel?
-
     // Draws a line from x0,y0 to x1,y1.
     // Pixels x0,y0 and x1,y1 are guaranteed to be drawn.
     //

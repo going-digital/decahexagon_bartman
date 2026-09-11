@@ -26,6 +26,37 @@ static void Wait11() { WaitLine(0x11); }
 static void Wait12() { WaitLine(0x12); }
 static void Wait13() { WaitLine(0x13); }
 
+// Rebuilds the copper list's per-frame-varying tail (bitplane pointers, HUD
+// sprite pointers/colours, palette), then unconditionally jumps to copper2 -
+// parking the copper there for the rest of the frame. Used both to seed the
+// very first frame (before the main loop starts) and every loop iteration
+// after: the SAME code path both times, so the list is always well-formed
+// (properly terminated) rather than relying on each frame's write being at
+// least as long as the previous one's. (It used not to be: the old
+// steady-state write was 2 words LONGER than the one-off initial write that
+// carried the copjmp2 jump, so that jump was gone from frame 1 onward and
+// the copper ran off the end of this list into whatever chip memory happened
+// to follow it - harmless only by luck.)
+static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD col0, UWORD col1) {
+    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bpl0);
+    #ifdef SHOW_DRAW_PLANE
+    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bpl1);
+    #else
+    (void)bpl1;
+    #endif
+
+    // HUD/title sprite pointers (SPRxPT), written by the copper every frame -
+    // see hud.h for why this must not be a direct CPU register write.
+    copPtr = hud_emit_copper(copPtr);
+
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
+
+    *copPtr++ = offsetof(struct Custom, copjmp2);
+    *copPtr++ = 0x7fff;
+    return copPtr;
+}
+
 #ifdef __cplusplus
     class TestClass {
     public:
@@ -104,9 +135,6 @@ int main() {
     // list below, which points SPRxPT at them from the very first frame.
     hud_init();
 
-    // MEMF_CLEAR: the loop clobbers the copjmp2 tail with palette writes and
-    // relies on the rest of the list being zero (harmless copper NOPs).
-    // TODO Phase 2: rebuild the copper list properly (needs it for the wedges).
     USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP | MEMF_CLEAR);
     USHORT* copPtr = copper1;
 
@@ -136,20 +164,12 @@ int main() {
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl1mod), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl2mod), 0);
 
-    // Set bitplane pointers
+    // Set bitplane pointers + the rest of the per-frame tail (see
+    // build_frame_tail). Initial colours are a placeholder - the main loop's
+    // first iteration recomputes and rewrites them before this is ever
+    // visible on screen, same as it always has.
     void* copListSetBpl = copPtr;
-    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bitplane_fg1);
-    #ifdef SHOW_DRAW_PLANE
-    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg2);
-    #endif
-
-    // HUD sprite pointers (SPRxPT), written by the copper every frame from
-    // here on - see hud.h for why this must not be a direct CPU register write.
-    copPtr = hud_emit_copper(copPtr);
-
-    // Jump to copper2
-    *copPtr++ = offsetof(struct Custom, copjmp2);
-    *copPtr++ = 0x7fff;
+    copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x102, 0xf83);
 
     custom->cop1lc = (ULONG)copper1;
     custom->cop2lc = (ULONG)copper2;
@@ -228,15 +248,6 @@ int main() {
         // effectively free. (cpu_cls was ~2.5ms of blocking CPU time.)
         blit_cls(bitplane_fg3);
 
-        // Flip render buffers on next frame
-        copPtr = copWritePtr(copListSetBpl, offsetof(struct Custom, bplpt[0]), bitplane_fg2);
-        #ifdef SHOW_DRAW_PLANE
-        copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg3);
-        #endif
-
-        // HUD sprite pointers for this frame's chosen glyphs (see hud_tick above).
-        copPtr = hud_emit_copper(copPtr);
-
         // Fixed 2-colour palette (Phase 2 will grow this to per-level palettes
         // once there's a 2nd bitplane). Foreground brightens on the beat;
         // full white/black flash for the first few DEAD ticks, and a brief
@@ -252,8 +263,10 @@ int main() {
             col0 = 0x102;                          // background: near-black blue
             col1 = game_on_beat() ? 0xfec : 0xf83; // foreground: warm orange, beat pop
         }
-        copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
-        copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
+
+        // Flip render buffers on next frame; same helper (and so the same
+        // well-terminated list shape) as the initial build above.
+        copPtr = build_frame_tail(copListSetBpl, bitplane_fg2, bitplane_fg3, col0, col1);
 
         // Bitplane fg3: Blank bitplane
         // Bitplane fg2: Line rendering and fill
