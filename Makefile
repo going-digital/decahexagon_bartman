@@ -22,11 +22,12 @@ objects := $(cpp_objects) $(c_objects) $(s_objects) $(vasm_objects)
 # https://stackoverflow.com/questions/4036191/sources-from-subdirectories-in-makefile/4038459
 # http://www.microhowto.info/howto/automatically_generate_makefile_dependencies.html
 
-program = out/a
+program = out/hexagon
 OUT = $(program)
 CC = m68k-amiga-elf-gcc
 AS = m68k-amiga-elf-as
 VASM = vasmm68k_mot
+EXE2ADF = exe2adf
 
 ifdef WINDOWS
 	SDKDIR = $(abspath $(dir $(shell where $(CC)))..\m68k-amiga-elf\sys-include)
@@ -45,7 +46,16 @@ ASFLAGS   = -mcpu=68000 -g --register-prefix-optional -I$(SDKDIR)
 LDFLAGS   = -Wl,--emit-relocs,--gc-sections,-Ttext=0,-Map=$(OUT).map
 VASMFLAGS = -m68000 -Felf -opt-fconst -nowarn=62 -dwarf=3 -quiet -x -I. -I$(SDKDIR)
 
-all: $(OUT).exe
+all: $(OUT).exe adf
+
+# Bootable floppy image: exe2adf writes a disk with a bootblock that loads
+# and runs the .exe directly, no AmigaDOS filesystem/Workbench needed - drop
+# it straight into an emulator or write it to a real disk with a real Amiga.
+adf: $(OUT).adf
+
+$(OUT).adf: $(OUT).exe
+	$(info Building ADF $(OUT).adf)
+	@$(EXE2ADF) -i $(OUT).exe -l Decahexagon -a $(OUT).adf
 
 $(OUT).exe: $(OUT).elf
 	$(info Elf2Hunk $(program).exe)
