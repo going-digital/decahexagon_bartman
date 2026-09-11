@@ -24,23 +24,22 @@
 // Slot content: [tens-of-100s][tens][units][.][tenths][hundredths]
 #define SLOT_PERIOD  3
 
-// Title: shown during MODE_ATTRACT, drawn as ONE continuous canvas spanning
-// all 8 sprite channels tiled edge-to-edge. Each channel is a hardware-
-// guaranteed 16-native-dot-wide, non-overlapping slice of that canvas, so
-// letters can't overlap each other or go missing regardless of any
-// lores-vs-native unit uncertainty in the maths below (that was the bug:
-// per-letter HSTART spacing computed in the wrong unit). Only the canvas's
-// overall on-screen placement (TITLE_X) is a best-effort centring - nudge it
-// if the whole banner isn't quite centred, that's independent of overlap.
-#define TITLE_LETTERS        7  // "HEXAGON"
+// Title/banners: shown during MODE_ATTRACT and briefly around mode
+// transitions, drawn as ONE continuous canvas spanning all 8 sprite channels
+// tiled edge-to-edge. Each channel is a hardware-guaranteed 16-native-dot-wide,
+// non-overlapping slice of that canvas, so letters can't overlap each other
+// or go missing regardless of any lores-vs-native unit uncertainty in the
+// maths below (that was the bug: per-letter HSTART spacing computed in the
+// wrong unit). Only the canvas's overall on-screen placement (TITLE_X) is a
+// best-effort centring - nudge it if the whole banner isn't quite centred,
+// that's independent of overlap. Banner width/centring is computed per
+// string (see paint_banner) so different messages ("HEXAGON", "GAME OVER")
+// can share this machinery at their own natural widths.
 #define TITLE_CANVAS_BITS    (SPRITE_CHANNELS * 16) // 128 native dots across all 8 sprites
 #define TITLE_GLYPH_NATIVE_W (HUD_GLYPH_W * 2)       // each glyph column doubled, same as the HUD font
 #define TITLE_GAP_NATIVE     6                        // gap between letters, in native dots
 #define TITLE_MARGIN_NATIVE  2                        // white margin each side of the whole banner
 #define TITLE_CELL_NATIVE    (TITLE_GLYPH_NATIVE_W + TITLE_GAP_NATIVE)
-#define TITLE_BANNER_W       (TITLE_MARGIN_NATIVE * 2 + TITLE_LETTERS * TITLE_GLYPH_NATIVE_W \
-                               + (TITLE_LETTERS - 1) * TITLE_GAP_NATIVE) // native dots, fits within TITLE_CANVAS_BITS
-#define TITLE_BANNER_X       ((TITLE_CANVAS_BITS - TITLE_BANNER_W) / 2)  // centred within the canvas
 // Measured correction: the best-effort screen-centring guess landed ~2.5
 // characters too far right. TITLE_X feeds directly into the same native-dot
 // HSTART space as the per-channel +16 spacing, so "2.5 characters" converts
@@ -50,6 +49,10 @@
 #define TITLE_Y       24 // screen px from the top - clear of the hub and the corner HUD
 #define TITLE_HOLD_TICKS  (FRAME_RATE * 3 / 10) // ~0.3s hold once READY starts
 #define TITLE_FLASH_TICKS 3                     // one-tick-ish white flash as it cuts away
+
+#define GAMEOVER_HOLD_TICKS  (FRAME_RATE * 16 / 10) // ~1.6s "GAME OVER" banner (doubled per user request)
+#define GAMEOVER_FLASH_TICKS 3                      // white flash as it cuts to the result readout
+#define RECORD_FLASH_PERIOD  16                     // ticks per on/off half of the "new record" blink
 
 // Raw 4-bit rows, MSB = leftmost column. Blocky but legible at this size.
 static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
@@ -67,8 +70,14 @@ static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
     /* . */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x2 },
 };
 
-// "HEXAGON", one row set per letter, same 4-bit/row encoding as the digits.
-static const UBYTE title_font[TITLE_LETTERS][HUD_GLYPH_H] = {
+// Letter glyphs for the banner canvas, same 4-bit/row encoding as the digit
+// font. Only the letters actually needed by title_str_*[] below are
+// authored (not a full alphabet) - add more here as more banners want them.
+enum {
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE,
+    TITLE_GLYPH_COUNT
+};
+static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     /* H */ { 0x9, 0x9, 0x9, 0xF, 0x9, 0x9 },
     /* E */ { 0xF, 0x8, 0xE, 0x8, 0x8, 0xF },
     /* X */ { 0x9, 0x9, 0x6, 0x6, 0x9, 0x9 },
@@ -76,7 +85,14 @@ static const UBYTE title_font[TITLE_LETTERS][HUD_GLYPH_H] = {
     /* G */ { 0x7, 0x8, 0x8, 0xB, 0x9, 0x7 },
     /* O */ { 0x6, 0x9, 0x9, 0x9, 0x9, 0x6 },
     /* N */ { 0x9, 0xD, 0xD, 0xB, 0xB, 0x9 },
+    /* M */ { 0x9, 0xD, 0xB, 0x9, 0x9, 0x9 },
+    /* V */ { 0x9, 0x9, 0x9, 0x9, 0x6, 0x6 },
+    /* R */ { 0xE, 0x9, 0xE, 0xA, 0x9, 0x9 },
+    /* (space, all blank) */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 },
 };
+
+static const UBYTE title_str_hexagon[] = { TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N };
+static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF_O, TF_V, TF_E, TF_R };
 
 // One pre-built, STATIC sprite descriptor (pos, ctl, data rows, terminator)
 // per (slot, glyph) and per title letter: position and content are both
@@ -85,7 +101,8 @@ static const UBYTE title_font[TITLE_LETTERS][HUD_GLYPH_H] = {
 // hud_emit_copper / hud.h) - the CPU never writes SPRxPT or any sprite data.
 static UWORD* glyph_buf[HUD_SLOTS][GLYPH_COUNT];
 static UBYTE  cur_glyph[HUD_SLOTS]; // this frame's HUD choice per slot, from hud_tick()
-static UWORD* title_buf[SPRITE_CHANNELS]; // one canvas slice per channel
+static UWORD* title_buf[SPRITE_CHANNELS];    // "HEXAGON" canvas, one slice per channel
+static UWORD* gameover_buf[SPRITE_CHANNELS]; // "GAME OVER" canvas, same layout
 
 // A degenerate (0,0) pos/ctl descriptor: 0-height, so the DMA channel goes
 // inert for the rest of that frame. Parked on every sprite channel that
@@ -110,12 +127,15 @@ static UWORD double_bits(UWORD n, WORD width) {
 
 // Each sprite pair shares a 3-colour bank: value 1/2/3 (value 0 is always
 // transparent). Pairs (0,1)/(2,3)/(4,5)/(6,7) sit at colour 17/21/25/29.
-// The digit HUD only ever used channels 0-5 (3 banks); the title canvas
-// uses all 8 (channel 6/7 = the 4th pair), which is what was missing here -
-// bank 29 was left at TakeSystem's zeroed default, so both "black" and
-// "white" for that pair resolved to 0x000: a solid black tile.
+// The digit HUD only ever used channels 0-5 (3 banks, bank_base[0..2]); the
+// title/banner canvases use all 8 (channel 6/7 = the 4th pair, bank_base[3]) -
+// this is why the array has 4 entries even though the digit HUD alone would
+// only need 3 (missing bank 29 here once caused a solid-black tile: it was
+// left at TakeSystem's zeroed default, so both "black" and "white" for that
+// pair resolved to 0x000).
+static const UBYTE bank_base[4] = { 17, 21, 25, 29 };
+
 static void set_hud_colours(void) {
-    static const UBYTE bank_base[4] = { 17, 21, 25, 29 };
     for (WORD i = 0; i < 4; i++) {
         custom->color[bank_base[i] + 0] = 0x000; // value 1: glyph foreground - black
         custom->color[bank_base[i] + 1] = 0xfff; // value 2: glyph background - white
@@ -159,9 +179,9 @@ static UWORD* build_glyph(UWORD pos, UWORD ctl, const UBYTE* rows) {
 }
 
 // Like build_glyph, but leaves the data rows blank (transparent) for
-// canvas_set() to paint in afterwards, since a title canvas slice's content
-// depends on where it falls relative to the whole 8-sprite banner, not on
-// itself in isolation.
+// paint_banner()/canvas_set_into() to paint in afterwards, since a canvas
+// slice's content depends on where it falls relative to the whole 8-sprite
+// banner, not on itself in isolation.
 static UWORD* alloc_canvas_slice(UWORD pos, UWORD ctl) {
     UWORD* buf = (UWORD*)AllocMem(
         (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD), MEMF_CHIP | MEMF_CLEAR);
@@ -173,21 +193,51 @@ static UWORD* alloc_canvas_slice(UWORD pos, UWORD ctl) {
 
 // Sets native column `nx` (0..TITLE_CANVAS_BITS-1) of canvas row `row` to
 // black (bitplane0/value1) or white (bitplane1/value2), in whichever
-// channel's slice that column falls in. Exclusive: painting black over a
-// spot that was white (banner background drawn first, glyph strokes after)
-// clears the white bit too, rather than leaving both set (value 3, which
-// was never assigned a colour - it happened to render black anyway only
-// because color[bank+2] defaults to 0x000).
-static void canvas_set(WORD row, WORD nx, UBYTE black) {
+// channel's slice of `slots` that column falls in. Exclusive: painting black
+// over a spot that was white (banner background drawn first, glyph strokes
+// after) clears the white bit too, rather than leaving both set (value 3,
+// which was never assigned a colour - it happened to render black anyway
+// only because color[bank+2] defaults to 0x000).
+static void canvas_set_into(UWORD* const* slots, WORD row, WORD nx, UBYTE black) {
     if (nx < 0 || nx >= TITLE_CANVAS_BITS) return;
     WORD ch = nx >> 4;         // /16 - each slice is exactly one sprite wide
     WORD bit = 15 - (nx & 15); // bit position within that channel's row word
-    UWORD* buf = title_buf[ch];
+    UWORD* buf = slots[ch];
     if (!buf) return;
     UWORD* row_words = buf + 2 + row * 2; // skip pos, ctl
     UWORD mask = (UWORD)(1u << bit);
     if (black) { row_words[0] |= mask; row_words[1] &= (UWORD)~mask; }
     else       { row_words[1] |= mask; row_words[0] &= (UWORD)~mask; }
+}
+
+// Paints a white background banner + black glyph strokes for `str` (an
+// array of title_font indices, `len` long) into `slots`, centred within the
+// 128-dot canvas at that string's own natural width. Shared by every banner
+// message (title, results) - see title_str_hexagon/title_str_gameover.
+static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
+    WORD banner_w = TITLE_MARGIN_NATIVE * 2 + len * TITLE_GLYPH_NATIVE_W
+                     + (len - 1) * TITLE_GAP_NATIVE;
+    WORD banner_x = (TITLE_CANVAS_BITS - banner_w) / 2;
+
+    for (WORD row = 0; row < HUD_CELL_H; row++) {
+        for (WORD nx = banner_x; nx < banner_x + banner_w; nx++)
+            canvas_set_into(slots, row, nx, 0); // white banner background
+
+        if (row < HUD_BORDER || row >= HUD_BORDER + HUD_GLYPH_H)
+            continue; // pure border row - background only, no glyph pixels
+
+        UBYTE frow = row - HUD_BORDER;
+        for (WORD letter = 0; letter < len; letter++) {
+            WORD cell_x = banner_x + TITLE_MARGIN_NATIVE + letter * TITLE_CELL_NATIVE;
+            UBYTE bits = title_font[str[letter]][frow];
+            for (WORD c = 0; c < HUD_GLYPH_W; c++) {
+                if (!(bits & (1 << (HUD_GLYPH_W - 1 - c))))
+                    continue;
+                canvas_set_into(slots, row, cell_x + c * 2,     1); // doubled, matches the HUD font's sizing
+                canvas_set_into(slots, row, cell_x + c * 2 + 1, 1);
+            }
+        }
+    }
 }
 
 void hud_init(void) {
@@ -208,62 +258,58 @@ void hud_init(void) {
             glyph_buf[slot][g] = build_glyph(pos, ctl, font[g]);
     }
 
-    // Title canvas: 8 sprites tiled edge-to-edge (16 native dots apart -
+    // Banner canvases: 8 sprites tiled edge-to-edge (16 native dots apart -
     // exactly one sprite width, so adjacent slices can't overlap or gap),
-    // forming one 128-dot strip. The banner (white background + black
-    // letters) is then drawn straight across it in native-dot coordinates.
+    // forming one 128-dot strip. Both banners share the same on-screen
+    // position (they're never shown at the same time - see banner_active()).
     {
         UWORD base_hstart = DISPLAY_HW_X + TITLE_X;
         for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
             UWORD pos, ctl;
             pos_ctl(base_hstart + ch * 16, DISPLAY_HW_Y + TITLE_Y, &pos, &ctl);
-            title_buf[ch] = alloc_canvas_slice(pos, ctl);
+            title_buf[ch]    = alloc_canvas_slice(pos, ctl);
+            gameover_buf[ch] = alloc_canvas_slice(pos, ctl);
         }
-
-        for (WORD row = 0; row < HUD_CELL_H; row++) {
-            for (WORD nx = TITLE_BANNER_X; nx < TITLE_BANNER_X + TITLE_BANNER_W; nx++)
-                canvas_set(row, nx, 0); // white banner background
-
-            if (row < HUD_BORDER || row >= HUD_BORDER + HUD_GLYPH_H)
-                continue; // pure border row - background only, no glyph pixels
-
-            UBYTE frow = row - HUD_BORDER;
-            for (WORD letter = 0; letter < TITLE_LETTERS; letter++) {
-                WORD cell_x = TITLE_BANNER_X + TITLE_MARGIN_NATIVE + letter * TITLE_CELL_NATIVE;
-                UBYTE bits = title_font[letter][frow];
-                for (WORD c = 0; c < HUD_GLYPH_W; c++) {
-                    if (!(bits & (1 << (HUD_GLYPH_W - 1 - c))))
-                        continue;
-                    canvas_set(row, cell_x + c * 2,     1); // doubled, matches the HUD font's sizing
-                    canvas_set(row, cell_x + c * 2 + 1, 1);
-                }
-            }
-        }
+        paint_banner(title_buf, title_str_hexagon,
+                     sizeof(title_str_hexagon) / sizeof(title_str_hexagon[0]));
+        paint_banner(gameover_buf, title_str_gameover,
+                     sizeof(title_str_gameover) / sizeof(title_str_gameover[0]));
     }
 }
 
-// Title shows over the whole of ATTRACT, then holds briefly into READY
-// before hud_flash_now() cuts it away to the timer HUD.
-static UBYTE title_active(void) {
+typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER } Banner;
+
+// HEXAGON shows over the whole of ATTRACT, then holds briefly into READY.
+// GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
+// hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
+static Banner banner_active(void) {
     GameMode m = game_mode();
-    if (m == MODE_ATTRACT) return 1;
-    if (m == MODE_READY && game_mode_timer() < TITLE_HOLD_TICKS) return 1;
-    return 0;
+    UWORD t = game_mode_timer();
+    if (m == MODE_ATTRACT) return BANNER_HEXAGON;
+    if (m == MODE_READY && t < TITLE_HOLD_TICKS) return BANNER_HEXAGON;
+    if (m == MODE_GAMEOVER && t < GAMEOVER_HOLD_TICKS) return BANNER_GAMEOVER;
+    return BANNER_NONE;
 }
 
 UBYTE hud_flash_now(void) {
     UWORD t = game_mode_timer();
-    return (UBYTE)(game_mode() == MODE_READY
-        && t >= TITLE_HOLD_TICKS
-        && t < TITLE_HOLD_TICKS + TITLE_FLASH_TICKS);
+    switch (game_mode()) {
+    case MODE_READY:
+        return (UBYTE)(t >= TITLE_HOLD_TICKS && t < TITLE_HOLD_TICKS + TITLE_FLASH_TICKS);
+    case MODE_GAMEOVER:
+        return (UBYTE)(t >= GAMEOVER_HOLD_TICKS && t < GAMEOVER_HOLD_TICKS + GAMEOVER_FLASH_TICKS);
+    default:
+        return 0;
+    }
 }
 
 void hud_tick(void) {
     GameMode m = game_mode();
     UWORD secs, frames;
 
-    // Current run while it's live, otherwise the best time on record.
-    if (m == MODE_PLAYING || m == MODE_DEAD) {
+    // Current (or just-finished) run while there's one to show, otherwise
+    // the best time on record.
+    if (m == MODE_PLAYING || m == MODE_DEAD || m == MODE_GAMEOVER) {
         secs = gamestate.time_seconds;
         frames = gamestate.time_subsecond_frames;
     } else {
@@ -291,17 +337,34 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     // write here (e.g. skipping a channel whose AllocMem somehow failed)
     // would desync it from what the rest of the list expects to follow -
     // fall back to the inert blank_sprite rather than ever skipping one.
-    UBYTE showing_title = title_active();
+    Banner banner = banner_active();
     for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
         UWORD* buf = (UWORD*)blank_sprite;
-        if (showing_title) {
+        if (banner == BANNER_HEXAGON) {
             if (title_buf[ch]) buf = title_buf[ch]; // all 8 channels carry a canvas slice
+        } else if (banner == BANNER_GAMEOVER) {
+            if (gameover_buf[ch]) buf = gameover_buf[ch];
         } else if (ch < HUD_SLOTS) {
             UWORD* g = glyph_buf[ch][cur_glyph[ch]];
             if (g) buf = g;
         }
         UWORD offset = (UWORD)(offsetof(struct Custom, sprpt) + ch * sizeof(APTR));
         copPtr = copWritePtr(copPtr, offset, buf);
+    }
+
+    // Celebratory blink on the digit HUD's 3 colour banks (0-5, the only
+    // channels it ever uses) when this run just beat the record. Always
+    // emitted - same length every frame regardless of whether it's actually
+    // flashing - to keep this tail's total word count frame-invariant, same
+    // reasoning as the sprite loop above. Banks stay solid black-on-white
+    // any time this isn't true, i.e. every frame outside a fresh GAMEOVER.
+    UBYTE flash_on = (UBYTE)(banner == BANNER_NONE && game_mode() == MODE_GAMEOVER
+        && game_new_record()
+        && (game_mode_timer() & RECORD_FLASH_PERIOD));
+    UWORD fg = flash_on ? 0xfff : 0x000, bg = flash_on ? 0x000 : 0xfff;
+    for (WORD i = 0; i < 3; i++) {
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[bank_base[i] + 0]), fg);
+        copPtr = copWrite(copPtr, offsetof(struct Custom, color[bank_base[i] + 1]), bg);
     }
     return copPtr;
 }

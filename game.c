@@ -34,6 +34,7 @@ static GameMode mode;
 static UWORD mode_timer;      // ticks elapsed in the current mode
 static WORD  wall_speed;      // px / tick, ramps with time
 static WORD  shake_x, shake_y;
+static UBYTE new_record;      // this run beat the previous best - latches until reset_run()
 
 static UWORD beat_ctr;       // counts up to BEAT_PERIOD
 static UWORD beat_env;       // decays after each beat; drives the zoom pulse
@@ -62,6 +63,7 @@ WORD     game_shake_x(void)   { return shake_x; }
 WORD     game_shake_y(void)   { return shake_y; }
 UBYTE    game_on_beat(void)   { return on_beat; }
 UWORD    game_rng(void)       { return rng(); }
+UBYTE    game_new_record(void) { return new_record; }
 
 void game_spawn_wall(UBYTE slot, WORD dist) {
     for (WORD i = 0; i < MAX_WALLS; i++) {
@@ -133,6 +135,7 @@ static void reset_run(void) {
     patterns_reset();
     wall_speed = 2;
     shake_x = shake_y = 0;
+    new_record = 0;
     zoom_base = ZOOM_ONE;
     beat_ctr = beat_env = 0;
     field_rot_target = gamestate.field_rotation;
@@ -150,6 +153,7 @@ static void record_time(void) {
         (s == gamestate.record_seconds && f > gamestate.record_subsecond_frames)) {
         gamestate.record_seconds = s;
         gamestate.record_subsecond_frames = f;
+        new_record = 1;
     }
 }
 
