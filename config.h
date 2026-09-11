@@ -18,9 +18,9 @@
 #endif
 
 // Startup banner text (BUILD_DEBUG only). Pick one.
-//#define DEBUG_NAG
+#define DEBUG_NAG
 //#define DEBUG_NGD
-#define DEBUG_SPAG
+//#define DEBUG_SPAG
 
 // ---- renderer tuning ----------------------------------------------------
 #define ASM_OPT           // hand-tuned m68k asm in the hot clip/line paths
