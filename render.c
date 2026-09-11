@@ -38,14 +38,15 @@ static void poly(const WORD* xs, const WORD* ys, WORD n, void* buf) {
 }
 
 static void draw_hub(void* buf) {
-    WORD xs[NUM_SIDES], ys[NUM_SIDES];
+    WORD xs[MAX_NUM_SIDES], ys[MAX_NUM_SIDES]; // capacity; gamestate.num_sides (runtime) says how many are used
     WORD rr = zscale(HUB_RADIUS);
     UWORD a = gamestate.field_angle;
-    for (WORD i = 0; i < NUM_SIDES; i++) {
+    UBYTE n = gamestate.num_sides;
+    for (WORD i = 0; i < n; i++) {
         pt(a, rr, &xs[i], &ys[i]);
         a += gamestate.segment_angle;
     }
-    poly(xs, ys, NUM_SIDES, buf);
+    poly(xs, ys, n, buf);
 }
 
 static void draw_player(void* buf) {
@@ -64,9 +65,10 @@ static WORD active_idx[MAX_WALLS];
 static WORD n_active;
 
 // Adjacent slots without a 32-bit `%` (which compiled to __modsi3 - ~1ms/frame
-// across all the walls).
-static UWORD slot_prev(UBYTE s) { return s ? (UWORD)(s - 1) : (UWORD)(NUM_SIDES - 1); }
-static UWORD slot_next(UBYTE s) { UBYTE n = s + 1; return n >= NUM_SIDES ? 0 : n; }
+// across all the walls). gamestate.num_sides is a runtime side-count morph,
+// but this is still just a compare + conditional subtract - no multiply/divide.
+static UWORD slot_prev(UBYTE s) { return s ? (UWORD)(s - 1) : (UWORD)(gamestate.num_sides - 1); }
+static UWORD slot_next(UBYTE s) { UBYTE n = s + 1; return n >= gamestate.num_sides ? 0 : n; }
 
 // Is an active wall sitting in `slot` at exactly `dist`? (Walls from one ring
 // share a dist and step together, so this identifies angular neighbours.)
@@ -118,7 +120,7 @@ void render_spokes(void* buf) {
     WORD inner = zscale(HUB_RADIUS);
     WORD outer = zscale(SPOKE_OUTER);
     UWORD a = gamestate.field_angle;
-    for (WORD i = 0; i < NUM_SIDES; i++) {
+    for (WORD i = 0; i < gamestate.num_sides; i++) {
         WORD sx, sy, ex, ey;
         polar_to_cartesian(a, (UWORD)inner, &sx, &sy);
         polar_to_cartesian(a, (UWORD)outer, &ex, &ey);

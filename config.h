@@ -29,8 +29,11 @@
 //#define SHOW_DRAW_PLANE  // show the work buffer as a 2nd bitplane
 //#define SKIP_FILL        // skip the area fill (wireframe)
 
-#define MAX_NUM_SIDES (6)  // hexagon; fewer edges = less blitter line time per frame
-#define NUM_SIDES MAX_NUM_SIDES
+// Hexagon is the max/starting side count; the field morphs down to fewer
+// sides (pentagon, square) as a run's difficulty ramps - see game.c's level
+// table. MAX_NUM_SIDES only sizes fixed-capacity buffers now; the current
+// side count is gamestate.num_sides (runtime, changes mid-run).
+#define MAX_NUM_SIDES (6)
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
 #define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine

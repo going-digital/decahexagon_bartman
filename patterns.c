@@ -9,7 +9,10 @@
 typedef struct { UBYTE slots; UBYTE delay; } PStep;
 typedef struct { const PStep* steps; UBYTE count; } Pattern;
 
-// Bit i = slot i. NUM_SIDES is 6, so 0x3F would be "all blocked" - never used.
+// Bit i = slot i. These masks are authored for a 6-slot (hexagon) field
+// specifically (0x3F would be "all blocked" - never used) and don't
+// generalize to a morphed 4/5-side field - see pick_pattern()'s num_sides!=6
+// fallback below.
 static const PStep s_ring[]    = { {0x3E, 0} };                       // one gap
 static const PStep s_wide_c[]  = { {0x3C, 0} };                       // two-wide gap
 static const PStep s_spiral[]  = { {0x01,6},{0x02,6},{0x04,6},{0x08,6},{0x10,6},{0x20,7} };
@@ -32,6 +35,14 @@ static const Pattern* const pool_mid[8]   = { &P_RING, &P_WIDE_C, &P_SPIRAL, &P_
 static const Pattern* const pool_late[8]  = { &P_RING, &P_SPIRAL, &P_RSPIRAL, &P_LADDER,
                                               &P_SPINGAP, &P_SPIRAL, &P_LADDER, &P_SPINGAP };
 
+// Generic 1- or 2-slot gap, sized to whatever the field's current side count
+// is. Used whenever the field isn't a hexagon: the hand-authored patterns
+// above assume exactly 6 slots (masks use bits up to bit5) and would
+// misfire - wrap to the wrong slots or leave nonsense bits set - on a
+// morphed 4/5-side field.
+static PStep generic_step; // scratch: filled fresh just before each use
+static const Pattern P_GENERIC = { &generic_step, 1 };
+
 static const Pattern* cur;
 static UBYTE cur_step;
 static UBYTE anchor;
@@ -40,6 +51,13 @@ static UWORD timer;
 static const Pattern* pick_pattern(void) {
     UWORD t = gamestate.time_seconds;
     UWORD r = game_rng();
+
+    if (gamestate.num_sides != 6) {
+        UBYTE all = (UBYTE)((1u << gamestate.num_sides) - 1);
+        generic_step.slots = (r & 1) ? (UBYTE)(all & ~3u) : (UBYTE)(all & ~1u); // 2-wide or 1-wide gap
+        generic_step.delay = 0;
+        return &P_GENERIC;
+    }
     if (t < 10)      return pool_early[r & 3];
     else if (t < 25) return pool_mid[r & 7];
     else             return pool_late[r & 7];
@@ -51,15 +69,30 @@ static UWORD inter_gap(void) {
     return (UWORD)(g < 12 ? 12 : g);
 }
 
-static UBYTE wrap_slot(UBYTE s) { return s >= NUM_SIDES ? (UBYTE)(s - NUM_SIDES) : s; }
+static UBYTE wrap_slot(UBYTE s) { return s >= gamestate.num_sides ? (UBYTE)(s - gamestate.num_sides) : s; }
 
 static UBYTE rng_slot(void) {
-    return wrap_slot(game_rng() & 7); // 0..7 -> 0..NUM_SIDES-1
+    return wrap_slot(game_rng() & 7); // 0..7 -> 0..num_sides-1 (num_sides>=4, so one subtraction always suffices)
+}
+
+// Anchor for a new pattern, biased toward a slot no OTHER in-flight wall is
+// already sitting on. A pattern only guarantees a gap relative to itself;
+// rings spawn faster than one fully crosses the field, so 2-3 are normally
+// active at once, and purely random anchors can (reliably, in practice)
+// leave no slot safe across all of them at once. Falls back to the random
+// pick only in the degenerate case where every slot is already occupied.
+static UBYTE pick_anchor(void) {
+    UBYTE start = rng_slot();
+    for (UBYTE i = 0; i < gamestate.num_sides; i++) {
+        UBYTE s = wrap_slot((UBYTE)(start + i));
+        if (!game_slot_blocked(s)) return s;
+    }
+    return start;
 }
 
 static void spawn_step(const PStep* st) {
     UBYTE m = st->slots;
-    for (UBYTE i = 0; i < NUM_SIDES; i++)
+    for (UBYTE i = 0; i < gamestate.num_sides; i++)
         if (m & (1 << i))
             game_spawn_wall(wrap_slot((UBYTE)(anchor + i)), WALL_SPAWN_DIST);
 }
@@ -77,7 +110,7 @@ void patterns_tick(void) {
     if (!cur) {
         cur = pick_pattern();
         cur_step = 0;
-        anchor = rng_slot();
+        anchor = pick_anchor();
     }
 
     spawn_step(&cur->steps[cur_step]);

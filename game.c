@@ -3,11 +3,14 @@
 #include "system.h" // frameCounter (rng entropy)
 #include "patterns.h"
 
+#define STARTING_SIDES 6 // hexagon; must match levels[0].num_sides below
+
 GameState gamestate = {
     .field_angle = 0,
     .field_rotation = 500,
-    .segment_angle = ((65536 + NUM_SIDES - 1) / NUM_SIDES), // Ensure overflow after last segment
-    .segment_angle_target = ((65536 + NUM_SIDES - 1) / NUM_SIDES),
+    .segment_angle = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES), // Ensure overflow after last segment
+    .segment_angle_target = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES),
+    .num_sides = STARTING_SIDES,
     .player_angle = 0,
     .wall_fraction = 0,
     .draw_distance = ZOOM_ONE,
@@ -24,7 +27,18 @@ Wall walls[MAX_WALLS];
 // here is 0.83s wall-clock - Phase 6 normalises difficulty to real time.
 #define READY_TICKS      (FRAME_RATE * 3 / 2) // ~1.5s "BEGIN" lead-in
 #define DEAD_TICKS       (FRAME_RATE)         // ~1s hit freeze
-#define PLAYER_TURN_RATE (1400)               // angle units / tick (~0.13 slots/tick at NUM_SIDES=6)
+#define PLAYER_TURN_RATE (1400)               // angle units / tick (~0.13 slots/tick on a hexagon; slower per-slot on morphed, wider-slotted fields)
+
+// Side-count morphs as a run gets harder: hexagon -> pentagon -> square.
+// Each entry's fields apply once gamestate.time_seconds reaches start_seconds.
+typedef struct { UBYTE num_sides; UWORD start_seconds; } LevelDef;
+#define NUM_LEVELS 3
+static const LevelDef levels[NUM_LEVELS] = {
+    { STARTING_SIDES, 0 },
+    { 5,              20 },
+    { 4,              40 },
+};
+static UBYTE cur_level;
 
 // Placeholder beat: free-running, not synced to the music yet (Phase 4).
 #define BEAT_BPM         (132)
@@ -76,6 +90,19 @@ void game_spawn_wall(UBYTE slot, WORD dist) {
     }
 }
 
+// Does ANY active wall (at any distance) currently occupy `slot`? Each
+// pattern only guarantees a gap relative to itself - with rings spawning
+// faster than a ring's ~66-tick spawn-to-hub transit, 2-3 rings are normally
+// in flight at once, and if their gaps land on uncoordinated random slots,
+// their combined coverage can leave no slot safe at all. patterns.c uses
+// this to steer a new pattern's gap onto a slot no other in-flight wall is
+// already sitting on, whenever one exists.
+UBYTE game_slot_blocked(UBYTE slot) {
+    for (WORD i = 0; i < MAX_WALLS; i++)
+        if (walls[i].active && walls[i].slot == slot) return 1;
+    return 0;
+}
+
 // Free-running beat + camera zoom breathing. Runs in every mode.
 static void update_ambient(void) {
     if (++beat_ctr >= BEAT_PERIOD) {
@@ -103,6 +130,18 @@ static void clear_walls(void) {
     for (WORD i = 0; i < MAX_WALLS; i++) walls[i].active = 0;
 }
 
+// Deliberately plain C math, NOT muluw(): with muluw() here, GCC's
+// -flto -fwhole-program optimizer silently eliminated the ENTIRE caller-side
+// blocking check below (confirmed by disassembly - the whole
+// `if (new_slot != old_slot && wall_overlaps_radius(...)) new_angle =
+// old_angle;` block vanished, leaving player_angle updated unconditionally).
+// muluw's inline asm has no "memory" clobber, so LTO loses track of the
+// dependency on walls[]/gamestate through it and mis-proves the branch dead.
+// Costs one __mulsi3 call/tick here - correctness over that micro-cost.
+static UWORD angle_to_slot(UWORD angle) {
+    return (UWORD)(((ULONG)angle * gamestate.num_sides) >> 16);
+}
+
 // Is any active wall in `slot` currently spanning `radius`? Shared by the
 // rotation blocker (side-on contact: can't turn into a wall) and the death
 // check (radial contact: a wall's inside edge sweeping inward catches you).
@@ -115,10 +154,33 @@ static UBYTE wall_overlaps_radius(UBYTE slot, WORD radius) {
     return 0;
 }
 
+// ceil(65536/sides). Plain C division, not divuw() - only called on a level
+// transition (a handful of times per run, nowhere near hot-path), and given
+// angle_to_slot()'s muluw() just turned out to cause a real miscompilation
+// under this build's -flto (see its comment), there's no reason to keep
+// divuw()'s equivalent risk here for a call this infrequent.
+static UWORD segment_angle_for(UBYTE sides) {
+    return (UWORD)((65536u + sides - 1u) / sides);
+}
+
+// Slot boundaries move when the side count changes, so old walls' slot
+// indices no longer mean the same angular position - clear them rather than
+// let them jump to the wrong place (or momentarily alias a different slot).
+static void enter_level(UBYTE idx) {
+    cur_level = idx;
+    gamestate.num_sides = levels[idx].num_sides;
+    gamestate.segment_angle = gamestate.segment_angle_target = segment_angle_for(gamestate.num_sides);
+    clear_walls();
+}
+
 static void update_difficulty(void) {
     UWORD t = gamestate.time_seconds;
     wall_speed = 2 + (WORD)(t / 15);
     if (wall_speed > 5) wall_speed = 5;
+
+    UBYTE idx = cur_level;
+    while (idx + 1 < NUM_LEVELS && t >= levels[idx + 1].start_seconds) idx++;
+    if (idx != cur_level) enter_level(idx);
 }
 
 static void reset_run(void) {
@@ -126,7 +188,9 @@ static void reset_run(void) {
     gamestate.field_rotation = 500;
     gamestate.player_angle = 0;
     gamestate.wall_fraction = 0;
-    gamestate.segment_angle = gamestate.segment_angle_target;
+    cur_level = 0;
+    gamestate.num_sides = levels[0].num_sides;
+    gamestate.segment_angle = gamestate.segment_angle_target = segment_angle_for(gamestate.num_sides);
     gamestate.draw_distance_target = ZOOM_ONE;
     gamestate.draw_distance = ZOOM_ONE;
     gamestate.time_seconds = 0;
@@ -182,8 +246,8 @@ static void update_playing(const InputState* in) {
     {
         UWORD old_angle = gamestate.player_angle;
         UWORD new_angle = (UWORD)(old_angle + (UWORD)(in->turn * PLAYER_TURN_RATE));
-        UWORD old_slot = (UWORD)(((ULONG)old_angle * NUM_SIDES) >> 16);
-        UWORD new_slot = (UWORD)(((ULONG)new_angle * NUM_SIDES) >> 16);
+        UWORD old_slot = angle_to_slot(old_angle);
+        UWORD new_slot = angle_to_slot(new_angle);
         if (new_slot != old_slot && wall_overlaps_radius((UBYTE)new_slot, PLAYER_RADIUS))
             new_angle = old_angle; // blocked: hold at the boundary
         gamestate.player_angle = new_angle;
@@ -199,7 +263,7 @@ static void update_playing(const InputState* in) {
 
     // Death: a wall's inside edge has swept inward onto the player's slot.
     // (Side-on contact from rotating into a wall was already blocked above.)
-    UWORD pslot = (UWORD)(((ULONG)gamestate.player_angle * NUM_SIDES) >> 16);
+    UWORD pslot = angle_to_slot(gamestate.player_angle);
     if (wall_overlaps_radius((UBYTE)pslot, PLAYER_RADIUS)) {
         record_time();
         set_mode(MODE_DEAD);

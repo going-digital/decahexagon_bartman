@@ -11,11 +11,11 @@
 #define WALL_THICKNESS   13
 #define WALL_SPAWN_DIST  150  // walls appear here and close inward
 
-#define MAX_WALLS        32   // ~2 full rings of NUM_SIDES-1 walls, plus slack
+#define MAX_WALLS        32   // ~2 full rings of MAX_NUM_SIDES-1 walls, plus slack
 
 typedef struct sWall {
     UBYTE active;
-    UBYTE slot;   // 0..NUM_SIDES-1
+    UBYTE slot;   // 0..gamestate.num_sides-1 (whatever it was when spawned)
     WORD  dist;   // radius of the wall's inner edge
 } Wall;
 
@@ -24,6 +24,7 @@ typedef struct sGameState {
     WORD field_rotation;
     UWORD segment_angle;
     UWORD segment_angle_target;
+    UBYTE num_sides;              // current field side count - morphs down as a run's difficulty ramps, see game.c's level table
     UWORD player_angle;          // field-relative, 0..65535 around the ring
     UWORD wall_fraction;
     UWORD draw_distance;
@@ -52,6 +53,7 @@ void game_update(const InputState* in);  // advance one logic tick
 // For the pattern sequencer (patterns.c):
 UWORD game_rng(void);                        // shared 16-bit PRNG
 void  game_spawn_wall(UBYTE slot, WORD dist); // add a wall; no-op if walls[] is full
+UBYTE game_slot_blocked(UBYTE slot);          // does any in-flight wall (any distance) occupy this slot?
 
 GameMode game_mode(void);
 UWORD    game_mode_timer(void);          // ticks elapsed in the current mode
