@@ -11,6 +11,15 @@
 // here at compile time.
 #define STARTING_ZOOM_TARGET (ZOOM_ONE * SCREEN_EDGE_RADIUS / STARTING_WALL_SPAWN_DIST)
 
+// Idle attract-screen close-up on the hub: HUB_RADIUS maps to ~80 screen px
+// (comfortably under SCREEN_EDGE_RADIUS, leaving a margin). Set continuously
+// while in MODE_ATTRACT (below); the existing zoom_base easing in
+// update_ambient() (every tick, every mode) tweens draw_distance smoothly
+// toward this on the way in, and back toward STARTING_ZOOM_TARGET (reset by
+// reset_run() right before leaving ATTRACT) on the way out - no separate
+// transition/tween logic needed, just setting the right target per mode.
+#define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 80 / HUB_RADIUS)
+
 GameState gamestate = {
     .field_angle = 0,
     .field_rotation = 500,
@@ -61,7 +70,10 @@ static UBYTE new_record;      // this run beat the previous best - latches until
 static UWORD beat_ctr;       // counts up to BEAT_PERIOD
 static UWORD beat_env;       // decays after each beat; drives the zoom pulse
 static UBYTE on_beat;        // 1 for the single tick a beat lands
-static UWORD zoom_base;      // Q8 resting zoom, eases toward draw_distance_target
+// Q8 resting zoom, eases toward draw_distance_target. Seeded here (not by
+// reset_run(), which only moves the target) so the very first frame is
+// already at the right zoom instead of easing up from 0.
+static UWORD zoom_base = STARTING_ZOOM_TARGET;
 static WORD  field_rot_target;
 static UWORD rot_timer;      // ticks until the next rotation-speed change
 
@@ -220,8 +232,11 @@ static void reset_run(void) {
     cur_level = 0;
     gamestate.num_sides = levels[0].num_sides;
     gamestate.segment_angle = gamestate.segment_angle_target = segment_angle_for(gamestate.num_sides);
+    // Only the TARGET changes here - draw_distance/zoom_base are left alone
+    // so update_ambient()'s existing per-tick ease (every mode, every tick)
+    // carries the zoom there smoothly instead of snapping. Matters most for
+    // the attract screen's close-up -> gameplay transition on fire-press.
     gamestate.draw_distance_target = STARTING_ZOOM_TARGET;
-    gamestate.draw_distance = STARTING_ZOOM_TARGET;
     gamestate.time_seconds = 0;
     gamestate.time_subsecond_frames = 0;
     clear_walls();
@@ -231,7 +246,6 @@ static void reset_run(void) {
     gamestate.wall_spawn_dist = STARTING_WALL_SPAWN_DIST;
     shake_x = shake_y = 0;
     new_record = 0;
-    zoom_base = STARTING_ZOOM_TARGET;
     beat_ctr = beat_env = 0;
     field_rot_target = gamestate.field_rotation;
     rot_timer = FRAME_RATE * 3;
@@ -313,6 +327,9 @@ void game_update(const InputState* in) {
 
     switch (mode) {
     case MODE_ATTRACT:
+        // Idle close-up on the hub; eases back out via reset_run() below the
+        // instant fire is pressed (see ATTRACT_ZOOM_TARGET's comment).
+        gamestate.draw_distance_target = ATTRACT_ZOOM_TARGET;
         if (in->fire_edge) {
             rng_state ^= (UWORD)frameCounter | 1u; // seed entropy from run start
             reset_run();
