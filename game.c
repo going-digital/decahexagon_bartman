@@ -101,6 +101,18 @@ static void clear_walls(void) {
     for (WORD i = 0; i < MAX_WALLS; i++) walls[i].active = 0;
 }
 
+// Is any active wall in `slot` currently spanning `radius`? Shared by the
+// rotation blocker (side-on contact: can't turn into a wall) and the death
+// check (radial contact: a wall's inside edge sweeping inward catches you).
+static UBYTE wall_overlaps_radius(UBYTE slot, WORD radius) {
+    for (WORD i = 0; i < MAX_WALLS; i++) {
+        if (!walls[i].active || walls[i].slot != slot) continue;
+        WORD d = walls[i].dist;
+        if (d <= radius && d + WALL_THICKNESS >= radius) return 1;
+    }
+    return 0;
+}
+
 static void update_difficulty(void) {
     UWORD t = gamestate.time_seconds;
     wall_speed = 2 + (WORD)(t / 15);
@@ -159,7 +171,19 @@ static void update_playing(const InputState* in) {
         gamestate.draw_distance_target = (UWORD)zt;
     }
 
-    gamestate.player_angle += (UWORD)(in->turn * PLAYER_TURN_RATE);
+    // Rotating into a wall's side just blocks the turn - it's only lethal
+    // when its inside edge sweeps inward and reaches you (checked below).
+    // PLAYER_TURN_RATE is well under one slot/tick, so at most one slot
+    // boundary is ever crossed here.
+    {
+        UWORD old_angle = gamestate.player_angle;
+        UWORD new_angle = (UWORD)(old_angle + (UWORD)(in->turn * PLAYER_TURN_RATE));
+        UWORD old_slot = (UWORD)(((ULONG)old_angle * NUM_SIDES) >> 16);
+        UWORD new_slot = (UWORD)(((ULONG)new_angle * NUM_SIDES) >> 16);
+        if (new_slot != old_slot && wall_overlaps_radius((UBYTE)new_slot, PLAYER_RADIUS))
+            new_angle = old_angle; // blocked: hold at the boundary
+        gamestate.player_angle = new_angle;
+    }
 
     for (WORD i = 0; i < MAX_WALLS; i++) {
         if (!walls[i].active) continue;
@@ -169,16 +193,12 @@ static void update_playing(const InputState* in) {
 
     patterns_tick();
 
-    // Collision: is a wall occupying the player's slot at the player's radius?
-    UWORD pslot = ((ULONG)gamestate.player_angle * NUM_SIDES) >> 16;
-    for (WORD i = 0; i < MAX_WALLS; i++) {
-        if (!walls[i].active || walls[i].slot != pslot) continue;
-        WORD d = walls[i].dist;
-        if (d <= PLAYER_RADIUS && d + WALL_THICKNESS >= PLAYER_RADIUS) {
-            record_time();
-            set_mode(MODE_DEAD);
-            return;
-        }
+    // Death: a wall's inside edge has swept inward onto the player's slot.
+    // (Side-on contact from rotating into a wall was already blocked above.)
+    UWORD pslot = (UWORD)(((ULONG)gamestate.player_angle * NUM_SIDES) >> 16);
+    if (wall_overlaps_radius((UBYTE)pslot, PLAYER_RADIUS)) {
+        record_time();
+        set_mode(MODE_DEAD);
     }
 }
 
