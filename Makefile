@@ -28,6 +28,13 @@ CC = m68k-amiga-elf-gcc
 AS = m68k-amiga-elf-as
 VASM = vasmm68k_mot
 EXE2ADF = exe2adf
+SHRINKLER = Shrinkler
+
+# Preset matches .vscode/amiga.json's "slow" shrinkler config (max compression,
+# flashes DFF180 as it decrunches so you can see it's not hung on a real Amiga).
+# Override on the command line for a quicker iterate, e.g.
+#   make pack SHRINKLER_FLAGS="-h -o -1"        .vscode/amiga.json's "fast" preset
+SHRINKLER_FLAGS ?= -h -f dff180 -9
 
 ifdef WINDOWS
 	SDKDIR = $(abspath $(dir $(shell where $(CC)))..\m68k-amiga-elf\sys-include)
@@ -46,16 +53,29 @@ ASFLAGS   = -mcpu=68000 -g --register-prefix-optional -I$(SDKDIR)
 LDFLAGS   = -Wl,--emit-relocs,--gc-sections,-Ttext=0,-Map=$(OUT).map
 VASMFLAGS = -m68000 -Felf -opt-fconst -nowarn=62 -dwarf=3 -quiet -x -I. -I$(SDKDIR)
 
-all: $(OUT).exe adf
+all: $(OUT).exe adf pack
 
 # Bootable floppy image: exe2adf writes a disk with a bootblock that loads
 # and runs the .exe directly, no AmigaDOS filesystem/Workbench needed - drop
 # it straight into an emulator or write it to a real disk with a real Amiga.
-adf: $(OUT).adf
+adf: $(OUT).adf $(OUT)_packed.adf
 
 $(OUT).adf: $(OUT).exe
 	$(info Building ADF $(OUT).adf)
 	@$(EXE2ADF) -i $(OUT).exe -l Decahexagon -a $(OUT).adf
+
+$(OUT)_packed.adf: pack
+	$(info Building ADF $(OUT)_packed.adf)
+	@$(EXE2ADF) -i $(OUT)_packed.exe -l Decahexagon -a $(OUT)_packed.adf
+
+# Shrinkler-compressed executable, built alongside the uncompressed one rather
+# than replacing it - self-decrunching, same hunk format, just smaller and
+# slower to load (decrunch time trades against SHRINKLER_FLAGS above).
+pack: $(OUT)_packed.exe
+
+$(OUT)_packed.exe: $(OUT).exe
+	$(info Shrinkler-compressing $(program)_packed.exe)
+	@$(SHRINKLER) $(SHRINKLER_FLAGS) $(OUT).exe $@
 
 $(OUT).exe: $(OUT).elf
 	$(info Elf2Hunk $(program).exe)
