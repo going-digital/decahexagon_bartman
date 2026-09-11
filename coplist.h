@@ -39,8 +39,8 @@ USHORT* copWaitY(USHORT* copListEnd, USHORT i) {
 __attribute__((always_inline)) inline USHORT* screenScanDefault(USHORT* copListEnd) {
     const USHORT width = SCREEN_WIDTH;
     const USHORT height = SCREEN_HEIGHT;
-    const USHORT x = 129 + (SCREEN_WIDTH - 320) / 2;
-    const USHORT y = 44 + (SCREEN_WIDTH - 256) / 2;
+    const USHORT x = DISPLAY_HW_X;
+    const USHORT y = DISPLAY_HW_Y;
     const USHORT RES = 8; //8=lowres,4=hires
     USHORT xstop = x + width;
     USHORT ystop = y + height;

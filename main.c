@@ -10,6 +10,7 @@
 #include "input.h"
 #include "game.h"
 #include "render.h"
+#include "hud.h"
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -99,6 +100,10 @@ int main() {
     bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
 
+    // Builds the HUD's sprite buffers - needs to happen before the copper
+    // list below, which points SPRxPT at them from the very first frame.
+    hud_init();
+
     // MEMF_CLEAR: the loop clobbers the copjmp2 tail with palette writes and
     // relies on the rest of the list being zero (harmless copper NOPs).
     // TODO Phase 2: rebuild the copper list properly (needs it for the wedges).
@@ -135,6 +140,10 @@ int main() {
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg2);
     #endif
 
+    // HUD sprite pointers (SPRxPT), written by the copper every frame from
+    // here on - see hud.h for why this must not be a direct CPU register write.
+    copPtr = hud_emit_copper(copPtr);
+
     // Jump to copper2
     *copPtr++ = offsetof(struct Custom, copjmp2);
     *copPtr++ = 0x7fff;
@@ -146,7 +155,7 @@ int main() {
     // BLITHOG gives the blitter every bus cycle - great when the CPU has
     // nothing to do during a blit, bad when it's spinning in blit_wait() while
     // real work waits. Build with -DNO_BLITHOG to let the CPU interleave.
-    custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER
+    custom->dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_RASTER | DMAF_COPPER | DMAF_BLITTER | DMAF_SPRITE
 #ifndef NO_BLITHOG
         | DMAF_BLITHOG
 #endif
@@ -188,6 +197,7 @@ int main() {
         if (input.quit) break;                                  // dev: both mouse buttons
         if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
         game_update(&input);
+        hud_tick(); // picks this frame's glyphs; the copper writes SPRxPT below
 #if BUILD_DEBUG
         custom->color[0] = 0x303; // after input+update
 #endif
@@ -221,13 +231,20 @@ int main() {
         copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bitplane_fg3);
         #endif
 
+        // HUD sprite pointers for this frame's chosen glyphs (see hud_tick above).
+        copPtr = hud_emit_copper(copPtr);
+
         // Fixed 2-colour palette (Phase 2 will grow this to per-level palettes
         // once there's a 2nd bitplane). Foreground brightens on the beat;
-        // full white/black flash for the first few DEAD ticks.
+        // full white/black flash for the first few DEAD ticks, and a brief
+        // white flash as the title screen cuts away to the timer HUD.
         UWORD col0, col1;
         if (game_mode() == MODE_DEAD && game_mode_timer() < 6) {
             col0 = 0xfff;
             col1 = 0x000;
+        } else if (hud_flash_now()) {
+            col0 = 0xfff;
+            col1 = 0xfff;
         } else {
             col0 = 0x102;                          // background: near-black blue
             col1 = game_on_beat() ? 0xfec : 0xf83; // foreground: warm orange, beat pop

@@ -49,6 +49,12 @@
 
 #define BITPLANE_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH_BYTES)
 
+// Raw hardware coordinates (DIWSTRT space) of the visible display's top-left
+// corner. screenScanDefault() uses these for DIWSTRT/DIWSTOP; the sprite HUD
+// shares them so sprites line up with the bitplane display.
+#define DISPLAY_HW_X (129 + (SCREEN_WIDTH - 320) / 2)
+#define DISPLAY_HW_Y (44 + (SCREEN_WIDTH - 256) / 2)
+
 // Viewport clipping bounds and line-slope fixed point
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)

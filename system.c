@@ -22,6 +22,14 @@ static APTR SystemIrq;
 
 static struct View *ActiView;
 
+// Sprite pointers + colour registers (17-31 are the sprite colour banks).
+// Unlike the bitplane colours, the OS never re-issues these once it's
+// running - the mouse pointer sprite is set up once, not redrawn every
+// frame - so anything we leave pointing at our own buffers/colours (the HUD)
+// would otherwise linger as garbage after we hand the system back.
+static APTR SystemSprPt[8];
+static UWORD SystemColor[32];
+
 static APTR GetVBR(void) {
     APTR vbr = 0;
     UWORD getvbr[] = { 0x4e7a, 0x0801, 0x4e73 }; // MOVEC.L VBR,D0 RTE
@@ -91,9 +99,13 @@ void TakeSystem(void) {
 
     custom->dmacon = 0x7fff;//Clear all DMA channels
 
-    //set all colors black
-    for(int a=0; a < 32; a++)
+    //set all colors black, saving them (and the sprite pointers) to restore on exit
+    for(int a=0; a < 32; a++) {
+        SystemColor[a] = custom->color[a];
         custom->color[a]=0;
+    }
+    for(int a=0; a < 8; a++)
+        SystemSprPt[a] = custom->sprpt[a];
 
     WaitVbl();
     WaitVbl();
@@ -116,6 +128,13 @@ void FreeSystem(void) {
     custom->cop1lc = (ULONG)GfxBase->copinit;
     custom->cop2lc = (ULONG)GfxBase->LOFlist;
     custom->copjmp1 = 0x7fff; // Start coppper
+
+    /* Restore sprite pointers and colours (DMA is still off here, so this
+       can't race a fetch) before DMA/the OS's view come back. */
+    for(int a=0; a < 8; a++)
+        custom->sprpt[a] = SystemSprPt[a];
+    for(int a=0; a < 32; a++)
+        custom->color[a] = SystemColor[a];
 
     /* Restore all interrupts and DMA settings. */
     custom->intena = SystemInts | INTF_SETCLR;
