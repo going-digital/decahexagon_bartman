@@ -8,8 +8,23 @@
 // Shared by the game logic and the renderer so collision matches what's drawn.
 #define HUB_RADIUS       18
 #define PLAYER_RADIUS    27   // player sits just outside the hub
-#define WALL_THICKNESS   13
-#define WALL_SPAWN_DIST  150  // walls appear here and close inward
+// Camera zoom target (game.c) - not the tighter (vertical) screen half-extent:
+// wall/hub/player rendering all go through the clipped line renderer, which
+// handles off-screen coordinates safely, so nothing here needs to guarantee
+// staying within the shorter dimension. Only render_spokes()'s raw,
+// UNCLIPPED blit_line() call needs its own hard on-screen bound, which it
+// has independently (SPOKE_OUTER_MAX in render.c) - so this can target the
+// wider extent instead, for a fuller, more zoomed-in field. A wall spawning
+// near straight up/down will briefly be off the top/bottom edge before
+// curving into view - expected and safely clipped, not a bug.
+#define SCREEN_EDGE_RADIUS (SCREEN_WIDTH / 2 - 10)
+
+// wall_thickness/wall_spawn_dist (in GameState below) are expressed in TIME,
+// not fixed distance: thickness ~100ms of travel, spawn dist ~1s of travel,
+// at the CURRENT wall_speed - see game.c's update_difficulty(). That keeps
+// the visual read (how much empty gap surrounds a wall, how long you get to
+// react) constant as wall_speed ramps up through a run, instead of walls
+// visually thickening relative to their spacing as they speed up.
 
 #define MAX_WALLS        32   // ~2 full rings of MAX_NUM_SIDES-1 walls, plus slack
 
@@ -25,6 +40,8 @@ typedef struct sGameState {
     UWORD segment_angle;
     UWORD segment_angle_target;
     UBYTE num_sides;              // current field side count - morphs down as a run's difficulty ramps, see game.c's level table
+    WORD  wall_thickness;         // ~100ms of travel at the current wall_speed
+    WORD  wall_spawn_dist;        // ~1s of travel at the current wall_speed (+ HUB_RADIUS)
     UWORD player_angle;          // field-relative, 0..65535 around the ring
     UWORD wall_fraction;
     UWORD draw_distance;

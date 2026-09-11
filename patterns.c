@@ -28,8 +28,10 @@ static const Pattern P_LADDER  = { s_ladder,  4 };
 static const Pattern P_SPINGAP = { s_spingap, 6 };
 
 // Difficulty-tiered pools, power-of-two sized so the pick is a mask not a %.
-// Repeats bias the weighting.
-static const Pattern* const pool_early[4] = { &P_RING, &P_WIDE_C, &P_RING, &P_WIDE_C };
+// Repeats bias the weighting. pool_early leans toward the wider (2-slot)
+// wide_c gap - ring's single-slot gap is a rough first thing to ask of a
+// player still learning the controls.
+static const Pattern* const pool_early[4] = { &P_WIDE_C, &P_WIDE_C, &P_WIDE_C, &P_RING };
 static const Pattern* const pool_mid[8]   = { &P_RING, &P_WIDE_C, &P_SPIRAL, &P_RSPIRAL,
                                               &P_RING, &P_SPIRAL, &P_LADDER, &P_WIDE_C };
 static const Pattern* const pool_late[8]  = { &P_RING, &P_SPIRAL, &P_RSPIRAL, &P_LADDER,
@@ -63,9 +65,11 @@ static const Pattern* pick_pattern(void) {
     else             return pool_late[r & 7];
 }
 
-// Ticks of calm between patterns, shrinking as the run gets faster.
+// Ticks of calm between patterns, shrinking as the run gets faster. Starts
+// at 44 (was 34) for a gentler first few patterns; same floor and shrink
+// rate, so it just takes a little longer to reach full pace.
 static UWORD inter_gap(void) {
-    WORD g = 34 - (WORD)(gamestate.time_seconds / 2);
+    WORD g = 44 - (WORD)(gamestate.time_seconds / 2);
     return (UWORD)(g < 12 ? 12 : g);
 }
 
@@ -94,7 +98,7 @@ static void spawn_step(const PStep* st) {
     UBYTE m = st->slots;
     for (UBYTE i = 0; i < gamestate.num_sides; i++)
         if (m & (1 << i))
-            game_spawn_wall(wrap_slot((UBYTE)(anchor + i)), WALL_SPAWN_DIST);
+            game_spawn_wall(wrap_slot((UBYTE)(anchor + i)), gamestate.wall_spawn_dist);
 }
 
 void patterns_reset(void) {

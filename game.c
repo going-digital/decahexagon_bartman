@@ -4,6 +4,12 @@
 #include "patterns.h"
 
 #define STARTING_SIDES 6 // hexagon; must match levels[0].num_sides below
+#define STARTING_WALL_SPEED 1 // must match update_difficulty()'s/reset_run()'s starting wall_speed below
+#define STARTING_WALL_SPAWN_DIST (HUB_RADIUS + STARTING_WALL_SPEED * FRAME_RATE) // ~1s of travel
+// Zoom so a freshly-spawned wall renders right at the screen edge - see
+// update_difficulty()'s comment. All-constant expression, safe to compute
+// here at compile time.
+#define STARTING_ZOOM_TARGET (ZOOM_ONE * SCREEN_EDGE_RADIUS / STARTING_WALL_SPAWN_DIST)
 
 GameState gamestate = {
     .field_angle = 0,
@@ -11,10 +17,12 @@ GameState gamestate = {
     .segment_angle = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES),
     .num_sides = STARTING_SIDES,
+    .wall_thickness = (STARTING_WALL_SPEED * FRAME_RATE / 10),  // ~100ms of travel
+    .wall_spawn_dist = STARTING_WALL_SPAWN_DIST,
     .player_angle = 0,
     .wall_fraction = 0,
-    .draw_distance = ZOOM_ONE,
-    .draw_distance_target = ZOOM_ONE,
+    .draw_distance = STARTING_ZOOM_TARGET,
+    .draw_distance_target = STARTING_ZOOM_TARGET,
     .time_seconds = 0,
     .time_subsecond_frames = 0,
     .record_seconds = 0,
@@ -149,7 +157,7 @@ static UBYTE wall_overlaps_radius(UBYTE slot, WORD radius) {
     for (WORD i = 0; i < MAX_WALLS; i++) {
         if (!walls[i].active || walls[i].slot != slot) continue;
         WORD d = walls[i].dist;
-        if (d <= radius && d + WALL_THICKNESS >= radius) return 1;
+        if (d <= radius && d + gamestate.wall_thickness >= radius) return 1;
     }
     return 0;
 }
@@ -175,8 +183,29 @@ static void enter_level(UBYTE idx) {
 
 static void update_difficulty(void) {
     UWORD t = gamestate.time_seconds;
-    wall_speed = 2 + (WORD)(t / 15);
-    if (wall_speed > 5) wall_speed = 5;
+    WORD new_speed = STARTING_WALL_SPEED + (WORD)(t / 15); // ramps to the same cap of 5
+    if (new_speed > 5) new_speed = 5;
+
+    if (new_speed != wall_speed) {
+        wall_speed = new_speed;
+        // Both in TIME, not fixed distance, so the visual read (gap around a
+        // wall, reaction time) stays constant as wall_speed ramps - see
+        // game.h. wall_speed*FRAME_RATE is a runtime value times a
+        // compile-time constant, and /10 divides by one too - both safe, no
+        // lib-math risk.
+        gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 10);
+        gamestate.wall_spawn_dist = (WORD)(HUB_RADIUS + wall_speed * FRAME_RATE);
+
+        // Zoom so a freshly-spawned wall (at wall_spawn_dist) always renders
+        // right at the screen edge, regardless of wall_speed - otherwise a
+        // slow start (small wall_spawn_dist) leaves most of the screen
+        // empty, and a fast run's much larger wall_spawn_dist would spawn
+        // walls off-screen. Plain '/' here is fine: this whole block only
+        // runs when wall_speed actually changes (a handful of times per
+        // run), nowhere near hot-path.
+        gamestate.draw_distance_target =
+            (UWORD)(ZOOM_ONE * SCREEN_EDGE_RADIUS / gamestate.wall_spawn_dist);
+    }
 
     UBYTE idx = cur_level;
     while (idx + 1 < NUM_LEVELS && t >= levels[idx + 1].start_seconds) idx++;
@@ -191,16 +220,18 @@ static void reset_run(void) {
     cur_level = 0;
     gamestate.num_sides = levels[0].num_sides;
     gamestate.segment_angle = gamestate.segment_angle_target = segment_angle_for(gamestate.num_sides);
-    gamestate.draw_distance_target = ZOOM_ONE;
-    gamestate.draw_distance = ZOOM_ONE;
+    gamestate.draw_distance_target = STARTING_ZOOM_TARGET;
+    gamestate.draw_distance = STARTING_ZOOM_TARGET;
     gamestate.time_seconds = 0;
     gamestate.time_subsecond_frames = 0;
     clear_walls();
     patterns_reset();
-    wall_speed = 2;
+    wall_speed = STARTING_WALL_SPEED;
+    gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 10);
+    gamestate.wall_spawn_dist = STARTING_WALL_SPAWN_DIST;
     shake_x = shake_y = 0;
     new_record = 0;
-    zoom_base = ZOOM_ONE;
+    zoom_base = STARTING_ZOOM_TARGET;
     beat_ctr = beat_env = 0;
     field_rot_target = gamestate.field_rotation;
     rot_timer = FRAME_RATE * 3;
@@ -232,12 +263,9 @@ static void update_playing(const InputState* in) {
     if (--rot_timer == 0) pick_rotation();
     gamestate.field_rotation += (field_rot_target - gamestate.field_rotation) >> 4;
 
-    // Slowly zoom the view out as the run gets faster.
-    {
-        WORD zt = ZOOM_ONE - (WORD)(gamestate.time_seconds);
-        if (zt < 216) zt = 216;
-        gamestate.draw_distance_target = (UWORD)zt;
-    }
+    // Zoom target is set in update_difficulty() (above), keyed to
+    // wall_spawn_dist so it tracks wall_speed instead of drifting on a
+    // fixed schedule of its own.
 
     // Rotating into a wall's side just blocks the turn - it's only lethal
     // when its inside edge sweeps inward and reaches you (checked below).

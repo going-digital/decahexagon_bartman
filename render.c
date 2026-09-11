@@ -91,7 +91,7 @@ static void draw_wall(const Wall* w, void* buf) {
     UWORD a0 = gamestate.field_angle + (UWORD)w->slot * gamestate.segment_angle;
     UWORD a1 = a0 + gamestate.segment_angle;
     WORD r0 = zscale(w->dist);
-    WORD r1 = zscale(w->dist + WALL_THICKNESS);
+    WORD r1 = zscale(w->dist + gamestate.wall_thickness);
     WORD x00, y00, x10, y10, x11, y11, x01, y01;
     pt(a0, r0, &x00, &y00);
     pt(a1, r0, &x10, &y10);
@@ -112,19 +112,26 @@ static void draw_wall(const Wall* w, void* buf) {
         blit_clipped_line_onedot(x11, y11, x10, y10, 0, buf); // trailing radial
 }
 
-#define SPOKE_OUTER 95  // spokes stop mid-field, not at the screen edge (cheaper)
+#define SPOKE_OUTER     95  // spoke length, world units (pre-zoom)
+#define SPOKE_OUTER_MAX 95  // safety clamp on the ZOOMED (screen-space) length
 
 void render_spokes(void* buf) {
     blit_line_mode(); // re-arm line-mode registers after the fill
 
     WORD inner = zscale(HUB_RADIUS);
     WORD outer = zscale(SPOKE_OUTER);
+    // blit_line() is unclipped - it assumes both endpoints are already
+    // on-screen. That held when zoom stayed near ZOOM_ONE, but the camera
+    // now targets wall_spawn_dist (game.c) and can zoom in well past that at
+    // low wall_speed, pushing the zoomed spoke length past the screen edge
+    // and feeding blit_line() garbage coordinates - clamp the SCREEN-SPACE
+    // result instead of assuming zoom stays bounded.
+    if (outer > SPOKE_OUTER_MAX) outer = SPOKE_OUTER_MAX;
     UWORD a = gamestate.field_angle;
     for (WORD i = 0; i < gamestate.num_sides; i++) {
         WORD sx, sy, ex, ey;
         polar_to_cartesian(a, (UWORD)inner, &sx, &sy);
         polar_to_cartesian(a, (UWORD)outer, &ex, &ey);
-        // outer is < half screen height, so both ends stay on-screen: no clip
         blit_line((UWORD)(CX + sx), (UWORD)(CY + sy),
                   (UWORD)(CX + ex), (UWORD)(CY + ey), buf);
         a += gamestate.segment_angle;
