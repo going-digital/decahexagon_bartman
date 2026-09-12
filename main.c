@@ -202,8 +202,6 @@ int main() {
     short last_frame = frameCounter;
 
     for (;;) {
-        exram_serial_putchar('.');
-
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
         // frame rate instead of the whole-frame stall Wait10() caused when
