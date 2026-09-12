@@ -78,13 +78,13 @@ int main() {
 
     SysBase = *((struct ExecBase**)4UL);
 
-    // We will use the graphics library only to locate and restore the system copper list once we are through.
-    GfxBase = (struct GfxBase *)OpenLibrary((CONST_STRPTR)"graphics.library",0);
-    if (!GfxBase) Exit(0);
-
     // Used for printing
     DOSBase = (struct DosLibrary*)OpenLibrary((CONST_STRPTR)"dos.library", 0);
     if (!DOSBase) Exit(0);
+
+    // We will use the graphics library only to locate and restore the system copper list once we are through.
+    GfxBase = (struct GfxBase *)OpenLibrary((CONST_STRPTR)"graphics.library",0);
+    if (!GfxBase) Exit(0);
 
 #if BUILD_DEBUG
 #ifdef __cplusplus
@@ -202,6 +202,8 @@ int main() {
     short last_frame = frameCounter;
 
     for (;;) {
+        exram_serial_putchar('.');
+
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
         // frame rate instead of the whole-frame stall Wait10() caused when
