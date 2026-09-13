@@ -2,6 +2,9 @@
 #include "config.h"
 #include "system.h" // frameCounter (rng entropy)
 #include "patterns.h"
+#ifdef MUSIC_LSP
+#include "audio.h" // audio_get_bpm() - real beat sync, see update_ambient()
+#endif
 
 #define STARTING_SIDES 6 // hexagon; must match levels[0].num_sides below
 #define STARTING_WALL_SPEED 1 // must match update_difficulty()'s/reset_run()'s starting wall_speed below
@@ -57,9 +60,12 @@ static const LevelDef levels[NUM_LEVELS] = {
 };
 static UBYTE cur_level;
 
-// Placeholder beat: free-running, not synced to the music yet (Phase 4).
-#define BEAT_BPM         (132)
-#define BEAT_PERIOD      (FRAME_RATE * 60 / BEAT_BPM)
+// Beat period, in ticks. Synced to the actual music's BPM when MUSIC_LSP is
+// built in (LSP tracks its live BPM - see audio_get_bpm() - and can change
+// tempo mid-song, which this follows); FALLBACK_BEAT_BPM is only used
+// without a music backend (or before the very first tick, in practice never
+// observed since p61Init() always runs before the main loop starts).
+#define FALLBACK_BEAT_BPM (132)
 
 static GameMode mode;
 static UWORD mode_timer;      // ticks elapsed in the current mode
@@ -67,7 +73,9 @@ static WORD  wall_speed;      // px / tick, ramps with time
 static WORD  shake_x, shake_y;
 static UBYTE new_record;      // this run beat the previous best - latches until reset_run()
 
-static UWORD beat_ctr;       // counts up to BEAT_PERIOD
+static UWORD beat_ctr;       // counts up to beat_period
+static UWORD beat_bpm = FALLBACK_BEAT_BPM;
+static UWORD beat_period = (FRAME_RATE * 60 / FALLBACK_BEAT_BPM); // ticks/beat, recomputed only when beat_bpm actually changes
 static UWORD beat_env;       // decays after each beat; drives the zoom pulse
 static UBYTE on_beat;        // 1 for the single tick a beat lands
 // Q8 resting zoom, eases toward draw_distance_target. Seeded here (not by
@@ -123,9 +131,20 @@ UBYTE game_slot_blocked(UBYTE slot) {
     return 0;
 }
 
-// Free-running beat + camera zoom breathing. Runs in every mode.
+// Beat-driven camera zoom breathing. Runs in every mode.
 static void update_ambient(void) {
-    if (++beat_ctr >= BEAT_PERIOD) {
+#ifdef MUSIC_LSP
+    // Gated on an actual change (not every tick) so the division stays off
+    // the hot path - same reasoning as wall_speed's gated recompute above.
+    // 0 is never a real BPM; guards a torn/pre-init read rather than latch a
+    // bogus period.
+    UWORD live_bpm = audio_get_bpm();
+    if (live_bpm != 0 && live_bpm != beat_bpm) {
+        beat_bpm = live_bpm;
+        beat_period = (UWORD)(FRAME_RATE * 60 / beat_bpm);
+    }
+#endif
+    if (++beat_ctr >= beat_period) {
         beat_ctr = 0;
         on_beat = 1;
         beat_env = 220;

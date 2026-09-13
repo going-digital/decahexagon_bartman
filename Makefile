@@ -28,13 +28,14 @@ CC = m68k-amiga-elf-gcc
 AS = m68k-amiga-elf-as
 VASM = vasmm68k_mot
 EXE2ADF = exe2adf
-SHRINKLER = Shrinkler
+EXECRAM = execram
 
-# Preset matches .vscode/amiga.json's "slow" shrinkler config (max compression,
-# flashes DFF180 as it decrunches so you can see it's not hung on a real Amiga).
-# Override on the command line for a quicker iterate, e.g.
-#   make pack SHRINKLER_FLAGS="-h -o -1"        .vscode/amiga.json's "fast" preset
-SHRINKLER_FLAGS ?= -h -f dff180 -9
+# zultra backend, self-checking the result (decompresses host-side, compares
+# byte-for-byte) before writing it. Override on the command line to try
+# another backend, e.g. make pack EXECRAM_FLAGS="--backend=auto"
+# (store|inflate|zultra|zx0|salvador|shrinkler|auto - auto tries them all and
+# keeps the smallest). https://github.com/going-digital/execram
+EXECRAM_FLAGS ?= --backend=zultra
 
 ifdef WINDOWS
 	SDKDIR = $(abspath $(dir $(shell where $(CC)))..\m68k-amiga-elf\sys-include)
@@ -68,14 +69,15 @@ $(OUT)_packed.adf: pack
 	$(info Building ADF $(OUT)_packed.adf)
 	@$(EXE2ADF) -i $(OUT)_packed.exe -l Decahexagon -a $(OUT)_packed.adf
 
-# Shrinkler-compressed executable, built alongside the uncompressed one rather
+# execram-compressed executable, built alongside the uncompressed one rather
 # than replacing it - self-decrunching, same hunk format, just smaller and
-# slower to load (decrunch time trades against SHRINKLER_FLAGS above).
+# slower to load. execram self-checks (decompresses host-side, compares
+# byte-for-byte) before writing anything. https://github.com/going-digital/execram
 pack: $(OUT)_packed.exe
 
 $(OUT)_packed.exe: $(OUT).exe
-	$(info Shrinkler-compressing $(program)_packed.exe)
-	@$(SHRINKLER) $(SHRINKLER_FLAGS) $(OUT).exe $@
+	$(info execram-compressing $(program)_packed.exe)
+	@$(EXECRAM) pack $(EXECRAM_FLAGS) $(OUT).exe $@
 
 $(OUT).exe: $(OUT).elf
 	$(info Elf2Hunk $(program).exe)

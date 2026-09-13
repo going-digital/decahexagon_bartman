@@ -1,4 +1,5 @@
 	public LSP_MusicDriver_CIA_Start
+	public LSP_MusicDriver_CIA_GetBPM
 	xdef LSP_MusicPlayTick
 	xdef LSP_MusicInit
 
@@ -101,6 +102,8 @@ LSP_MusicDriver_CIA_Start:
 		; check if BMP changed in the middle of the music
 			move.l	.pMusicBPM(pc),a0
 			move.w	(a0),d0					; current music BPM
+			lea		LSP_CurrentBPM(pc),a2
+			move.w	d0,(a2)					; mirror to a plain global - see LSP_MusicDriver_CIA_GetBPM
 			cmp.w	.curBpm(pc),d0
 			beq.s	.noChg
 			lea		.curBpm(pc),a2			
@@ -134,9 +137,22 @@ LSP_MusicDriver_CIA_Start:
 			nop
 			rte
 
+; d0: current BPM, from LSP_CurrentBPM (mirrored every tick by .LSP_MainIrq,
+; so this reflects a mid-song BPM change immediately) - added for
+; beat-syncing game visuals to the actual track instead of a guessed BPM.
+; A plain (non-local) label, not .pMusicBPM directly: local .foo labels are
+; scoped to the nearest preceding top-level label, and this function - being
+; public, so necessarily its own top-level label - can't be defined inside
+; LSP_MusicDriver_CIA_Start's scope to share it.
+LSP_MusicDriver_CIA_GetBPM:
+			move.w	LSP_CurrentBPM(pc),d0
+			rts
+
 LSP_MusicDriver_CIA_Stop:
 			move.b	#$7f,$bfdd00
 			move.w	#$2000,$dff09a
 			move.w	#$2000,$dff09c
 			move.w	#$000f,$dff096
 			rts
+
+LSP_CurrentBPM:	dc.w	0

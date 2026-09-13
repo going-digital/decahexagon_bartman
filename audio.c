@@ -38,6 +38,19 @@ int p61Music(void) {
     // Not needed for LSP CIA
 }
 
+UWORD audio_get_bpm(void) {
+    register volatile UWORD _d0 ASM("d0");
+    __asm volatile (
+        "movem.l %%d1/%%a0-%%a1,-(%%sp)\n"
+        "jsr LSP_MusicDriver_CIA_GetBPM\n"
+        "movem.l (%%sp)+,%%d1/%%a0-%%a1\n"
+        : "=r"(_d0)
+        :
+        : "cc", "memory"
+    );
+    return _d0;
+}
+
 int p61End(void) {
 }
 #endif
