@@ -8,7 +8,13 @@
 
 #define STARTING_SIDES 6 // hexagon; must match levels[0].num_sides below
 #define STARTING_WALL_SPEED 1 // must match update_difficulty()'s/reset_run()'s starting wall_speed below
-#define STARTING_WALL_SPAWN_DIST (HUB_RADIUS + STARTING_WALL_SPEED * FRAME_RATE) // ~1s of travel
+// Visible range, in seconds of travel at the current wall_speed - see
+// update_difficulty()'s comment. 3/2 (not a plain literal) so this stays a
+// compile-time-constant multiply/divide-by-power-of-2 wherever it's used on
+// a runtime wall_speed, same reasoning as FRAME_RATE itself.
+#define VIEW_SECONDS_NUM 3
+#define VIEW_SECONDS_DEN 2
+#define STARTING_WALL_SPAWN_DIST (HUB_RADIUS + STARTING_WALL_SPEED * FRAME_RATE * VIEW_SECONDS_NUM / VIEW_SECONDS_DEN)
 // Zoom so a freshly-spawned wall renders right at the screen edge - see
 // update_difficulty()'s comment. All-constant expression, safe to compute
 // here at compile time.
@@ -225,7 +231,8 @@ static void update_difficulty(void) {
         // compile-time constant, and /10 divides by one too - both safe, no
         // lib-math risk.
         gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 10);
-        gamestate.wall_spawn_dist = (WORD)(HUB_RADIUS + wall_speed * FRAME_RATE);
+        gamestate.wall_spawn_dist =
+            (WORD)(HUB_RADIUS + wall_speed * FRAME_RATE * VIEW_SECONDS_NUM / VIEW_SECONDS_DEN);
 
         // Zoom so a freshly-spawned wall (at wall_spawn_dist) always renders
         // right at the screen edge, regardless of wall_speed - otherwise a
