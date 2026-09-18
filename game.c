@@ -6,7 +6,7 @@
 #include "audio.h" // audio_get_bpm() - real beat sync, see update_ambient()
 #endif
 
-#define STARTING_SIDES 6 // hexagon; must match levels[0].num_sides below
+#define STARTING_SIDES 6 // hexagon - field side count is fixed for the whole run (see num_sides in game.h)
 #define STARTING_WALL_SPEED 1 // must match update_difficulty()'s/reset_run()'s starting wall_speed below
 // Visible range, in seconds of travel at the current wall_speed - see
 // update_difficulty()'s comment. 3/2 (not a plain literal) so this stays a
@@ -53,18 +53,18 @@ Wall walls[MAX_WALLS];
 // here is 0.83s wall-clock - Phase 6 normalises difficulty to real time.
 #define READY_TICKS      (FRAME_RATE * 3 / 2) // ~1.5s "BEGIN" lead-in
 #define DEAD_TICKS       (FRAME_RATE)         // ~1s hit freeze
-#define PLAYER_TURN_RATE (1400)               // angle units / tick (~0.13 slots/tick on a hexagon; slower per-slot on morphed, wider-slotted fields)
-
-// Side-count morphs as a run gets harder: hexagon -> pentagon -> square.
-// Each entry's fields apply once gamestate.time_seconds reaches start_seconds.
-typedef struct { UBYTE num_sides; UWORD start_seconds; } LevelDef;
-#define NUM_LEVELS 3
-static const LevelDef levels[NUM_LEVELS] = {
-    { STARTING_SIDES, 0 },
-    { 5,              20 },
-    { 4,              40 },
-};
-static UBYTE cur_level;
+// Two selectable turn models - see config.h's CONTROL_FLICK for why both are
+// kept in the tree rather than one replacing the other.
+#if CONTROL_FLICK
+// Turning is a discrete, fixed-duration slot-to-slot "flick" (matches the
+// source PC game - see scratchpad/super_hexagon_pattern_reverse_engineering.md
+// Part 7 §7.1), not continuous rotation: press a direction, the player angle
+// sweeps at a constant rate for FLICK_TICKS ticks, then hard-snaps to the
+// destination slot's exact center. FLICK_TICKS is the PC's own value.
+#define FLICK_TICKS (10)
+#else
+#define PLAYER_TURN_RATE (1400) // angle units / tick (~0.13 slots/tick on the hexagon field)
+#endif
 
 // Beat period, in ticks. Synced to the actual music's BPM when MUSIC_LSP is
 // built in (LSP tracks its live BPM - see audio_get_bpm() - and can change
@@ -73,9 +73,28 @@ static UBYTE cur_level;
 // observed since p61Init() always runs before the main loop starts).
 #define FALLBACK_BEAT_BPM (132)
 
+// Wall speed ramps in fine (1/8-unit) steps on a cheap tick counter, then the
+// actual per-tick pixel movement is smoothed further via a Bresenham-style
+// fractional accumulator (wall_speed_accum, in update_playing()) - together
+// these approximate the source PC game's continuous "+dt every tick" ramp
+// (scratchpad/super_hexagon_pattern_reverse_engineering.md Part 3 §3.1)
+// using only adds/shifts/masks, never a per-tick multiply or divide. The
+// three DERIVED quantities below (thickness/spawn_dist/zoom) still only
+// recompute when the WHOLE unit changes (same "a handful of times per run,
+// now ~32 instead of 4" cadence as before) - they don't need per-tick
+// precision, unlike the raw movement rate.
+#define WALL_SPEED_CAP_X8 (5 * 8) // same cap (5) as before, in eighths
+// Ticks between each 1/8-unit increase - matches the old "+1 whole unit
+// every 15s" overall ramp time (15*FRAME_RATE ticks per whole unit / 8
+// eighths per unit), compile-time constant, no runtime division.
+#define WALL_SPEED_RAMP_TICKS ((15 * FRAME_RATE) / 8)
+
 static GameMode mode;
 static UWORD mode_timer;      // ticks elapsed in the current mode
-static WORD  wall_speed;      // px / tick, ramps with time
+static UWORD wall_speed_x8 = STARTING_WALL_SPEED * 8; // fixed-point eighths
+static UWORD wall_ramp_ctr;   // ticks until the next 1/8-unit speed increase
+static UWORD wall_speed_accum; // fractional-pixel carry for the per-tick move
+static WORD  wall_speed;      // last-recomputed WHOLE unit of wall_speed_x8 - gates the derived recompute below, not read for movement any more
 static WORD  shake_x, shake_y;
 static UBYTE new_record;      // this run beat the previous best - latches until reset_run()
 
@@ -88,8 +107,30 @@ static UBYTE on_beat;        // 1 for the single tick a beat lands
 // reset_run(), which only moves the target) so the very first frame is
 // already at the right zoom instead of easing up from 0.
 static UWORD zoom_base = STARTING_ZOOM_TARGET;
+// Field rotation kicks are milestone-triggered (waves_spawned crossing a
+// threshold), not a free-running timer - matching the source PC game's
+// otisrotate(), which only ever re-targets rotation speed at difficulty
+// milestones, easing toward it the rest of the time (Part 2 §2.2). Magnitude
+// alternates direction each kick rather than rerolling randomly, also
+// matching otisrotate(). Reuses patterns.c's wave-tier milestones as the
+// nearest equivalent this codebase has to the PC's own rank-up thresholds.
+#define ROTATION_MILD_MAG    (300) // eased forward spin at run start (PC: ease to +10)
+#define ROTATION_STRONG_MAG  (700) // kick magnitude at each milestone (PC: alternating +-20)
+#define ROTATION_KICK_WAVE_1 (12)  // first kick - matches patterns.c's WAVE_TIER_MID
+#define ROTATION_KICK_WAVE_2 (30)  // second kick - matches patterns.c's WAVE_TIER_LATE
+#define ROTATION_KICK_WAVE_STEP (20) // repeat cadence after the second kick
 static WORD  field_rot_target;
-static UWORD rot_timer;      // ticks until the next rotation-speed change
+static UWORD next_rot_kick_wave; // next patterns_waves_spawned() milestone that kicks rotation
+static UBYTE rot_kick_negative;  // alternates each kick
+
+#if CONTROL_FLICK
+// Flick state: 0 = at rest between flicks; else counts toward 0 (sign = direction).
+// flick_step (angle moved per tick while mid-flick) is cached once per run by
+// reset_run() - it's segment_angle/FLICK_TICKS, and segment_angle only ever
+// changes on a run reset now that the side-count morph is gone (game.c history).
+static WORD  flick_timer;
+static UWORD flick_step;
+#endif
 
 // 16-bit xorshift PRNG.
 static UWORD rng_state = 0x2545;
@@ -119,6 +160,7 @@ void game_spawn_wall(UBYTE slot, WORD dist) {
             walls[i].active = 1;
             walls[i].slot = slot;
             walls[i].dist = dist;
+            walls[i].width = gamestate.wall_thickness; // frozen at spawn - see Wall.width's comment
             return;
         }
     }
@@ -164,11 +206,12 @@ static void update_ambient(void) {
     gamestate.draw_distance = zoom_base + (beat_env >> 2); // beat pops the view toward the camera
 }
 
-static void pick_rotation(void) {
-    UWORD r = rng();
-    WORD mag = 250 + (r & 0x1ff);              // 250..761 units/tick
-    field_rot_target = (r & 0x200) ? mag : -mag; // sometimes reverses
-    rot_timer = (FRAME_RATE * 2) + (rng() & 0xff); // change again in ~2..7s
+static void rotation_kick(void) {
+    field_rot_target = (WORD)(rot_kick_negative ? -ROTATION_STRONG_MAG : ROTATION_STRONG_MAG);
+    rot_kick_negative = !rot_kick_negative;
+    next_rot_kick_wave = (next_rot_kick_wave == ROTATION_KICK_WAVE_1)
+        ? ROTATION_KICK_WAVE_2
+        : (UWORD)(next_rot_kick_wave + ROTATION_KICK_WAVE_STEP);
 }
 
 static void clear_walls(void) {
@@ -176,52 +219,53 @@ static void clear_walls(void) {
 }
 
 // Deliberately plain C math, NOT muluw(): with muluw() here, GCC's
-// -flto -fwhole-program optimizer silently eliminated the ENTIRE caller-side
-// blocking check below (confirmed by disassembly - the whole
-// `if (new_slot != old_slot && wall_overlaps_radius(...)) new_angle =
-// old_angle;` block vanished, leaving player_angle updated unconditionally).
-// muluw's inline asm has no "memory" clobber, so LTO loses track of the
-// dependency on walls[]/gamestate through it and mis-proves the branch dead.
-// Costs one __mulsi3 call/tick here - correctness over that micro-cost.
+// -flto -fwhole-program optimizer previously eliminated an entire
+// wall-dependent conditional built on this function's result (confirmed by
+// disassembly on an earlier version of this code, back when this fed a
+// turn-blocking check) - muluw's inline asm has no "memory" clobber, so LTO
+// loses track of the dependency on walls[]/gamestate through it and
+// mis-proves the branch dead. The same risk applies to the death check below
+// that still consumes this function's result. Costs one __mulsi3 call/tick
+// here - correctness over that micro-cost.
 static UWORD angle_to_slot(UWORD angle) {
     return (UWORD)(((ULONG)angle * gamestate.num_sides) >> 16);
 }
 
-// Is any active wall in `slot` currently spanning `radius`? Shared by the
-// rotation blocker (side-on contact: can't turn into a wall) and the death
-// check (radial contact: a wall's inside edge sweeping inward catches you).
+// Is any active wall in `slot` currently spanning `radius`? Used by the death
+// check: a wall's inside edge sweeping inward onto the player's radius.
 static UBYTE wall_overlaps_radius(UBYTE slot, WORD radius) {
     for (WORD i = 0; i < MAX_WALLS; i++) {
         if (!walls[i].active || walls[i].slot != slot) continue;
         WORD d = walls[i].dist;
-        if (d <= radius && d + gamestate.wall_thickness >= radius) return 1;
+        if (d <= radius && d + walls[i].width >= radius) return 1;
     }
     return 0;
 }
 
-// ceil(65536/sides). Plain C division, not divuw() - only called on a level
-// transition (a handful of times per run, nowhere near hot-path), and given
-// angle_to_slot()'s muluw() just turned out to cause a real miscompilation
-// under this build's -flto (see its comment), there's no reason to keep
-// divuw()'s equivalent risk here for a call this infrequent.
+// ceil(65536/sides). Plain C division, not divuw() - only called once per run
+// (reset_run()), nowhere near hot-path, and given angle_to_slot()'s muluw()
+// just turned out to cause a real miscompilation under this build's -flto
+// (see its comment), there's no reason to keep divuw()'s equivalent risk here
+// for a call this infrequent.
 static UWORD segment_angle_for(UBYTE sides) {
     return (UWORD)((65536u + sides - 1u) / sides);
 }
 
-// Slot boundaries move when the side count changes, so old walls' slot
-// indices no longer mean the same angular position - clear them rather than
-// let them jump to the wrong place (or momentarily alias a different slot).
-static void enter_level(UBYTE idx) {
-    cur_level = idx;
-    gamestate.num_sides = levels[idx].num_sides;
-    gamestate.segment_angle = gamestate.segment_angle_target = segment_angle_for(gamestate.num_sides);
-    clear_walls();
+#if CONTROL_FLICK
+// Angle at the centre of `slot`. Only called once per flick completion (every
+// FLICK_TICKS ticks), nowhere near hot-path - muluw() here is for consistency
+// with angle_to_slot()'s -flto lesson (see its comment), not a perf need.
+static UWORD slot_center_angle(UWORD slot) {
+    return (UWORD)(muluw(slot, gamestate.segment_angle) + (gamestate.segment_angle >> 1));
 }
+#endif
 
 static void update_difficulty(void) {
-    UWORD t = gamestate.time_seconds;
-    WORD new_speed = STARTING_WALL_SPEED + (WORD)(t / 15); // ramps to the same cap of 5
-    if (new_speed > 5) new_speed = 5;
+    if (wall_speed_x8 < WALL_SPEED_CAP_X8 && ++wall_ramp_ctr >= WALL_SPEED_RAMP_TICKS) {
+        wall_ramp_ctr = 0;
+        wall_speed_x8++;
+    }
+    WORD new_speed = (WORD)(wall_speed_x8 >> 3); // whole units, for the derived-value gate only
 
     if (new_speed != wall_speed) {
         wall_speed = new_speed;
@@ -244,20 +288,24 @@ static void update_difficulty(void) {
         gamestate.draw_distance_target =
             (UWORD)(ZOOM_ONE * SCREEN_EDGE_RADIUS / gamestate.wall_spawn_dist);
     }
-
-    UBYTE idx = cur_level;
-    while (idx + 1 < NUM_LEVELS && t >= levels[idx + 1].start_seconds) idx++;
-    if (idx != cur_level) enter_level(idx);
 }
 
 static void reset_run(void) {
     gamestate.field_angle = 0;
     gamestate.field_rotation = 500;
-    gamestate.player_angle = 0;
     gamestate.wall_fraction = 0;
-    cur_level = 0;
-    gamestate.num_sides = levels[0].num_sides;
+    gamestate.num_sides = STARTING_SIDES;
     gamestate.segment_angle = gamestate.segment_angle_target = segment_angle_for(gamestate.num_sides);
+#if CONTROL_FLICK
+    // At rest on slot 0's centre, not the raw-0 slot BOUNDARY - flicks always
+    // end on a slot centre (see slot_center_angle()), so the resting state
+    // should start there too.
+    gamestate.player_angle = slot_center_angle(0);
+    flick_timer = 0;
+    flick_step = (UWORD)(gamestate.segment_angle / FLICK_TICKS);
+#else
+    gamestate.player_angle = 0;
+#endif
     // Only the TARGET changes here - draw_distance/zoom_base are left alone
     // so update_ambient()'s existing per-tick ease (every mode, every tick)
     // carries the zoom there smoothly instead of snapping. Matters most for
@@ -267,14 +315,18 @@ static void reset_run(void) {
     gamestate.time_subsecond_frames = 0;
     clear_walls();
     patterns_reset();
+    wall_speed_x8 = STARTING_WALL_SPEED * 8;
+    wall_ramp_ctr = 0;
+    wall_speed_accum = 0;
     wall_speed = STARTING_WALL_SPEED;
     gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 10);
     gamestate.wall_spawn_dist = STARTING_WALL_SPAWN_DIST;
     shake_x = shake_y = 0;
     new_record = 0;
     beat_ctr = beat_env = 0;
-    field_rot_target = gamestate.field_rotation;
-    rot_timer = FRAME_RATE * 3;
+    field_rot_target = ROTATION_MILD_MAG; // mild forward ease-in, matching the PC's run-start behaviour
+    next_rot_kick_wave = ROTATION_KICK_WAVE_1;
+    rot_kick_negative = 0;
 }
 
 void game_init(void) {
@@ -299,38 +351,67 @@ static void update_playing(const InputState* in) {
     }
     update_difficulty();
 
-    // Rotation: ease toward a target that changes every few seconds (and can flip).
-    if (--rot_timer == 0) pick_rotation();
+    // Rotation: ease toward a target that only re-targets at wave-count
+    // milestones (rotation_kick()), not on a free-running timer.
+    if (patterns_waves_spawned() >= next_rot_kick_wave) rotation_kick();
     gamestate.field_rotation += (field_rot_target - gamestate.field_rotation) >> 4;
 
     // Zoom target is set in update_difficulty() (above), keyed to
     // wall_spawn_dist so it tracks wall_speed instead of drifting on a
     // fixed schedule of its own.
 
-    // Rotating into a wall's side just blocks the turn - it's only lethal
-    // when its inside edge sweeps inward and reaches you (checked below).
-    // PLAYER_TURN_RATE is well under one slot/tick, so at most one slot
-    // boundary is ever crossed here.
-    {
-        UWORD old_angle = gamestate.player_angle;
-        UWORD new_angle = (UWORD)(old_angle + (UWORD)(in->turn * PLAYER_TURN_RATE));
-        UWORD old_slot = angle_to_slot(old_angle);
-        UWORD new_slot = angle_to_slot(new_angle);
-        if (new_slot != old_slot && wall_overlaps_radius((UBYTE)new_slot, PLAYER_RADIUS))
-            new_angle = old_angle; // blocked: hold at the boundary
-        gamestate.player_angle = new_angle;
-    }
+    // Turning is unconditional either way - it's never blocked by an
+    // occupied wall slot (the PC's input handler never references the wall
+    // array at all); death is decided purely by the radial-overlap check
+    // below. Which of the two models below is compiled in is config.h's
+    // CONTROL_FLICK.
+#if CONTROL_FLICK
+    // Discrete slot-to-slot "flick", matching the source PC game (confirmed
+    // by decompile - see FLICK_TICKS's comment): a new flick only starts at
+    // rest (flick_timer==0), so holding a direction auto-repeats one flick
+    // right after another rather than free-spinning.
+    if (flick_timer == 0 && in->turn != 0)
+        flick_timer = (WORD)(in->turn > 0 ? FLICK_TICKS : -FLICK_TICKS);
 
+    if (flick_timer > 0) {
+        gamestate.player_angle = (UWORD)(gamestate.player_angle + flick_step);
+        if (--flick_timer == 0)
+            gamestate.player_angle = slot_center_angle(angle_to_slot(gamestate.player_angle));
+    } else if (flick_timer < 0) {
+        gamestate.player_angle = (UWORD)(gamestate.player_angle - flick_step);
+        if (++flick_timer == 0)
+            gamestate.player_angle = slot_center_angle(angle_to_slot(gamestate.player_angle));
+    }
+#else
+    // Continuous free rotation at a constant rate - this project's original
+    // control model, kept as the fallback (see config.h's CONTROL_FLICK).
+    gamestate.player_angle = (UWORD)(gamestate.player_angle + (UWORD)(in->turn * PLAYER_TURN_RATE));
+#endif
+
+    // Bresenham-style fractional carry: over several ticks this averages out
+    // to exactly wall_speed_x8/8 px/tick, using only an add/shift/mask - see
+    // wall_speed_x8's comment for why (cheap per-tick smoothing of a ramp
+    // that itself only updates in coarse steps, no multiply or divide here).
+    wall_speed_accum = (UWORD)(wall_speed_accum + wall_speed_x8);
+    WORD move = (WORD)(wall_speed_accum >> 3);
+    wall_speed_accum &= 7;
     for (WORD i = 0; i < MAX_WALLS; i++) {
         if (!walls[i].active) continue;
-        walls[i].dist -= wall_speed;
-        if (walls[i].dist <= HUB_RADIUS) walls[i].active = 0;
+        if (walls[i].dist > HUB_RADIUS) {
+            walls[i].dist -= move;
+            if (walls[i].dist <= HUB_RADIUS) walls[i].dist = HUB_RADIUS; // hold the leading edge at the hub, don't overshoot past it
+        } else {
+            // Leading edge is already at the hub - the trailing edge (see
+            // Wall.width) keeps sweeping in until it catches up, then the
+            // wall deactivates. Two-stage despawn, see Wall.width's comment.
+            walls[i].width -= move;
+            if (walls[i].width <= 0) walls[i].active = 0;
+        }
     }
 
     patterns_tick();
 
     // Death: a wall's inside edge has swept inward onto the player's slot.
-    // (Side-on contact from rotating into a wall was already blocked above.)
     UWORD pslot = angle_to_slot(gamestate.player_angle);
     if (wall_overlaps_radius((UBYTE)pslot, PLAYER_RADIUS)) {
         record_time();

@@ -91,7 +91,7 @@ static void draw_wall(const Wall* w, void* buf) {
     UWORD a0 = gamestate.field_angle + (UWORD)w->slot * gamestate.segment_angle;
     UWORD a1 = a0 + gamestate.segment_angle;
     WORD r0 = zscale(w->dist);
-    WORD r1 = zscale(w->dist + gamestate.wall_thickness);
+    WORD r1 = zscale(w->dist + w->width);
     WORD x00, y00, x10, y10, x11, y11, x01, y01;
     pt(a0, r0, &x00, &y00);
     pt(a1, r0, &x10, &y10);

@@ -31,7 +31,18 @@
 typedef struct sWall {
     UBYTE active;
     UBYTE slot;   // 0..gamestate.num_sides-1 (whatever it was when spawned)
-    WORD  dist;   // radius of the wall's inner edge
+    WORD  dist;   // radius of the wall's inner (leading, hub-facing) edge
+    // Snapshot of gamestate.wall_thickness at spawn time - the wall's own
+    // frozen thickness, used for both its collision hitbox and its rendered
+    // outer edge (dist+width). While approaching, this just sits at whatever
+    // wall_thickness was when the wall was born (so an in-flight wall doesn't
+    // visually "fatten" if wall_thickness ramps up while it's still travelling -
+    // see game.c). Once dist clamps at HUB_RADIUS, this instead counts down to
+    // 0 before the wall deactivates - the source PC game's two-stage despawn
+    // (scratchpad/super_hexagon_pattern_reverse_engineering.md Part 3 §3.1):
+    // the leading edge holds at the hub while the trailing edge keeps
+    // sweeping in, rather than an instant cutoff.
+    WORD  width;
 } Wall;
 
 typedef struct sGameState {
@@ -39,7 +50,7 @@ typedef struct sGameState {
     WORD field_rotation;
     UWORD segment_angle;
     UWORD segment_angle_target;
-    UBYTE num_sides;              // current field side count - morphs down as a run's difficulty ramps, see game.c's level table
+    UBYTE num_sides;              // field side count - fixed at STARTING_SIDES for the whole run (see game.c)
     WORD  wall_thickness;         // ~100ms of travel at the current wall_speed
     WORD  wall_spawn_dist;        // ~1.5s of travel at the current wall_speed (+ HUB_RADIUS)
     UWORD player_angle;          // field-relative, 0..65535 around the ring

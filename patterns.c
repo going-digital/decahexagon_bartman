@@ -42,6 +42,12 @@ static const Pattern* const pool_late[8]  = { &P_RING, &P_SPIRAL, &P_RSPIRAL, &P
 // above assume exactly 6 slots (masks use bits up to bit5) and would
 // misfire - wrap to the wrong slots or leave nonsense bits set - on a
 // morphed 4/5-side field.
+// Currently dead code: num_sides is fixed at 6 for the whole run (the
+// side-count morph was removed - it turned out to have no basis in the real
+// PC game, see scratchpad/super_hexagon_pattern_reverse_engineering.md).
+// Kept anyway as a defensive fallback rather than deleted: cheap, and it's
+// exactly the kind of guard the source game itself lacks (its own generator
+// can go silently wall-less for a beat on a non-hex field - this can't).
 static PStep generic_step; // scratch: filled fresh just before each use
 static const Pattern P_GENERIC = { &generic_step, 1 };
 
@@ -50,8 +56,20 @@ static UBYTE cur_step;
 static UBYTE anchor;
 static UWORD timer;
 
+// Count of completed patterns this run - the real PC game's difficulty/family
+// tiering keys off a discrete wave-count beat counter, not elapsed seconds
+// (scratchpad/super_hexagon_pattern_reverse_engineering.md Part 1 §5), with
+// hard checkpoints around wave 12 and wave 30. A decahexagon_bartman "pattern"
+// and a PC "wave" aren't quite the same grain, so these are a tuned-by-feel
+// starting point at the PC's own checkpoint values, not a precise port.
+static UWORD waves_spawned;
+#define WAVE_TIER_MID  (12)
+#define WAVE_TIER_LATE (30)
+
+UWORD patterns_waves_spawned(void) { return waves_spawned; }
+
 static const Pattern* pick_pattern(void) {
-    UWORD t = gamestate.time_seconds;
+    UWORD w = waves_spawned;
     UWORD r = game_rng();
 
     if (gamestate.num_sides != 6) {
@@ -60,9 +78,9 @@ static const Pattern* pick_pattern(void) {
         generic_step.delay = 0;
         return &P_GENERIC;
     }
-    if (t < 10)      return pool_early[r & 3];
-    else if (t < 25) return pool_mid[r & 7];
-    else             return pool_late[r & 7];
+    if (w < WAVE_TIER_MID)       return pool_early[r & 3];
+    else if (w < WAVE_TIER_LATE) return pool_mid[r & 7];
+    else                         return pool_late[r & 7];
 }
 
 // Ticks of calm between patterns, shrinking as the run gets faster. Starts
@@ -85,6 +103,10 @@ static UBYTE rng_slot(void) {
 // active at once, and purely random anchors can (reliably, in practice)
 // leave no slot safe across all of them at once. Falls back to the random
 // pick only in the degenerate case where every slot is already occupied.
+// This is now the ONLY fairness mechanism in the game: game.c no longer
+// blocks turning into an occupied slot (matching the source PC game), so a
+// wall can't be "bounced off" - if pick_anchor() ever placed a gap on an
+// unsafe slot, that would be an unavoidable hit, not just an inconvenience.
 static UBYTE pick_anchor(void) {
     UBYTE start = rng_slot();
     for (UBYTE i = 0; i < gamestate.num_sides; i++) {
@@ -106,6 +128,7 @@ void patterns_reset(void) {
     cur_step = 0;
     anchor = 0;
     timer = FRAME_RATE; // ~1s calm before the first pattern of a run
+    waves_spawned = 0;
 }
 
 void patterns_tick(void) {
@@ -123,6 +146,7 @@ void patterns_tick(void) {
     if (cur_step >= cur->count) {
         cur = 0;
         timer = inter_gap();
+        waves_spawned++;
     } else {
         timer = d;
     }

@@ -11,6 +11,18 @@
 // TARGET_NTSC: 60Hz timing + pixel-aspect correction. Default is 50Hz PAL.
 //#define TARGET_NTSC
 
+// CONTROL_FLICK: player turning model. 1 = discrete slot-to-slot "flick"
+// (matches the real PC game - fixed-duration hop, hard-snaps to the
+// destination slot's centre, see game.c). 0 = continuous free rotation at a
+// constant rate (this project's original model). On real hardware the flick
+// model reads correctly on a joystick but has tested worse than continuous
+// on keyboard - kept as a build-time choice rather than picking one and
+// deleting the other, until that's settled. Override with
+// `make EXTRA_CFLAGS="-DCONTROL_FLICK=0"`.
+#ifndef CONTROL_FLICK
+#define CONTROL_FLICK 1
+#endif
+
 #ifdef TARGET_NTSC
 #define FRAME_RATE (60)
 #else
@@ -29,10 +41,10 @@
 //#define SHOW_DRAW_PLANE  // show the work buffer as a 2nd bitplane
 //#define SKIP_FILL        // skip the area fill (wireframe)
 
-// Hexagon is the max/starting side count; the field morphs down to fewer
-// sides (pentagon, square) as a run's difficulty ramps - see game.c's level
-// table. MAX_NUM_SIDES only sizes fixed-capacity buffers now; the current
-// side count is gamestate.num_sides (runtime, changes mid-run).
+// Hexagon is the side count, fixed for the whole run (the side-count morph
+// this comment used to describe was removed - it had no basis in the real
+// PC game, see game.c). MAX_NUM_SIDES sizes fixed-capacity buffers and
+// matches gamestate.num_sides, which no longer changes at runtime.
 #define MAX_NUM_SIDES (6)
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
