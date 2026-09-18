@@ -37,10 +37,17 @@ static const PStep s_pinwheel[] = { {0x09,8}, {0x24,0} };
 // usual baseline, a punchier/lower-warning opener).
 static const PStep s_punch[] = { {0x07,6}, {0x18,0} };
 
-// Two near-full rings back to back, gap shifted one slot, short gap between
-// (wave 202's tighter/closer-spaced tiers vs. the big multi-thousand-unit
-// spreads elsewhere) - reads as a quick double-pulse.
-static const PStep s_tight_pulse[] = { {0x3E,4}, {0x3D,0} };
+// Two near-full rings back to back, short gap between (wave 202's
+// tighter/closer-spaced tiers vs. the big multi-thousand-unit spreads
+// elsewhere) - reads as a quick double-pulse. The second ring's gap is
+// TWO slots wide (anchor+0 AND +1), a superset of the first ring's single
+// anchor+0 gap - not just a shifted single gap (0x3D would leave only
+// anchor+1 open). That matters at this pattern's short 4-tick delay: if the
+// two rings' walls are ever simultaneously in range of the player's radius
+// (comes down to wall thickness vs. this delay - see WALL_THICKNESS_DIVISOR
+// in game.c), a shifted single gap would leave literally no slot safe in
+// both at once, whereas anchor+0 stays safe throughout either way here.
+static const PStep s_tight_pulse[] = { {0x3E,4}, {0x3C,0} };
 
 // Extended spingap - same validated gap-walk shape, 8 steps instead of 6
 // (wraps past a full loop), tighter per-step delay (the 300s family's

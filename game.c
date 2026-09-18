@@ -8,6 +8,26 @@
 
 #define STARTING_SIDES 6 // hexagon - field side count is fixed for the whole run (see num_sides in game.h)
 #define STARTING_WALL_SPEED 1 // must match update_difficulty()'s/reset_run()'s starting wall_speed below
+
+// wall_thickness = wall_speed * FRAME_RATE / WALL_THICKNESS_DIVISOR (3 call
+// sites: the initializer below, update_difficulty(), reset_run()). Since
+// thickness scales with wall_speed, the TIME a wall blocks a given radius is
+// FRAME_RATE/WALL_THICKNESS_DIVISOR ticks, constant regardless of speed.
+// SAFETY CONSTRAINT, found the hard way (playtesting hit a pattern that was
+// briefly unwinnable): patterns.c's patterns that shift their gap to a
+// DIFFERENT single slot each step (spingap/staircase_long, and formerly
+// tight_pulse before its mask was fixed) rely on there being no moment where
+// two consecutive steps' walls are simultaneously "in range" of the player's
+// radius with no slot safe in both - which requires this divisor's resulting
+// tick count to stay safely BELOW every such pattern's inter-step delay
+// (spingap/staircase_long's tightest is 9 ticks). A previous /4 gave 12-15
+// ticks - well over that - and briefly made tight_pulse (delay 4) truly
+// unwinnable for a stretch, not just harder. /7 gives 7-8 ticks, a real
+// margin under 9. If tuning this again, check every pattern's minimum
+// internal delay in patterns.c first - patterns with only ONE always-open
+// slot per step (not several, like pinwheel/punch's designs) are the ones at
+// risk.
+#define WALL_THICKNESS_DIVISOR 7
 // Visible range, in seconds of travel at the current wall_speed - see
 // update_difficulty()'s comment. Expressed as a ratio (not a plain literal)
 // so this stays a compile-time-constant multiply/divide wherever it's used
@@ -43,7 +63,7 @@ GameState gamestate = {
     .segment_angle = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES),
     .num_sides = STARTING_SIDES,
-    .wall_thickness = (STARTING_WALL_SPEED * FRAME_RATE / 4),  // ~250ms of travel (was /10 - playtesting found walls too thin)
+    .wall_thickness = (STARTING_WALL_SPEED * FRAME_RATE / WALL_THICKNESS_DIVISOR),
     .wall_spawn_dist = STARTING_WALL_SPAWN_DIST,
     .player_angle = 0,
     .wall_fraction = 0,
@@ -292,7 +312,7 @@ static void update_difficulty(void) {
         // game.h. wall_speed*FRAME_RATE is a runtime value times a
         // compile-time constant, and /10 divides by one too - both safe, no
         // lib-math risk.
-        gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 4);
+        gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / WALL_THICKNESS_DIVISOR);
         gamestate.wall_spawn_dist =
             (WORD)(HUB_RADIUS + wall_speed * FRAME_RATE * VIEW_SECONDS_NUM / VIEW_SECONDS_DEN);
 
@@ -337,7 +357,7 @@ static void reset_run(void) {
     wall_ramp_ctr = 0;
     wall_speed_accum = 0;
     wall_speed = STARTING_WALL_SPEED;
-    gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 4);
+    gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / WALL_THICKNESS_DIVISOR);
     gamestate.wall_spawn_dist = STARTING_WALL_SPAWN_DIST;
     shake_x = shake_y = 0;
     new_record = 0;
@@ -425,7 +445,7 @@ static void update_playing(const InputState* in) {
             // Shrinks at 2^DESPAWN_TAIL_SHIFT x the normal travel rate (a
             // shift, not a real multiply - cheap), not 1x: at 1x this tail
             // lingers for a fixed ~wall_thickness/wall_speed ticks regardless
-            // of speed (~FRAME_RATE/4 once wall_thickness's own /4 divisor is
+            // of speed (~FRAME_RATE/N once wall_thickness's own divisor is
             // substituted in - profiled as the actual bottleneck, `blit_fill`
             // reaching the bottom of the BUILD_DEBUG raster bar, once wall
             // thickness/zoom both grew). A wall in this phase has already
