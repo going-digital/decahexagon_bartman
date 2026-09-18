@@ -20,22 +20,58 @@ static const PStep s_rspiral[] = { {0x20,6},{0x10,6},{0x08,6},{0x04,6},{0x02,6},
 static const PStep s_ladder[]  = { {0x15,10},{0x2A,10},{0x15,10},{0x2A,11} }; // weave 010101/101010
 static const PStep s_spingap[] = { {0x3E,11},{0x3D,11},{0x3B,11},{0x37,11},{0x2F,11},{0x1F,12} }; // gap walks round
 
+// The patterns below are modeled on real PC wave shapes documented in
+// scratchpad/super_hexagon_pattern_reverse_engineering.md, added after
+// playtesting found the original 6 (hand-guessed before that RE work
+// existed) didn't feel like the source game. See that report + the approved
+// plan for the per-pattern reasoning on what got simplified and why.
+
+// Two opposite-pair "blades" crossing at different times (wave 90, the PC's
+// own first wave of a run) - simplified to one shared anchor since this
+// engine's pattern format assumes one, where the PC uses two independent
+// random anchors.
+static const PStep s_pinwheel[] = { {0x09,8}, {0x24,0} };
+
+// Two adjacent-block tiers, closer together than usual (wave 100, the first
+// "real" 100s-family wave - the report found it spawns closer than the
+// usual baseline, a punchier/lower-warning opener).
+static const PStep s_punch[] = { {0x07,6}, {0x18,0} };
+
+// Two near-full rings back to back, gap shifted one slot, short gap between
+// (wave 202's tighter/closer-spaced tiers vs. the big multi-thousand-unit
+// spreads elsewhere) - reads as a quick double-pulse.
+static const PStep s_tight_pulse[] = { {0x3E,4}, {0x3D,0} };
+
+// Extended spingap - same validated gap-walk shape, 8 steps instead of 6
+// (wraps past a full loop), tighter per-step delay (the 300s family's
+// staircases are structurally an extended version of wave 101/spingap's own
+// shape, not a different one - see the report).
+static const PStep s_staircase_long[] = {
+    {0x3E,9},{0x3D,9},{0x3B,9},{0x37,9},{0x2F,9},{0x1F,9},{0x3E,9},{0x3D,10}
+};
+
 static const Pattern P_RING    = { s_ring,    1 };
 static const Pattern P_WIDE_C  = { s_wide_c,  1 };
 static const Pattern P_SPIRAL  = { s_spiral,  6 };
 static const Pattern P_RSPIRAL = { s_rspiral, 6 };
 static const Pattern P_LADDER  = { s_ladder,  4 };
 static const Pattern P_SPINGAP = { s_spingap, 6 };
+static const Pattern P_PINWHEEL       = { s_pinwheel,       2 };
+static const Pattern P_PUNCH          = { s_punch,          2 };
+static const Pattern P_TIGHT_PULSE    = { s_tight_pulse,    2 };
+static const Pattern P_STAIRCASE_LONG = { s_staircase_long, 8 };
 
 // Difficulty-tiered pools, power-of-two sized so the pick is a mask not a %.
 // Repeats bias the weighting. pool_early leans toward the wider (2-slot)
 // wide_c gap - ring's single-slot gap is a rough first thing to ask of a
-// player still learning the controls.
-static const Pattern* const pool_early[4] = { &P_WIDE_C, &P_WIDE_C, &P_WIDE_C, &P_RING };
+// player still learning the controls. Tier placement of the newer,
+// PC-wave-modeled patterns mirrors the PC's own family placement (90s=intro,
+// 100s=early/mid, 300s=late) rather than being scattered arbitrarily.
+static const Pattern* const pool_early[4] = { &P_WIDE_C, &P_WIDE_C, &P_PINWHEEL, &P_RING };
 static const Pattern* const pool_mid[8]   = { &P_RING, &P_WIDE_C, &P_SPIRAL, &P_RSPIRAL,
-                                              &P_RING, &P_SPIRAL, &P_LADDER, &P_WIDE_C };
+                                              &P_PUNCH, &P_TIGHT_PULSE, &P_LADDER, &P_WIDE_C };
 static const Pattern* const pool_late[8]  = { &P_RING, &P_SPIRAL, &P_RSPIRAL, &P_LADDER,
-                                              &P_SPINGAP, &P_SPIRAL, &P_LADDER, &P_SPINGAP };
+                                              &P_SPINGAP, &P_STAIRCASE_LONG, &P_TIGHT_PULSE, &P_SPINGAP };
 
 // Generic 1- or 2-slot gap, sized to whatever the field's current side count
 // is. Used whenever the field isn't a hexagon: the hand-authored patterns

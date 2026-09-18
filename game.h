@@ -20,7 +20,7 @@
 #define SCREEN_EDGE_RADIUS (SCREEN_WIDTH / 2 - 10)
 
 // wall_thickness/wall_spawn_dist (in GameState below) are expressed in TIME,
-// not fixed distance: thickness ~100ms of travel, spawn dist ~1.5s of
+// not fixed distance: thickness ~250ms of travel, spawn dist ~1.5s of
 // travel, at the CURRENT wall_speed - see game.c's update_difficulty(). That keeps
 // the visual read (how much empty gap surrounds a wall, how long you get to
 // react) constant as wall_speed ramps up through a run, instead of walls
@@ -51,7 +51,7 @@ typedef struct sGameState {
     UWORD segment_angle;
     UWORD segment_angle_target;
     UBYTE num_sides;              // field side count - fixed at STARTING_SIDES for the whole run (see game.c)
-    WORD  wall_thickness;         // ~100ms of travel at the current wall_speed
+    WORD  wall_thickness;         // ~250ms of travel at the current wall_speed
     WORD  wall_spawn_dist;        // ~1.5s of travel at the current wall_speed (+ HUB_RADIUS)
     UWORD player_angle;          // field-relative, 0..65535 around the ring
     UWORD wall_fraction;

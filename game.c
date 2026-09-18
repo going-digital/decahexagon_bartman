@@ -9,9 +9,17 @@
 #define STARTING_SIDES 6 // hexagon - field side count is fixed for the whole run (see num_sides in game.h)
 #define STARTING_WALL_SPEED 1 // must match update_difficulty()'s/reset_run()'s starting wall_speed below
 // Visible range, in seconds of travel at the current wall_speed - see
-// update_difficulty()'s comment. 3/2 (not a plain literal) so this stays a
-// compile-time-constant multiply/divide-by-power-of-2 wherever it's used on
-// a runtime wall_speed, same reasoning as FRAME_RATE itself.
+// update_difficulty()'s comment. Expressed as a ratio (not a plain literal)
+// so this stays a compile-time-constant multiply/divide wherever it's used
+// on a runtime wall_speed, same reasoning as FRAME_RATE itself. This ratio
+// sets BOTH the camera zoom AND the actual reaction time before a wall
+// reaches the hub (wall_spawn_dist drives both) - they can't be tuned
+// independently. History: 3/2 originally felt too zoomed out/distant, but
+// that was before this session's other pacing/content changes (wall speed
+// ramp, thickness, new patterns); 1/1 fixed the zoom but cut reaction time
+// enough to feel too hard; 5/4 and 11/8 still weren't zoomed out enough.
+// Settled back on 3/2 (1.5s) - it reads differently now that everything
+// else around it has changed.
 #define VIEW_SECONDS_NUM 3
 #define VIEW_SECONDS_DEN 2
 #define STARTING_WALL_SPAWN_DIST (HUB_RADIUS + STARTING_WALL_SPEED * FRAME_RATE * VIEW_SECONDS_NUM / VIEW_SECONDS_DEN)
@@ -35,7 +43,7 @@ GameState gamestate = {
     .segment_angle = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES), // Ensure overflow after last segment
     .segment_angle_target = ((65536 + STARTING_SIDES - 1) / STARTING_SIDES),
     .num_sides = STARTING_SIDES,
-    .wall_thickness = (STARTING_WALL_SPEED * FRAME_RATE / 10),  // ~100ms of travel
+    .wall_thickness = (STARTING_WALL_SPEED * FRAME_RATE / 4),  // ~250ms of travel (was /10 - playtesting found walls too thin)
     .wall_spawn_dist = STARTING_WALL_SPAWN_DIST,
     .player_angle = 0,
     .wall_fraction = 0,
@@ -88,6 +96,16 @@ Wall walls[MAX_WALLS];
 // every 15s" overall ramp time (15*FRAME_RATE ticks per whole unit / 8
 // eighths per unit), compile-time constant, no runtime division.
 #define WALL_SPEED_RAMP_TICKS ((15 * FRAME_RATE) / 8)
+
+// How much faster the two-stage despawn's trailing edge (Wall.width, see
+// game.h) shrinks than the normal per-tick travel rate, once a wall's
+// leading edge has reached the hub - a shift (2^N), not a real multiply.
+// Profiled: with this at 0 (same rate as travel) every wall lingers for a
+// fixed ~wall_thickness/wall_speed ticks after functionally reaching the
+// hub, which was still costing fill time (BUILD_DEBUG's raster bar showed
+// blit_fill as the actual per-frame bottleneck) on top of the thicker walls
+// and bigger zoom from tuning the "too thin"/"too zoomed out" feedback.
+#define DESPAWN_TAIL_SHIFT 2 // x4 - taper in ~3 ticks instead of ~12
 
 static GameMode mode;
 static UWORD mode_timer;      // ticks elapsed in the current mode
@@ -274,7 +292,7 @@ static void update_difficulty(void) {
         // game.h. wall_speed*FRAME_RATE is a runtime value times a
         // compile-time constant, and /10 divides by one too - both safe, no
         // lib-math risk.
-        gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 10);
+        gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 4);
         gamestate.wall_spawn_dist =
             (WORD)(HUB_RADIUS + wall_speed * FRAME_RATE * VIEW_SECONDS_NUM / VIEW_SECONDS_DEN);
 
@@ -319,7 +337,7 @@ static void reset_run(void) {
     wall_ramp_ctr = 0;
     wall_speed_accum = 0;
     wall_speed = STARTING_WALL_SPEED;
-    gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 10);
+    gamestate.wall_thickness = (WORD)(wall_speed * FRAME_RATE / 4);
     gamestate.wall_spawn_dist = STARTING_WALL_SPAWN_DIST;
     shake_x = shake_y = 0;
     new_record = 0;
@@ -404,7 +422,17 @@ static void update_playing(const InputState* in) {
             // Leading edge is already at the hub - the trailing edge (see
             // Wall.width) keeps sweeping in until it catches up, then the
             // wall deactivates. Two-stage despawn, see Wall.width's comment.
-            walls[i].width -= move;
+            // Shrinks at 2^DESPAWN_TAIL_SHIFT x the normal travel rate (a
+            // shift, not a real multiply - cheap), not 1x: at 1x this tail
+            // lingers for a fixed ~wall_thickness/wall_speed ticks regardless
+            // of speed (~FRAME_RATE/4 once wall_thickness's own /4 divisor is
+            // substituted in - profiled as the actual bottleneck, `blit_fill`
+            // reaching the bottom of the BUILD_DEBUG raster bar, once wall
+            // thickness/zoom both grew). A wall in this phase has already
+            // functionally reached the hub - only its visual taper remains -
+            // so cutting how long it keeps costing fill time doesn't take
+            // anything away from the approach phase's thickness or the zoom.
+            walls[i].width -= (WORD)(move << DESPAWN_TAIL_SHIFT);
             if (walls[i].width <= 0) walls[i].active = 0;
         }
     }
