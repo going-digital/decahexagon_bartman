@@ -35,7 +35,7 @@ EXECRAM = execram
 # another backend, e.g. make pack EXECRAM_FLAGS="--backend=auto"
 # (store|inflate|zultra|zx0|salvador|shrinkler|auto - auto tries them all and
 # keeps the smallest). https://github.com/going-digital/execram
-EXECRAM_FLAGS ?= --backend=zultra
+EXECRAM_FLAGS ?= --backend=store
 
 ifdef WINDOWS
 	SDKDIR = $(abspath $(dir $(shell where $(CC)))..\m68k-amiga-elf\sys-include)
@@ -63,11 +63,11 @@ adf: $(OUT).adf $(OUT)_packed.adf
 
 $(OUT).adf: $(OUT).exe
 	$(info Building ADF $(OUT).adf)
-	@$(EXE2ADF) -i $(OUT).exe -l Decahexagon -a $(OUT).adf
+	@$(EXE2ADF) -i $(OUT).exe -l Hexagon -a $(OUT).adf
 
 $(OUT)_packed.adf: pack
 	$(info Building ADF $(OUT)_packed.adf)
-	@$(EXE2ADF) -i $(OUT)_packed.exe -l Decahexagon -a $(OUT)_packed.adf
+	@$(EXE2ADF) -i $(OUT)_packed.exe -l Hexagon -a $(OUT)_packed.adf
 
 # execram-compressed executable, built alongside the uncompressed one rather
 # than replacing it - self-decrunching, same hunk format, just smaller and
