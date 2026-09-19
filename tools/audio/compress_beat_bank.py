@@ -8,9 +8,14 @@ import reuse_beats as reuse
 from codec_experiment import fib_encode,fib_decode
 
 
-def main():
+def main(optimal=False):
     root=reuse.ROOT;work=root/'scratchpad/audio/courtesy'
-    out=work/'compressed_beats';out.mkdir(exist_ok=True)
+    out=work/('compressed_beats_optimal' if optimal else 'compressed_beats');out.mkdir(exist_ok=True)
+    encoder=fib_encode
+    if optimal:
+        from compare_fib_encoders import load_encoder,encode
+        fn=load_encoder()
+        encoder=lambda q: encode(q,fn)
     sr,pcm=wavfile.read(work/'beat_reuse/reference_16k_8bit.wav');q=(pcm//256).astype(np.int8)
     meta=json.loads((root/'soundtrack/courtesy.analysis.json').read_text())['constant_grid_hypothesis']
     edges=np.rint(np.arange(meta['phase_seconds'],len(q)/sr,30/meta['bpm'])*sr).astype(int)
@@ -22,13 +27,13 @@ def main():
     fixed=len(prefix)+len(suffix)+32+4*(len(slices)+2)+1536
     slots=max(len(fib_encode(np.zeros(n,dtype=np.int8))) for n in set(map(len,slices)))
     report={'status':'host only; decoder runtime/code and disk-loading overhead unmeasured',
-            'pcm_buffers_bytes':1536,'trials':[]}
+            'pcm_buffers_bytes':1536,'encoder':'block-optimal' if optimal else 'greedy','trials':[]}
     for budget in [64,192]:
         k=int((budget*1024-fixed-4)//(slots+4))
         chosen,ids=reuse.choose(dist,k)
         bank=bytearray();offsets=[];decoded=[]
         for j in chosen:
-            offsets.append(len(bank));data=fib_encode(slices[j]);bank.extend(data)
+            offsets.append(len(bank));data=encoder(slices[j]);bank.extend(data)
             decoded.append(fib_decode(data))
         offsets.append(len(bank))
         result=q.copy();uncompressed=q.copy()
@@ -48,7 +53,11 @@ def main():
         report['trials'].append({'budget_kib':budget,'dictionary_slices':k,'accounted_bytes':accounted,
                                 'feature_mse':float(np.mean((f-descriptors)**2)),
                                 'preview':str((out/f'{budget}k_fibonacci.wav').relative_to(root))})
-    (root/'soundtrack/courtesy.compressed_beats.json').write_text(json.dumps(report,indent=2)+'\n')
+    (root/('soundtrack/courtesy.compressed_beats_optimal.json' if optimal else 'soundtrack/courtesy.compressed_beats.json')).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--optimal',action='store_true')
+    main(parser.parse_args().optimal)

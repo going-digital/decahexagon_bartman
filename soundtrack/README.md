@@ -535,3 +535,53 @@ scheduler, verify it against these host bytes, then measure worst-case block
 fill time and underruns under heavy game rendering in PAL/NTSC FS-UAE. No claim
 of real-time feasibility, new ADF or emulator audio verification is made in this
 host-only batch. Do not replace LSP until that gate passes.
+
+## Priority 1: improved Fibonacci encoder, unchanged playback
+
+QOA is excluded following the user's instruction. Continue with: improved
+Fibonacci encoding; equal-budget 12/14/16 kHz comparisons; variable-length slices
+and mixed codecs; then cross-track reuse. The 68000/FS-UAE timing gate remains
+outstanding and must precede adopting a runtime player.
+
+The first priority is implemented. Because this codec has only 256 predictor
+states, the offline encoder can search the entire 512-sample block using dynamic
+programming rather than a bounded lookahead. It minimizes unweighted squared
+sample error with the block's initial predictor fixed. That is an exact optimum
+for this objective and format, not a claim of perceptual optimality.
+
+`tools/audio/fib_optimal.c` is compiled as a host library by
+`tools/audio/compare_fib_encoders.py`. It is not linked into the Amiga game.
+`FIB1` block sizes, predictors, code meanings and byte counts are unchanged;
+the existing decoder reads the improved streams with no additional operations.
+
+| First 20 seconds | Greedy SNR | Block-optimal SNR | Spectral error, greedy → optimal |
+| --- | ---: | ---: | ---: |
+| Courtesy | 22.78 dB | 24.90 dB | 0.05170 → 0.04090 |
+| Focus | 22.19 dB | 25.07 dB | 0.05592 → 0.04347 |
+| Otis | 19.36 dB | 22.21 dB | 0.07536 → 0.05651 |
+
+Every coded excerpt remains exactly 160,637 bytes. Metrics use the same quantized
+reference and gain as the earlier experiment. Listening approval remains pending.
+
+Reproduce:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compare_fib_encoders.py
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compress_beat_bank.py --optimal
+```
+
+Per-track codec_test directories now contain `fibonacci_optimal.bin` and
+`fibonacci_optimal_preview.wav`; previous files remain intact. Full Courtesy
+reconstructions are under `compressed_beats_optimal/`, with the same sample
+selection, budgets and bank layout as the greedy version. At 192 KiB this still
+means 100 slices and 195,489 accounted bytes. End-to-end feature MSE changes only
+slightly, from 0.019718 to 0.019703; at 64 KiB it changes from 0.031932 to 0.031964.
+Improving codec sample error does not guarantee better whole-song spectral error
+when musical substitutions dominate. Do not overstate the full-track improvement.
+
+Validation: a separately enumerated 16^3 path oracle verifies optimal error on
+two four-sample signals including signed wrapping; reset-boundary lengths
+1/2/511/512/513/1025 verify unchanged size and error no worse than greedy. Each
+encoded block stream is decoded with the previous Python decoder and its exact
+squared error checked against the dynamic-programming result. The 68000 timing
+benchmark remains unperformed; this change makes no runtime performance claim.

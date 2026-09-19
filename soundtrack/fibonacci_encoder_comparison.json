@@ -1,0 +1,43 @@
+{
+  "objective": "minimum unweighted squared sample error per 512-sample block, first predictor fixed",
+  "decoder_format": "FIB1 unchanged",
+  "validation": "brute-force four-sample oracle and reset/wrap boundary cases pass",
+  "tracks": [
+    {
+      "track": "courtesy",
+      "bytes": 160637,
+      "greedy": {
+        "snr_db": 22.781166398503693,
+        "relative_spectral_error": 0.05169954820125141
+      },
+      "optimal": {
+        "snr_db": 24.902961295711954,
+        "relative_spectral_error": 0.04089516323936807
+      }
+    },
+    {
+      "track": "focus",
+      "bytes": 160637,
+      "greedy": {
+        "snr_db": 22.192273781899843,
+        "relative_spectral_error": 0.05591799108072015
+      },
+      "optimal": {
+        "snr_db": 25.070757225061975,
+        "relative_spectral_error": 0.04347047915559056
+      }
+    },
+    {
+      "track": "otis",
+      "bytes": 160637,
+      "greedy": {
+        "snr_db": 19.36304787296002,
+        "relative_spectral_error": 0.07536211263885435
+      },
+      "optimal": {
+        "snr_db": 22.20586212449839,
+        "relative_spectral_error": 0.05650539838923792
+      }
+    }
+  ]
+}
