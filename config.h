@@ -13,8 +13,8 @@
 #define CHEAT_MODE 0
 #endif
 
-// TARGET_NTSC: 60Hz timing + pixel-aspect correction. Default is 50Hz PAL.
-//#define TARGET_NTSC
+// PAL/NTSC is detected from the running raster at startup.
+#include "video.h"
 
 // Initial menu selection: 0=Hexagon, 1=Hexagoner, 2=Hexagonest.
 // All six profiles are available in the runtime selector.
@@ -34,11 +34,7 @@
 #endif
 
 // Display cadence is independent of the 60 Hz reference simulation.
-#ifdef TARGET_NTSC
-#define DISPLAY_RATE 60
-#else
-#define DISPLAY_RATE 50
-#endif
+#define DISPLAY_RATE (video_timing.rate)
 #define FRAME_RATE 60 // simulation ticks per second (legacy consumers)
 
 // Startup banner text (BUILD_DEBUG only). Pick one.
@@ -58,16 +54,7 @@
 #define SCREEN_HEIGHT (200) // Must be multiple of 4 for cls routine
 #define SCREEN_WIDTH_BYTES (SCREEN_WIDTH >> 3)
 
-// Pixel aspect correction for NTSC
-#ifdef TARGET_NTSC
-// Should be *0.8333
-// n - (n>>2) = 0.75
-// n - (n>>2) + (n>>4) = 0.8125 close enough
-#define PIXEL_ASPECT_CORRECT_Y(n) (n * 5 / 6)
-#else
-// Strictly this is 15/16, but 1 is close enough
-#define PIXEL_ASPECT_CORRECT_Y(n) (n)
-#endif
+// Pixel geometry is handled by polar_to_cartesian(), identically in both modes.
 
 #define BITPLANE_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH_BYTES)
 
@@ -75,11 +62,7 @@
 // corner. screenScanDefault() uses these for DIWSTRT/DIWSTOP; the sprite HUD
 // shares them so sprites line up with the bitplane display.
 #define DISPLAY_HW_X (129 + (SCREEN_WIDTH - 320) / 2)
-#ifdef TARGET_NTSC
-#define DISPLAY_VISIBLE_HEIGHT 200
-#else
-#define DISPLAY_VISIBLE_HEIGHT 256
-#endif
+#define DISPLAY_VISIBLE_HEIGHT (video_timing.visible_height)
 #define DISPLAY_HW_Y (44 + (DISPLAY_VISIBLE_HEIGHT - SCREEN_HEIGHT) / 2)
 
 // Viewport clipping bounds and line-slope fixed point

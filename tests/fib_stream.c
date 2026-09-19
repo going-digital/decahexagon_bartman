@@ -23,13 +23,7 @@ static UWORD started, rendered, display_frames;
 static ULONG sample_length, fill_position, positions[FIB_BUFFERS];
 static volatile ULONG audible_position;
 static volatile UWORD audio_frame, audio_line, audio_epoch;
-#ifdef TARGET_NTSC
-#define AUDIO_PERIOD 298
-#define VIDEO_LINES 262
-#else
-#define AUDIO_PERIOD 296
-#define VIDEO_LINES 312
-#endif
+
 /* VBlank can be pending when the higher-priority audio IRQ runs. Include it
  * in the timestamp without changing the system's frame counter. */
 static void beam_stamp(UWORD *frame,UWORD *line) {
@@ -51,9 +45,9 @@ unsigned fib_stream_cue(void) {
         position=audible_position;af=audio_frame;al=audio_line;
         beam_stamp(&frame,&line);
     } while(epoch!=audio_epoch);
-    int lines=(UWORD)(frame-af)*VIDEO_LINES+(int)line-al;
+    int lines=(UWORD)(frame-af)*video_timing.lines+(int)line-al;
     if(lines<0) lines=0;
-    position=pc_pcm_position(position,sample_length,(unsigned)lines,AUDIO_PERIOD);
+    position=pc_pcm_position(position,sample_length,(unsigned)lines,video_timing.music_period);
     unsigned index=pc_pulse_cue_index(position);
     return index<11441?((const UBYTE*)CourtesyCues)[index]:0;
 }
@@ -115,11 +109,7 @@ void fib_stream_start(void) {
     paula_irq_set(0,audio_irq);
     custom->adkcon=0x00ff; /* no volume/period attachment */
     queue(0);
-#ifdef TARGET_NTSC
-    custom->aud[0].ac_per=298; /* 3579545 / 298 = 12011.90 Hz */
-#else
-    custom->aud[0].ac_per=296; /* 3546895 / 296 = 11982.75 Hz */
-#endif
+    custom->aud[0].ac_per=video_timing.music_period;
     custom->aud[0].ac_vol=0;
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;

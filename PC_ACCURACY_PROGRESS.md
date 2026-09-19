@@ -782,3 +782,25 @@ NTSC FS-UAE menu/gameplay verification passed with the music/effects build
 `scratchpad/fsuae/ntsc/fs-uae-crop-2609192048-02.png` (menu) and
 `fs-uae-crop-2609192049-02.png` (gameplay). The shared origin moved both sprite
 HUD and scene up 32 lines. Updated output: `out/hexagon_ntsc.adf`.
+
+## One executable for PAL and NTSC
+
+Added startup raster measurement after takeover, before Copper, HUD or audio
+initialization. A complete field selects the nominal 50/60 Hz simulation input,
+PAL/NTSC visible area and music/SFX Paula periods. The cue clock uses the
+measured field length. There are no remaining `TARGET_NTSC` branches in C code;
+both standards use the same ADF. The unused aspect macro was removed, preserving
+the renderer's existing common pixel geometry.
+
+`make test-video test-pulse test-pcm-lifecycle test-sfx` passes, including
+312/313-line PAL and 262/263-line NTSC configurations. Both the combined-audio
+and default effects-only builds pass the release cheat audit.
+
+FS-UAE boot/menu/gameplay checks passed in both modes using byte-identical
+`out/hexagon.adf` (SHA-256
+`f7fc6c2711ad300c8608bef36324e62aa20f13e0b725c715e9964f83c6786333`).
+The HUD/playfield selected the correct origins; both showed zero music
+underruns. Gameplay captures:
+`scratchpad/fsuae/pal/fs-uae-crop-2609192053-03.png` and
+`scratchpad/fsuae/ntsc/fs-uae-crop-2609192055-03.png`.
+These are short startup/gameplay checks, not new full-song stress trials.

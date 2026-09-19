@@ -46,11 +46,7 @@ static void play(unsigned id) {
     settle_dma();
     *(volatile ULONG*)&custom->aud[ch].ac_ptr=(ULONG)((const UBYTE*)SfxData+sfx_samples[id].offset);
     custom->aud[ch].ac_len=sfx_samples[id].words;
-#ifdef TARGET_NTSC
-    custom->aud[ch].ac_per=447;
-#else
-    custom->aud[ch].ac_per=443;
-#endif
+    custom->aud[ch].ac_per=video_timing.sfx_period;
     custom->aud[ch].ac_vol=64;
     ++begun;age[ch]=++serial;clip_id[ch]=id;first[ch]=busy[ch]=1;
     __asm volatile("" ::: "memory");

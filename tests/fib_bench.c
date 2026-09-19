@@ -38,11 +38,7 @@ void fib_bench_run(void) {
         UWORD end=beam();
         /* Reject timings that may have wrapped more than one raster. */
         if((UWORD)((UWORD)frameCounter-frame)>1) failure=1;
-#ifdef TARGET_NTSC
-        unsigned lines=262;
-#else
-        unsigned lines=312;
-#endif
+        unsigned lines=video_timing.lines;
         unsigned elapsed=(end+lines-start)%lines+1;
         if(elapsed>worst) worst=elapsed;
     }

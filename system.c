@@ -62,6 +62,20 @@ void WaitVbl(void) {
     debug_stop_idle();
 }
 
+/* Called with interrupts/DMA disabled after takeover. Observe a complete
+ * field, rather than relying on the OS default or an ECS-only mode bit. */
+void DetectVideoTiming(void) {
+    WaitVbl();
+    UWORD previous=0,maximum=0;
+    for (;;) {
+        UWORD line=(*(volatile ULONG*)&custom->vposr>>8)&511;
+        if(line<previous) break;
+        if(line>maximum) maximum=line;
+        previous=line;
+    }
+    video_select(maximum+1);
+}
+
 void WaitLine(USHORT line) {
     while (1) {
         ULONG vpos = *(volatile ULONG*)&custom->vposr;

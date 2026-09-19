@@ -127,6 +127,7 @@ int main() {
 #endif
 
     TakeSystem();
+    DetectVideoTiming();
 #if SOUND_EFFECTS || MUSIC_FIB_STREAM
     paula_irq_init();
 #endif
