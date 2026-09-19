@@ -1,5 +1,21 @@
 # Soundtrack analysis progress
 
+**Current decision: runtime soundtrack decompression is abandoned.** CPU time
+must remain available to the game. The supported soundtrack trial now plays
+word-aligned, offline-predecoded PCM slices, with no runtime interpolation.
+`MUSIC_FIB_STREAM=1` selects this backend; compressed playback and decoder
+benchmark build options are rejected. Earlier codec experiments below are
+historical evidence, not future work. Their host tools remain for reference.
+
+Next work is reducing the resident PCM dictionary through slice reuse and
+memory budgeting while preserving acceptable sound. The current exact variant
+bank needs 688,266 bytes plus buffers/state and requires the tested 1 MB A500
+configuration. A new 272,412-byte, 96-slice candidate now passes bounded
+512 KiB-only playback, with listening review and an attract HUD issue still
+open (see shared-duration trials below). Do not trade gameplay
+CPU for a smaller compressed bank; any decoding must finish before gameplay
+and fit alongside the game's memory requirements.
+
 First analysis batch: all three recordings have been decoded without manual
 trimming, hashed, and analysed. Per-track JSON files retain provenance, tempo
 hypotheses, stereo measurements and unreviewed excerpt intervals.
@@ -1069,12 +1085,65 @@ FSUAE_ADF="$PWD/out/fib_pcm.adf" tools/run_fsuae.sh pal
 ```
 
 `out/fib_pcm.adf` is the cheat-free listening build. The optional assisted stress
-image is `out/fib_pcm_game.adf`. `FIB_TRIAL_PCM=0` retains compressed playback;
-regenerate `out/courtesy.fbs` with `pack_fib_song.py` before rebuilding it.
-For the 512 KiB target, the next substantial saving needs removal of runtime
-interpolation within a smaller memory budget (for example offline compressed
-length variants, with a separately measured size/quality tradeoff).
+image is `out/fib_pcm_game.adf`. Compressed playback has since been retired;
+`FIB_TRIAL_PCM=0` is now rejected. Future memory reductions must retain
+predecoded playback without in-game decompression.
 
 Detailed artifact hashes, counters and screenshot paths:
 `fib_playback_optimization_trials.json`. The normal release rebuilt and passed
 its cheat audit; its map contains no experimental soundtrack backend.
+
+### Shared-duration PCM trials
+
+The exact PCM version stored 246 duration variants of 134 musical slices.
+`compact_pcm_song.py` instead stores each slice once at the longest required
+length. A short source repeats its final sample once during offline preparation;
+a short playback occurrence omits the final stored sample. Sequence lengths and
+all beat boundaries remain unchanged. This removes whole-slice resampling and
+its duplicated PCM storage, but is **not sample-exact** to the accepted preview.
+
+FBP2 retains word-aligned entries and permits up to two unused physical bytes
+beyond an occurrence's logical length. Playback still only copies PCM. FBP1
+remains supported for the exact baseline. The build now accepts `PCM_ASSET` to
+select trial banks without overwriting that baseline.
+
+| Musical slices | Complete asset bytes | With four DMA buffers | Sample RMS difference vs accepted preview |
+| --- | ---: | ---: | ---: |
+| 134 | 377,824 | 379,872 | 2.267 |
+| 128 | 361,180 | 363,228 | 2.836 |
+| 112 | 316,796 | 318,844 | 4.319 |
+| 96 | 272,412 | 274,460 | 6.061 |
+
+RMS uses signed 8-bit sample units. These are waveform differences, not a
+perceptual quality ranking. Counts below 134 use a frequency/time descriptor
+and occurrence-weighted greedy selection to substitute similar existing slices.
+No decoder or interpolation runs in the game. All previews remain 12 kHz and
+2,320,000 samples long; there is no accumulated beat-grid drift.
+
+All four banks pass the target C reader on the host, including noncontiguous
+load chunks, word padding, mixed odd/even read sizes, output canaries, invalid
+length rejection and the loop boundary. The exact FBP1 baseline also still
+passes. Preview WAVs and banks live in `scratchpad/audio/courtesy/pcm_reuse/`;
+measurements and source assignments are in `pcm_reuse_trials.json`.
+
+The 134-slice assisted executable failed at AmigaDOS load with error 103 on
+512 KiB Chip-only. Asset size alone does not establish that the complete game
+fits. The 128-slice image was built but has not been emulator-tested.
+The 112-slice assisted build loaded but displayed startup failure U999 and
+stalled at R=1/V=2; the shared error code does not distinguish bank validation
+from audio allocation failure. It is not a validated playback candidate.
+The 96-slice bank passed a bounded PAL 512 KiB Chip-only trial: 45.60 seconds
+of assisted gameplay, zero underruns, and clean return to AmigaDOS. Attract
+counters R=400/V=402 imply about 49.8 fps at nominal PAL cadence. Some score
+digits were clipped in the initial attract capture; gameplay timer digits were
+complete. That display issue remains unresolved. The full song loop and NTSC
+have not been target-tested. Evidence: `pcm_reuse_target_trials.json`. All sound changes still require
+listening judgement; none is installed as the normal soundtrack.
+
+```sh
+venv/bin/python tools/audio/compact_pcm_song.py
+tools/build.sh -B MUSIC_FIB_STREAM=1 \
+  PCM_ASSET=scratchpad/audio/courtesy/pcm_reuse/96 \
+  EXTRA_CFLAGS=-DBUILD_DEBUG=0 OUT=out/pcm_reuse_96 out/pcm_reuse_96.adf
+FSUAE_ADF="$PWD/out/pcm_reuse_96.adf" tools/run_fsuae.sh pal512
+```

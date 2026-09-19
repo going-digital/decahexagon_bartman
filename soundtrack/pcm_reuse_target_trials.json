@@ -1,0 +1,57 @@
+{
+  "profile": "PAL A500 512 KiB Chip, no Slow/Fast RAM",
+  "artifacts": {
+    "out/pcm_reuse_game.exe": {
+      "bytes": 451328,
+      "sha256": "8fa0e58d1b187e1886a1154c9690127d3c2d4c72f3acb5c12c94dfae0b017eb5"
+    },
+    "out/pcm_reuse_112_game.exe": {
+      "bytes": 390296,
+      "sha256": "7ae7d0b9310832ba1e1e586904edb47012e6b24ea8a758a3d006ef5b21180fee"
+    },
+    "out/pcm_reuse_96_game.exe": {
+      "bytes": 345912,
+      "sha256": "f4ffb46c6773d3bbd3e9a20a255fcf433c865e515b76bb5ce66deab5c1ac8b54"
+    },
+    "out/pcm_reuse_96.exe": {
+      "bytes": 342016,
+      "sha256": "3e87e7b992733f3fcef70c872c54cf90ea96b2d697ff46d435252f844f3efdad"
+    }
+  },
+  "trials": [
+    {
+      "slices": 134,
+      "status": "AmigaDOS load error 103",
+      "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191941-01.png"
+    },
+    {
+      "slices": 128,
+      "status": "built, not emulator tested"
+    },
+    {
+      "slices": 112,
+      "status": "loaded but startup failure U999 and stalled display R1/V2; bank-validation vs audio-allocation cause unresolved",
+      "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191943-01.png"
+    },
+    {
+      "slices": 96,
+      "status": "bounded gameplay and clean exit passed; attract HUD issue remains",
+      "asset_bytes": 272412,
+      "dma_bytes": 2048,
+      "game_clock_seconds": 45.6,
+      "underruns": 0,
+      "menu_R": 400,
+      "menu_V": 402,
+      "menu_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191944-01.png",
+      "gameplay_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191945-03.png",
+      "exit_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191946-04.png"
+    }
+  ],
+  "limitations": [
+    "No NTSC or full-song target loop trial",
+    "No target audio capture comparison",
+    "Lossy slice substitution requires listening judgement",
+    "Some score digits clipped in initial attract capture; gameplay timer complete",
+    "Normal release soundtrack unchanged"
+  ]
+}

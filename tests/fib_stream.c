@@ -1,33 +1,17 @@
-/* Experimental DMA transport; optional complete FBS1 bank sequencer. */
+/* Predecoded PCM DMA transport: no runtime decompression or interpolation. */
 #include "../system.h"
 #include "../config.h"
-#include "../fib_decode.h"
 #include "fib_stream.h"
-#ifndef FIB_TRIAL_PCM
-#define FIB_TRIAL_PCM 0
-#endif
-#if FIB_TRIAL_SONG
 #include "../fib_song.h"
-#if FIB_TRIAL_PCM
-INCBIN(FibSongData, "out/courtesy.pcm0");
-INCBIN_CHIP(FibSongTail, "out/courtesy.pcm1");
-#else
-INCBIN(FibSongData, "out/courtesy.fbs");
-#endif
+INCBIN(FibSongData, PCM_BANK_FIRST);
+INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
 static FibSong song;
-#else
-INCBIN(FibTrial, "out/fib_trial.payload");
-#endif
-#if FIB_TRIAL_SONG
 #define FIB_BUFFERS 4
-#else
-#define FIB_BUFFERS 3
-#endif
 static UBYTE *buffers;
 static volatile UWORD state[FIB_BUFFERS]; /* 0 free, 1 decoded, 2 owned by DMA */
 static volatile UWORD underruns, blocks;
 static UWORD playing, pending, next_queue, first_irq;
-static unsigned fill_slot, source_block, source_blocks, fill_position;
+static unsigned fill_slot;
 static volatile UWORD running;
 static UWORD started, rendered, display_frames;
 void fib_stream_frame(unsigned elapsed) {++rendered;display_frames+=elapsed;}
@@ -58,41 +42,22 @@ __attribute__((interrupt)) static void audio_irq(void) {
     }
     queue(pending); /* registers describe the following hardware reload */
 }
-static void fill_one(unsigned samples) {
-#if FIB_TRIAL_SONG
-    fib_song_read(&song,buffers+fill_slot*512+fill_position,samples);
-    fill_position+=samples;
-    if(fill_position<512) return;
-    fill_position=0;
-#else
-    fib_decode_block((const UBYTE*)FibTrial+source_block*257,buffers+fill_slot*512,512);
-    source_block=(source_block+1)%source_blocks;
-#endif
+static void fill_one(void) {
+    fib_song_read(&song,buffers+fill_slot*512,512);
     __asm volatile ("" ::: "memory");
     state[fill_slot]=1;
     fill_slot=(fill_slot+1)%FIB_BUFFERS;
 }
 void fib_stream_start(void) {
-#if FIB_TRIAL_SONG
     unsigned bytes=(ULONG)&incbin_FibSongData_end-(ULONG)FibSongData;
-#if FIB_TRIAL_PCM
-    int valid=fib_pcm_init_split(&song,FibSongData,bytes,FibSongTail,
-        (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail);
-#else
-    int valid=fib_song_init(&song,FibSongData,bytes);
-#endif
-    if(!valid) {
+    if(!fib_pcm_init_split(&song,FibSongData,bytes,FibSongTail,
+        (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail)) {
         underruns=999; return;
     }
-#else
-    unsigned bytes=(ULONG)&incbin_FibTrial_end-(ULONG)FibTrial;
-    if(!bytes || bytes%257) { underruns=999; return; }
-    source_blocks=bytes/257;
-#endif
     buffers=AllocMem(512*FIB_BUFFERS,MEMF_CHIP);
     if(!buffers) { underruns=999; return; }
-    fill_slot=source_block=fill_position=0;
-    for(unsigned i=0;i<FIB_BUFFERS;++i) fill_one(512);
+    fill_slot=0;
+    for(unsigned i=0;i<FIB_BUFFERS;++i) fill_one();
     playing=pending=0;next_queue=1;first_irq=1;state[0]=2;
     custom->intena=INTF_AUD0;
     custom->dmacon=DMAF_AUD0;
@@ -121,21 +86,10 @@ void fib_stream_fill(void) {
     UWORD age=(UWORD)((UWORD)frameCounter-started);
     if(age>=250 && age<265) return; /* deliberate producer starvation */
 #endif
-    /* One decode per VBlank (or per frame in the negative baseline build).
-     * Level-4 audio IRQ can preempt this level-3 producer safely. */
-    if(state[fill_slot]==0) {
-#if FIB_TRIAL_SONG
-        /* Cheap spans can safely refill a whole block in one tick. Never
-         * let this fast path cross into a potentially interpolated segment. */
-        unsigned remaining=512-fill_position;
-        unsigned quota=(FIB_TRIAL_PCM || (song.output_left>=remaining &&
-            (song.raw_mode || song.source_length==song.target_length)))?remaining:256;
-        fill_one(quota);
-#else
-        fill_one(512);
-#endif
-    }
+    /* One PCM copy per VBlank. Level-4 audio IRQ can preempt safely. */
+    if(state[fill_slot]==0) fill_one();
 }
+
 void fib_stream_stop(void) {
     running=0;
     __asm volatile ("" ::: "memory");

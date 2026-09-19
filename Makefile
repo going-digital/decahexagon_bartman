@@ -20,38 +20,22 @@ $(error CHEAT_MODE must be 0 or 1)
 endif
 c_sources += cheat.c
 endif
-FIB_TRIAL_PCM ?= 0
-ifeq ($(FIB_TRIAL_PCM),1)
-ifneq ($(FIB_TRIAL_SONG),1)
-$(error FIB_TRIAL_PCM requires FIB_TRIAL_SONG=1)
-endif
-endif
-FIB_TRIAL_SONG ?= 0
-ifeq ($(FIB_TRIAL_SONG),1)
-ifneq ($(MUSIC_FIB_STREAM),1)
-$(error FIB_TRIAL_SONG requires MUSIC_FIB_STREAM=1)
-endif
-ifeq ($(FIB_TRIAL_PCM),1)
-c_sources += fib_pcm.c
-SELFTEST_CFLAGS += -DFIB_TRIAL_PCM=1
-else
-c_sources += fib_song.c
-endif
-SELFTEST_CFLAGS += -DFIB_TRIAL_SONG=1
-endif
+# Soundtrack trials now only copy offline-predecoded PCM. Runtime codecs retired.
+PCM_ASSET ?= out/courtesy
 MUSIC_FIB_STREAM ?= 0
-ifeq ($(MUSIC_FIB_STREAM),1)
-c_sources += fib_decode.c tests/fib_stream.c
-SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1
-VPATH += tests
-endif
+FIB_TRIAL_SONG ?= 1
+FIB_TRIAL_PCM ?= 1
 MUSIC_FIB_BENCH ?= 0
 ifeq ($(MUSIC_FIB_BENCH),1)
-ifeq ($(MUSIC_FIB_STREAM),1)
-$(error Select only one Fibonacci trial)
+$(error Runtime decompression trials are retired; use MUSIC_FIB_STREAM=1 for predecoded PCM)
 endif
-c_sources += fib_decode.c tests/fib_bench.c
-SELFTEST_CFLAGS += -DMUSIC_FIB_BENCH=1
+ifeq ($(MUSIC_FIB_STREAM),1)
+ifneq ($(FIB_TRIAL_SONG)$(FIB_TRIAL_PCM),11)
+$(error Runtime decompression is retired; soundtrack playback requires predecoded PCM)
+endif
+c_sources += fib_pcm.c tests/fib_stream.c
+SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1 -DFIB_TRIAL_SONG=1 -DFIB_TRIAL_PCM=1
+SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).pcm1"'
 VPATH += tests
 endif
 PC_CORE_SELFTEST ?= 0
@@ -246,13 +230,5 @@ test-death:
 	python3 tests/compare_death.py
 
 ifeq ($(MUSIC_FIB_STREAM),1)
-ifeq ($(FIB_TRIAL_SONG),1)
-ifeq ($(FIB_TRIAL_PCM),1)
-obj/fib_stream.o: out/courtesy.pcm0 out/courtesy.pcm1
-else
-obj/fib_stream.o: out/courtesy.fbs
-endif
-else
-obj/fib_stream.o: out/fib_trial.payload
-endif
+obj/fib_stream.o: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1
 endif

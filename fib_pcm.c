@@ -9,7 +9,8 @@ int fib_pcm_init_split(FibSong *s,const unsigned char *p,unsigned first_bytes,
     unsigned bytes=first_bytes+second_bytes;
     if(bytes<first_bytes || first_bytes<32 || (first_bytes&1) ||
        (second_bytes && !second)) return 0;
-    if(bytes<32 || p[0]!='F'||p[1]!='B'||p[2]!='P'||p[3]!='1') return 0;
+    if(bytes<32 || p[0]!='F'||p[1]!='B'||p[2]!='P'||(p[3]!='1' && p[3]!='2')) return 0;
+    unsigned shared=p[3]=='2';
     unsigned count=be32(p+8),banks=be32(p+12),off=be32(p+16),seq=be32(p+20),data=be32(p+24);
     if(!banks || banks>65535 || !count || count>65535 || off!=32 ||
        seq!=off+4*(banks+1) || data!=seq+4*count || data>first_bytes ||
@@ -25,7 +26,11 @@ int fib_pcm_init_split(FibSong *s,const unsigned char *p,unsigned first_bytes,
         if(id>=banks || !n || n>32767) return 0;
         unsigned a=be32(p+off+4*id),b=be32(p+off+4*(id+1));
         const unsigned char *slice=a<split?p+data+a:second+(a-split);
-        if(b-a!=((n+1)&~1u) || ((n&1) && slice[n])) return 0;
+        /* FBP2 permits a shared slice to end up to two bytes beyond the
+         * requested duration. These bytes are never copied into the stream. */
+        if(shared) {
+            if(b-a<n || b-a>n+2) return 0;
+        } else if(b-a!=((n+1)&~1u) || ((n&1) && slice[n])) return 0;
         total+=n;
     }
     if(total!=be32(p+4)) return 0;
