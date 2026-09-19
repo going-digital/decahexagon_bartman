@@ -159,10 +159,11 @@ int main() {
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0), BPLCON0F_COLOR | (1 * BPLCON0F_BPU210));
     #endif
     copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon1), 0);
-    // PF1P=4 puts the (single) playfield behind all 4 sprite pairs, so the
-    // HUD/title sprites always draw on top of the walls/hexagon bitplane.
-    // PF2P/PF2PRI are dual-playfield-only and don't apply here.
-    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon2), BPLCON2F_PF2PRI | (4 * BPLCON2F_PF1P210));
+    // Put both playfield priority groups behind all four sprite pairs.
+    // Single-playfield mode also needs PF2P set: PF1P alone does not
+    // keep the HUD above the bitplane. BPLCON2 = $0024.
+    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon2),
+        4 * BPLCON2F_PF1P210 | 4 * BPLCON2F_PF2P210);
 
     // Set bitplane modulo
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl1mod), 0);

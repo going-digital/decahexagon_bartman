@@ -416,3 +416,19 @@ This resolves the previously recorded reload failure on that configuration.
 A second floppy reload also reaches the title and exits cleanly (three launches
 within one emulator boot): [third title](scratchpad/fsuae/pal512/fs-uae-crop-2609191236-01.png),
 [third exit](scratchpad/fsuae/pal512/fs-uae-crop-2609191237-01.png).
+
+
+## HUD priority above walls
+
+Corrected the copper BPLCON2 value from $0044 to $0024. Normal single-playfield
+sprite priority is controlled by PF2P, which was previously zero (playfield
+in front of every sprite). Both priority fields now contain 4, placing all
+HUD/title sprite pairs in front of the playfield. Removed the incorrect
+comment claiming PF2P only applies to dual-playfield displays.
+See the [Hardware Reference Manual, priority control register](https://www.theflatnet.de/pub/cbm/amiga/AmigaDevDocs/hard_7.html).
+
+Normal and packed release builds pass, including the no-cheat audits.
+FS-UAE PAL A500, 512 KB Chip: [wall crossing behind the complete timer at
+2.13 seconds](scratchpad/fsuae/pal512/fs-uae-crop-2609191244-08.png)
+confirms the priority fix during gameplay. Title and game-over banners also
+render correctly. The verification emulator was closed.
