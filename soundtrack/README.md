@@ -450,3 +450,88 @@ Validation: all six stored banks and assignment files were decoded independently
 and reproduce every interior preview sample exactly. Each mix equals the sum of
 its exported layers, each output has 3,093,334 samples at 16 kHz, and bank plus
 sequence allowances fit the stated budgets. No Amiga runtime code changed.
+
+## Codec experiment: measured host quality/storage, target timing pending
+
+`tools/audio/codec_experiment.py` compares the first 20 seconds of all three
+tracks at mono 16 kHz. Each track has one common anti-clipping gain and an 8-bit
+quantized reference. Preview WAVs use a lossless 16-bit container for those
+8-bit output values. Methods:
+
+- Fibonacci delta: four-bit codes, fixed delta table, signed-byte wrap semantics,
+  predictor restart every 512 samples. Custom `FIB1` container, not an 8SVX file.
+- IMA ADPCM: FFmpeg's WAV encoder/decoder; decoded samples are rounded/clipped
+  to signed 8-bit to represent final Paula output. The exact FFmpeg version is
+  recorded. Padded encoded blocks count toward storage; previews trim the tail
+  to the original reference length. No native IMA decoder has been added yet.
+- VQ8: 256 quantized eight-sample vectors, one byte per vector index. A 2 KiB
+  codebook is trained on up to 5,000 blocks from the first ten seconds only;
+  second-half metrics test unseen material. This is a basic waveform codebook,
+  not a perceptual codec or a full-track-trained dictionary.
+
+| Codec | Encoded bytes / 20-second excerpt, including container | Reduction |
+| --- | ---: | ---: |
+| Reference 8-bit PCM payload | 320,000 | 1× |
+| Fibonacci | 160,637 | 1.99× |
+| IMA ADPCM WAV | 160,862 | 1.99× |
+| VQ8 | 42,056 | 7.61× |
+
+| Track | Fibonacci SNR | IMA SNR | VQ8 SNR |
+| --- | ---: | ---: | ---: |
+| Courtesy | 22.78 dB | 18.86 dB | 9.64 dB |
+| Focus | 22.19 dB | 24.40 dB | 13.70 dB |
+| Otis | 19.36 dB | 13.24 dB | 12.06 dB |
+
+SNR is relative to the quantized/downsampled reference, not the original MP3.
+These comparisons do not establish subjective quality or represent each whole
+song. Fibonacci wins the measured error on Courtesy/Otis; IMA wins on Focus.
+The short-block dictionary saves much more storage but has substantially more
+error. Decoder CPU costs have not been measured on the A500.
+
+Reproduce:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/codec_experiment.py
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compress_beat_bank.py
+```
+
+Listening files are under `scratchpad/audio/<track>/codec_test/`: reference.wav,
+fibonacci_preview.wav, ima_adpcm_preview.wav and vq8_preview.wav. Actual coded
+files accompany them. Measurements are in `soundtrack/codec_comparison.json`.
+
+### Larger reusable bank within the same budget
+
+The follow-on experiment applies Fibonacci coding to independently stored
+Courtesy half-beat samples, keeping the previous spectral-medoid selection.
+Predictor state resets at each coded block; sample offsets allow seeking.
+
+| Total budget | Old PCM entries | Compressed entries | Accounted bytes | Old feature MSE | New feature MSE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 64 KiB | 15 | 30 | 64,624 | 0.0408 | 0.03193 |
+| 192 KiB | 51 | 100 | 195,489 | 0.0257 | 0.01972 |
+
+New accounting includes actual compressed samples, verbatim intro/outro,
+four-byte sample offsets, proposed compact sequencing/header storage and
+1,536 bytes for three 512-byte PCM buffers. Decoder code/state, interrupt setup,
+allocator/OS costs and loader peaks remain excluded. The earlier PCM comparison
+did not reserve those decoded buffers. This is Courtesy only, not three songs.
+
+Under `scratchpad/audio/courtesy/compressed_beats/`, audition
+`192k_fibonacci.wav` against `192k_before_codec.wav` (identical larger dictionary
+before delta coding), and the earlier `beat_reuse/0.5beat_192k.wav`. All use the
+same reference gain. Compressed banks, edge-fragment PCM and complete host
+sequence/offset JSON are retained. Compact target sequencing is budgeted but
+not yet implemented. One-sample slice-length correction remains a host-preview
+operation which the target must reproduce with an explicit timing policy.
+
+Validation: independent known-byte vectors check Fibonacci wrap behavior and
+VQ lookup; boundary-length cases exercise Fibonacci blocks. Both stored full-track
+compressed banks and their sequences replay byte-for-byte to their exported
+previews. The new spectral error is lower, but joins and musical substitutions
+still require listening review.
+
+Next target gate: implement a bounded 68000 Fibonacci decoder and replay
+scheduler, verify it against these host bytes, then measure worst-case block
+fill time and underruns under heavy game rendering in PAL/NTSC FS-UAE. No claim
+of real-time feasibility, new ADF or emulator audio verification is made in this
+host-only batch. Do not replace LSP until that gate passes.

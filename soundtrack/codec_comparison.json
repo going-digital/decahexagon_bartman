@@ -1,0 +1,162 @@
+{
+  "status": "host quality/storage only; no target timing measured",
+  "ffmpeg": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "tracks": [
+    {
+      "track": "courtesy",
+      "interval_seconds": [
+        0,
+        20
+      ],
+      "sample_rate": 16000,
+      "reference_bytes": 320000,
+      "common_gain": 1.0,
+      "vq_training_seconds": [
+        0,
+        10
+      ],
+      "variants": {
+        "fibonacci": {
+          "encoded_bytes_including_headers": 160637,
+          "compression_ratio": 1.9920690749951755,
+          "whole_excerpt": {
+            "snr_db": 22.781166398503693,
+            "relative_spectral_error": 0.05169954820125141
+          },
+          "second_half": {
+            "snr_db": 23.354852254930222,
+            "relative_spectral_error": 0.04827060519564657
+          }
+        },
+        "vq8": {
+          "encoded_bytes_including_headers": 42056,
+          "compression_ratio": 7.608902415826517,
+          "whole_excerpt": {
+            "snr_db": 9.643395010376466,
+            "relative_spectral_error": 0.2507376768369379
+          },
+          "second_half": {
+            "snr_db": 9.449719899633159,
+            "relative_spectral_error": 0.25999028051239287
+          }
+        },
+        "ima_adpcm": {
+          "encoded_bytes_including_headers": 160862,
+          "compression_ratio": 1.989282739242332,
+          "whole_excerpt": {
+            "snr_db": 18.858727769944178,
+            "relative_spectral_error": 0.07481741536815092
+          },
+          "second_half": {
+            "snr_db": 20.408965211085892,
+            "relative_spectral_error": 0.0627327008681938
+          }
+        }
+      }
+    },
+    {
+      "track": "focus",
+      "interval_seconds": [
+        0,
+        20
+      ],
+      "sample_rate": 16000,
+      "reference_bytes": 320000,
+      "common_gain": 0.9835745692253113,
+      "vq_training_seconds": [
+        0,
+        10
+      ],
+      "variants": {
+        "fibonacci": {
+          "encoded_bytes_including_headers": 160637,
+          "compression_ratio": 1.9920690749951755,
+          "whole_excerpt": {
+            "snr_db": 22.192273781899843,
+            "relative_spectral_error": 0.05591799108072015
+          },
+          "second_half": {
+            "snr_db": 22.146933495742076,
+            "relative_spectral_error": 0.055984743940090474
+          }
+        },
+        "vq8": {
+          "encoded_bytes_including_headers": 42056,
+          "compression_ratio": 7.608902415826517,
+          "whole_excerpt": {
+            "snr_db": 13.702041013901496,
+            "relative_spectral_error": 0.1410475837871314
+          },
+          "second_half": {
+            "snr_db": 13.575660981044319,
+            "relative_spectral_error": 0.14259899359846392
+          }
+        },
+        "ima_adpcm": {
+          "encoded_bytes_including_headers": 160862,
+          "compression_ratio": 1.989282739242332,
+          "whole_excerpt": {
+            "snr_db": 24.404385619135272,
+            "relative_spectral_error": 0.0401570195838634
+          },
+          "second_half": {
+            "snr_db": 24.417619474460622,
+            "relative_spectral_error": 0.04008526025827325
+          }
+        }
+      }
+    },
+    {
+      "track": "otis",
+      "interval_seconds": [
+        0,
+        20
+      ],
+      "sample_rate": 16000,
+      "reference_bytes": 320000,
+      "common_gain": 1.0,
+      "vq_training_seconds": [
+        0,
+        10
+      ],
+      "variants": {
+        "fibonacci": {
+          "encoded_bytes_including_headers": 160637,
+          "compression_ratio": 1.9920690749951755,
+          "whole_excerpt": {
+            "snr_db": 19.36304787296002,
+            "relative_spectral_error": 0.07536211263885435
+          },
+          "second_half": {
+            "snr_db": 19.200584616706394,
+            "relative_spectral_error": 0.07608459813238641
+          }
+        },
+        "vq8": {
+          "encoded_bytes_including_headers": 42056,
+          "compression_ratio": 7.608902415826517,
+          "whole_excerpt": {
+            "snr_db": 12.056274986237588,
+            "relative_spectral_error": 0.17045936372443618
+          },
+          "second_half": {
+            "snr_db": 11.29652695247422,
+            "relative_spectral_error": 0.18532462073651124
+          }
+        },
+        "ima_adpcm": {
+          "encoded_bytes_including_headers": 160862,
+          "compression_ratio": 1.989282739242332,
+          "whole_excerpt": {
+            "snr_db": 13.238119119099537,
+            "relative_spectral_error": 0.12803325307893879
+          },
+          "second_half": {
+            "snr_db": 14.610847642109551,
+            "relative_spectral_error": 0.1129160809098062
+          }
+        }
+      }
+    }
+  ]
+}

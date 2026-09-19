@@ -1,0 +1,20 @@
+{
+  "status": "host only; decoder runtime/code and disk-loading overhead unmeasured",
+  "pcm_buffers_bytes": 1536,
+  "trials": [
+    {
+      "budget_kib": 64,
+      "dictionary_slices": 30,
+      "accounted_bytes": 64624,
+      "feature_mse": 0.031931524882217274,
+      "preview": "scratchpad/audio/courtesy/compressed_beats/64k_fibonacci.wav"
+    },
+    {
+      "budget_kib": 192,
+      "dictionary_slices": 100,
+      "accounted_bytes": 195489,
+      "feature_mse": 0.01971827433124018,
+      "preview": "scratchpad/audio/courtesy/compressed_beats/192k_fibonacci.wav"
+    }
+  ]
+}
