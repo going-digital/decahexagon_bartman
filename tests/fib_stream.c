@@ -4,6 +4,8 @@
 #include "fib_stream.h"
 #include "../fib_song.h"
 #include "../pcm_lifecycle.h"
+#include "../paula_irq.h"
+#include "../sfx.h"
 static PcmLifecycle lifecycle;
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
@@ -17,14 +19,13 @@ static unsigned fill_slot;
 static volatile UWORD running;
 static UWORD started, rendered, display_frames;
 void fib_stream_frame(unsigned elapsed) {++rendered;display_frames+=elapsed;}
-static APTR saved_vector;
-static APTR *vector;
 
 static void queue(unsigned slot) {
     *(volatile ULONG *)&custom->aud[0].ac_ptr=(ULONG)(buffers+slot*512);
     custom->aud[0].ac_len=256;
 }
-__attribute__((interrupt)) static void audio_irq(void) {
+static void audio_irq(unsigned channel) {
+    (void)channel;
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;
     if(first_irq) first_irq=0; /* initial DMA fetch has started buffer zero */
@@ -64,9 +65,7 @@ void fib_stream_start(void) {
     playing=pending=0;next_queue=1;first_irq=1;state[0]=2;
     custom->intena=INTF_AUD0;
     custom->dmacon=DMAF_AUD0;
-    vector=(APTR*)((UBYTE*)GetSystemVBR()+0x70);
-    saved_vector=*vector;
-    *vector=(APTR)audio_irq;
+    paula_irq_set(0,audio_irq);
     custom->adkcon=0x00ff; /* no volume/period attachment */
     queue(0);
 #ifdef TARGET_NTSC
@@ -102,7 +101,7 @@ void fib_stream_stop(void) {
     custom->aud[0].ac_vol=0;
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;
-    *vector=saved_vector;
+    paula_irq_set(0,0);
     FreeMem(buffers,512*FIB_BUFFERS);
     buffers=0;
 }
@@ -119,14 +118,15 @@ void fib_stream_draw(unsigned char *plane) {
       {6,9,6,9,6},{6,9,7,1,14},{9,9,9,9,6},{14,9,14,9,14},{14,9,14,10,9},{9,9,9,6,6}};
     unsigned u=underruns,b=blocks;
     unsigned r=rendered,v=display_frames;
-    unsigned text[22]={10,u/100,(u/10)%10,u%10,11,b/10000,(b/1000)%10,(b/100)%10,(b/10)%10,b%10,12,r/10000,(r/1000)%10,(r/100)%10,(r/10)%10,r%10,13,v/10000,(v/1000)%10,(v/100)%10,(v/10)%10,v%10};
+    unsigned sb,sr,sa;sfx_status(&sb,&sr,&sa);
+    unsigned text[32]={10,u/100,(u/10)%10,u%10,11,b/10000,(b/1000)%10,(b/100)%10,(b/10)%10,b%10,12,r/10000,(r/1000)%10,(r/100)%10,(r/10)%10,r%10,13,v/10000,(v/1000)%10,(v/100)%10,(v/10)%10,v%10,11,sb/100,(sb/10)%10,sb%10,12,sr/100,(sr/10)%10,sr%10,13,sa};
     /* Byte-aligned glyphs keep diagnostics from dominating render time. */
     static const UBYTE expanded[16]={0,3,12,15,48,51,60,63,192,195,204,207,240,243,252,255};
-    for(unsigned ch=0;ch<22;++ch) {
-        unsigned column=ch<10?ch:ch-10;
-        unsigned gap=ch<10?4:6;
+    for(unsigned ch=0;ch<32;++ch) {
+        unsigned column=ch<10?ch:ch<22?ch-10:ch-22;
+        unsigned gap=ch<10?4:ch<22?6:4;
         unsigned x=1+column+(column>=gap);
-        unsigned top=ch<10?26:40;
+        unsigned top=ch<10?26:ch<22?40:54;
         for(unsigned y=0;y<5;++y) {
             UBYTE bits=expanded[glyphs[text[ch]][y]];
             plane[(top+2*y)*SCREEN_WIDTH_BYTES+x]=bits;

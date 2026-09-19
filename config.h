@@ -81,3 +81,7 @@
 #define XMAX (SCREEN_WIDTH-1)
 #define YMAX (SCREEN_HEIGHT-1)
 #define FRACBITS 8
+
+#ifndef SOUND_EFFECTS
+#define SOUND_EFFECTS 1
+#endif

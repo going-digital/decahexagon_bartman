@@ -18,6 +18,8 @@
 #include "trig.h"
 #include "input.h"
 #include "game.h"
+#include "sfx.h"
+#include "paula_irq.h"
 #include "render.h"
 #include "hud.h"
 
@@ -125,6 +127,10 @@ int main() {
 #endif
 
     TakeSystem();
+#if SOUND_EFFECTS || MUSIC_FIB_STREAM
+    paula_irq_init();
+#endif
+    sfx_init();
     WaitVbl();
 
     // Allocate bitplanes
@@ -335,6 +341,10 @@ int main() {
     fib_stream_stop();
 #endif
 
+    sfx_shutdown();
+#if SOUND_EFFECTS || MUSIC_FIB_STREAM
+    paula_irq_shutdown();
+#endif
     // END
     FreeSystem();
     hud_free();

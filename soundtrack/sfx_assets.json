@@ -1,0 +1,120 @@
+{
+  "sample_rate": 8000,
+  "format": "signed 8-bit mono, even padded",
+  "bytes": 117890,
+  "sha256": "a1ecf02277880f61c849947cf0c616ef902322dec212bf4fae81c86c4b31f4e3",
+  "clips": [
+    {
+      "id": 0,
+      "name": "begin",
+      "source_sha256": "17a4ff952f755c59e5fd028c9d82235a4725e074dc0824328516475d8ad40b73",
+      "offset": 0,
+      "bytes": 4260
+    },
+    {
+      "id": 1,
+      "name": "excellent",
+      "source_sha256": "81045f8c28831d994958b8ac0859f721dc56ab4d6fa7e109b8fae498a35bebda",
+      "offset": 4260,
+      "bytes": 7986
+    },
+    {
+      "id": 2,
+      "name": "gameover",
+      "source_sha256": "b584567aea17f6bfe646215e326eebdee200dcb63d1cb414a2de4c2dd5f3877a",
+      "offset": 12246,
+      "bytes": 12406
+    },
+    {
+      "id": 3,
+      "name": "start",
+      "source_sha256": "97afbcc791cb78a3a77ed700dd01629bb62856857c3c2fa126ff48ea1c8c06cd",
+      "offset": 24652,
+      "bytes": 10954
+    },
+    {
+      "id": 4,
+      "name": "die",
+      "source_sha256": "9ece731a0b52ea838afd0427ba269380fb74cedfdc31e311afa3b4b66c4f0c3d",
+      "offset": 35606,
+      "bytes": 15378
+    },
+    {
+      "id": 5,
+      "name": "rankup",
+      "source_sha256": "8c9797bf878e94f652d8c95d0f7b20deb05522828baa86b7f871d33666b65698",
+      "offset": 50984,
+      "bytes": 4002
+    },
+    {
+      "id": 6,
+      "name": "line",
+      "source_sha256": "fd1147d13c18580337f9550d4f61d933a218b4ff47a6e4c93c2be8dad1c3888f",
+      "offset": 54986,
+      "bytes": 5038
+    },
+    {
+      "id": 7,
+      "name": "triangle",
+      "source_sha256": "a38d5b17d382dd4a4b9b6ceaf7bbbe12d9a1f8f8c12e2bbfebdc357511cf3740",
+      "offset": 60024,
+      "bytes": 7536
+    },
+    {
+      "id": 8,
+      "name": "square",
+      "source_sha256": "b584fa9f23e488bc43a1a0a6c342757e348a5459347180c430f2bf1c58d4bd56",
+      "offset": 67560,
+      "bytes": 6616
+    },
+    {
+      "id": 9,
+      "name": "pentagon",
+      "source_sha256": "0c75d78ef3bf4c83b84011f6eebbad7909639c1dbc537792a166beafac6f92f7",
+      "offset": 74176,
+      "bytes": 7126
+    },
+    {
+      "id": 10,
+      "name": "hexagon",
+      "source_sha256": "d86ba395db513bbee7f78cb84e591d53b85e3526e496b3fb248965a5afe530c1",
+      "offset": 81302,
+      "bytes": 6562
+    },
+    {
+      "id": 11,
+      "name": "menuselect",
+      "source_sha256": "74741ae3dc784e8f656bfd30ef0befae47fdbf98dbb513c26128b39f69c8c840",
+      "offset": 87864,
+      "bytes": 2756
+    },
+    {
+      "id": 12,
+      "name": "menuchoose",
+      "source_sha256": "e1aacb5151eba89a8d450d70d8e28a3071458d8eb2316a0d97ec467eb7f0edfe",
+      "offset": 90620,
+      "bytes": 1890
+    },
+    {
+      "id": 13,
+      "name": "awesome",
+      "source_sha256": "cb22cdb2f09173a3fcd8fb9d957c919bafbd4a4a09b17ac5969218066d49cedf",
+      "offset": 92510,
+      "bytes": 5688
+    },
+    {
+      "id": 14,
+      "name": "wonderful",
+      "source_sha256": "2d9723e78204fb586ebb13f41df2660a9159a5f519c03e4c0bc2e103a79444ae",
+      "offset": 98198,
+      "bytes": 7172
+    },
+    {
+      "id": 15,
+      "name": "superhexagon",
+      "source_sha256": "56e3ab7e2f6e17486cdbf3fdc2ad77d9ad7808d6f59ffdf3829d31bdfebed0dc",
+      "offset": 105370,
+      "bytes": 12520
+    }
+  ]
+}

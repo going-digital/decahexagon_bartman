@@ -1,8 +1,11 @@
 # Soundtrack analysis progress
 
 The placeholder LSP/ThePlayer backends and demo music assets have been removed.
-Only the PCM soundtrack option remains (`MUSIC_FIB_STREAM=1`); builds without
-that option are silent. The PCM start/death/retry lifecycle remains in place.
+PCM music remains optional (`MUSIC_FIB_STREAM=1`). Original PC effects and
+speech are now enabled by default (`SOUND_EFFECTS=1`) on AUD1–AUD3, separate
+from AUD0 music. Set `SOUND_EFFECTS=0` to omit them. Builds with both options
+off are silent. The PCM start/death/retry lifecycle remains in place.
+See [SOUND_EFFECTS.md](SOUND_EFFECTS.md) for triggers, memory and limitations.
 
 **Current decision: runtime soundtrack decompression is abandoned.** CPU time
 must remain available to the game. The supported soundtrack trial now plays

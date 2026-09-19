@@ -730,3 +730,22 @@ PAL A500 512 KB Chip-only FS-UAE captures show `LOCKED` both
 [immediately after selection](scratchpad/fsuae/pal512/fs-uae-crop-2609191458-01.png)
 and [two seconds later](scratchpad/fsuae/pal512/fs-uae-crop-2609191458-02.png).
 Normal and packed releases were rebuilt and pass the no-cheat audit.
+
+## Sound effects and speech
+
+Original PC clips now convert offline to word-aligned 8 kHz PCM. AUD0 remains
+reserved for music; AUD1–3 share a one-shot effect/voice pool and a common
+level-4 dispatcher. Hooks cover existing menu movement, begin/start, record
+crossing, rank thresholds, ordinary death, delayed game-over, completed-result
+voices, continuation and the startup announcement. See
+`soundtrack/SOUND_EFFECTS.md` for exact source anchors and limitations: PC
+settings/leaderboard and scripted ending scenes remain unimplemented, and
+three hardware voices limit simultaneous effects. The combined music/effects
+trial targets 512 KiB Chip plus 512 KiB expansion; effects alone are the default
+build. Host boundary and existing menu/lifecycle/death fixture checks pass.
+
+PAL FS-UAE validation: the combined build reached 45.50 seconds with zero music
+underruns while rank clips played, and returned cleanly to AmigaDOS. The default
+effects-only build also booted and ran with 512 KiB Chip and no expansion.
+See `soundtrack/SOUND_EFFECTS.md` for evidence, the corrected one-shot DMA issue,
+and the remaining NTSC/listening/ending-scene limitations.

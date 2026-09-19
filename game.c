@@ -5,6 +5,8 @@
 #include "pc_menu.h"
 #include "pc_lifecycle.h"
 #include "pc_death.h"
+#include "sfx.h"
+static PcSfx sound_events;
 #if CHEAT_MODE
 #include "cheat.h"
 #endif
@@ -92,6 +94,7 @@ static void reset_run(void) {
 }
 void game_init(void) {
     pc_lifecycle_init(&lifecycle);
+    pc_sfx_init(&sound_events);
     player.angle=player.previous_angle=30;
     selected_profile=PC_START_STAGE+3*PC_START_HYPER;
     pc_menu_reset(&menu,selected_profile);reset_run();set_mode(MODE_ATTRACT);
@@ -107,6 +110,7 @@ static void update_playing(const InputState *in) {
     pc_lifecycle_tick(&lifecycle);
     gamestate.time_seconds=(UWORD)(lifecycle.elapsed/60);
     gamestate.time_subsecond_frames=(UWORD)(lifecycle.elapsed%60);
+    sfx_emit(pc_sfx_live(&sound_events,lifecycle.elapsed));
     record_time();
     UBYTE held=in->held;
 #if CHEAT_MODE
@@ -121,11 +125,14 @@ static void update_playing(const InputState *in) {
     pc_collide(&player,game_world.walls,game_world.count,morph.sides,(int16_t)game_world.speed);
     project_state();
     if (player.hit || game_world.overflow) {
+        /* PC completion-state 1 enters its ending instead of ordinary death. */
+        if(sound_events.completion!=1) sfx_emit(SFX_BIT(SFX_DIE));
         pc_lifecycle_die(&lifecycle);set_mode(MODE_DEAD);return;
     }
     pc_world_move(&game_world);
     patterns_tick();
     if (patterns_transitioned()) {
+        sfx_emit(SFX_BIT(SFX_AWESOME)|SFX_BIT(SFX_START));
         pc_morph_reset(&morph);project_state();
         pc_palette_enter(&game_palette,patterns_stage(),1);
     }
@@ -152,12 +159,15 @@ static void start_playing(const InputState *in) {
 #if CHEAT_MODE
     first.cheat_held=0;
 #endif
+    sfx_emit(pc_sfx_begin(&sound_events,records.best[selected_profile],
+        records.completed[selected_profile],selected_profile));
     reset_run();set_mode(MODE_PLAYING);
     pc_palette_tick(&game_palette,patterns_effective_score(1));
     update_playing(&first);
 }
 
 void game_update(const InputState* in) {
+    sfx_emit(pc_sfx_startup(&sound_events));
     mode_timer++;
     update_ambient();
     pc_palette_tick(&game_palette,mode==MODE_PLAYING ?
@@ -166,6 +176,7 @@ void game_update(const InputState* in) {
     // Escape abandons a run / backs out to the title. From the title itself
     // main.c turns Escape into a quit.
     if (in->back_edge && mode != MODE_ATTRACT) {
+        sfx_emit(SFX_BIT(SFX_RANKUP));
         reset_run();
         pc_menu_reset(&menu,selected_profile);
         pc_lifecycle_init(&lifecycle);
@@ -178,7 +189,11 @@ void game_update(const InputState* in) {
     case MODE_ATTRACT:
         // Keep the menu pointer visible; ease to gameplay zoom on confirmation.
         gamestate.draw_distance_target = ATTRACT_ZOOM_TARGET;
-        pc_menu_tick(&menu,in->held);
+        {
+            int moving=menu.motion;
+            pc_menu_tick(&menu,in->held);
+            if(!moving && menu.motion) sfx_emit(SFX_BIT(SFX_MENUCHOOSE));
+        }
         if (selected_profile!=pc_menu_profile(&menu)) {
             selected_profile=pc_menu_profile(&menu);load_record();
             pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
@@ -203,7 +218,9 @@ void game_update(const InputState* in) {
         if ((in->fire || in->fire_edge) && pc_lifecycle_can_start(&lifecycle)) {
             start_playing(in);
         } else {
+            unsigned old_extent=lifecycle.extent;
             pc_death_tick(&lifecycle,&game_world,&morph,patterns_stage(),selected_profile%3);
+            sfx_emit(pc_sfx_death(&sound_events,lifecycle.death,old_extent,lifecycle.extent));
             project_state();
             if (mode==MODE_DEAD && pc_lifecycle_can_start(&lifecycle))
                 set_mode(MODE_GAMEOVER);

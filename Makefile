@@ -11,7 +11,7 @@ endif
 VPATH = support
 cpp_sources :=
 cpp_objects :=
-c_sources := main.c system.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
+c_sources := main.c system.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
 # Default release behavior: omit the entire steering-assist translation unit.
 CHEAT_MODE ?= 0
 ifneq ($(CHEAT_MODE),0)
@@ -37,6 +37,14 @@ c_sources += fib_pcm.c pcm_lifecycle.c tests/fib_stream.c
 SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1 -DFIB_TRIAL_SONG=1 -DFIB_TRIAL_PCM=1
 SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).pcm1"'
 VPATH += tests
+endif
+SOUND_EFFECTS ?= 1
+SELFTEST_CFLAGS += -DSOUND_EFFECTS=$(SOUND_EFFECTS)
+ifeq ($(SOUND_EFFECTS),1)
+c_sources += sfx.c
+endif
+ifneq ($(filter 1,$(SOUND_EFFECTS) $(MUSIC_FIB_STREAM)),)
+c_sources += paula_irq.c
 endif
 PC_CORE_SELFTEST ?= 0
 ifeq ($(PC_CORE_SELFTEST),1)
@@ -151,9 +159,9 @@ $(vasm_objects): obj/%.o : %.asm
 
 .PHONY: test
 HOST_CC ?= cc
-test: test-palette test-progression test-menu test-lifecycle test-death
+test: test-palette test-progression test-menu test-lifecycle test-death test-sfx
 	@mkdir -p out
-	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
 	./out/core_test
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c tests/wave_probe.c -o out/wave_probe
 	python3 tests/compare_waves.py
@@ -238,3 +246,16 @@ test-pcm-lifecycle:
 	mkdir -p out
 	cc -Wall -Wextra -Werror pcm_lifecycle.c tests/pcm_lifecycle_test.c -o out/pcm_lifecycle_check
 	out/pcm_lifecycle_check
+
+# Clips are converted offline; the target never decodes compressed audio.
+out/sfx.pcm: tools/audio/prepare_sfx.py $(wildcard assets/sounds/*.ogg)
+	python3 tools/audio/prepare_sfx.py
+out/sfx_samples.h: out/sfx.pcm
+	@test -f $@ || python3 tools/audio/prepare_sfx.py
+obj/sfx.o: out/sfx.pcm out/sfx_samples.h
+
+.PHONY: test-sfx
+test-sfx:
+	mkdir -p out
+	$(HOST_CC) -Wall -Wextra -Werror pc_sfx.c tests/pc_sfx_test.c -o out/pc_sfx_test
+	out/pc_sfx_test
