@@ -91,7 +91,11 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     /* (space, all blank) */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 },
 };
 
-static const UBYTE title_str_hexagon[] = { TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N };
+static const UBYTE title_str_hexagon[] = { TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N
+#if PC_START_STAGE == 1
+    , TF_E, TF_R
+#endif
+};
 static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF_O, TF_V, TF_E, TF_R };
 
 // One pre-built, STATIC sprite descriptor (pos, ctl, data rows, terminator)

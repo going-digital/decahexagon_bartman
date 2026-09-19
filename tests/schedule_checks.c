@@ -12,7 +12,7 @@ static uint16_t draw(void *unused,uint16_t bound) {
     return (uint16_t)(x%bound);
 }
 static const struct {
-    uint16_t wave,sides,score,shape,seed;
+    uint16_t stage,wave,sides,score,shape,seed;
     int16_t chosen;
     uint16_t next_wave,next_shape,speed,delay,wait;
 } cases[]={
@@ -22,7 +22,7 @@ unsigned pc_schedule_checks(void) {
     PcSchedule s;
     for (unsigned i=0;i<sizeof(cases)/sizeof(cases[0]);++i) {
         pc_world_reset(&world);pc_schedule_reset(&s);
-        s.wave=cases[i].wave;s.shape_counter=cases[i].shape;
+        s.stage=(uint8_t)cases[i].stage;s.wave=cases[i].wave;s.shape_counter=cases[i].shape;
         seed=cases[i].seed;draws=0;
         pc_schedule_tick(&s,&world,(uint8_t)cases[i].sides,cases[i].score+1,draw,0);
         CHECK(s.chosen==cases[i].chosen && s.wave==cases[i].next_wave);

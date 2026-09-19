@@ -12,7 +12,7 @@ slow=512
 ntsc=0
 [ "$name" != ntsc ] || ntsc=1
 [ "$name" != pal512 ] || slow=0
-cp "$root/out/hexagon.adf" "$run/hexagon.adf"
+cp "${FSUAE_ADF:-$root/out/hexagon.adf}" "$run/hexagon.adf"
 cat > "$run/check.fs-uae" <<CONFIG
 [fs-uae]
 amiga_model = A500

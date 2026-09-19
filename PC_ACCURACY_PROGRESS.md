@@ -3,8 +3,8 @@
 Updated 2026-09-19. See [the implementation plan](PC_ACCURACY_PLAN.md).
 
 Current milestone: PC-unit walls, collision, exact waves and the normal-Hexagon
-selector/morphs are connected to live gameplay. All 70,599 saved generator and
-normal-selector reference cases pass. Presentation and stage progression are
+selector/morphs are connected to live gameplay. All 132,039 saved generator and
+Hexagon/Hexagoner selector reference cases pass. Presentation and stage progression are
 still incomplete; see the third batch below.
 
 ## First batch completed (historical)
@@ -197,3 +197,50 @@ on the 512 KB Chip-only A500. [Release gameplay](scratchpad/fsuae/pal512/fs-uae-
 and [release game-over](scratchpad/fsuae/pal512/fs-uae-crop-2609191053-02.png).
 All verification emulator instances were closed; `out/hexagon.adf` and
 `out/hexagon_packed.adf` contain the normal PAL release.
+
+## Fourth batch: Hexagoner selector and playable build
+
+The previous verified milestone was committed as `e416109`.
+
+- Added the normal Hexagoner selector: wave 91 opener, wave 1 special pool,
+  forced-fourth and forced-twentieth waves, deep pools, and score-dependent
+  RNG bounds. Preserved the six-way branch that deliberately emits no wave.
+- Implemented its event-driven speeds independently of Hexagon: 24 initially,
+  ramp toward 28 only at waves 12–29, and post-3600 ramp toward 33. Unlike Hexagon,
+  this selector does not freeze its delay for a morph marker wait.
+- Added `PC_START_STAGE=1` for a playable Hexagoner build with the correct
+  title and a live first-wave travel assertion. The default stays Hexagon.
+- Promoted 61,440 stage 1 native selector traces. Combined selector comparison
+  now passes 122,880 cases; the 9,159 wave-generator comparisons still pass.
+- Expanded shared host/68000 selection checks from 86 to 274 native cases.
+- Added 256 Hexagoner forced-survival stress runs to tick 10800: peak 61 records,
+  no overflow and no morph requests. Host checks and UBSan pass.
+
+The 180-second stage change is not a simple difficulty increase: the reference
+clears several state groups and enters another stage with hyper-entry state.
+This batch provides the next selector that path needs, but does not yet add
+that handoff, unlocks, rank announcements or the six-level menu. Hexagonest,
+hyper-entry/ending behavior and complete ordered tick traces remain next.
+
+Hexagoner PAL A500 512 KB target checks passed; title, gameplay and game-over
+observed. [HEXAGONER target PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191105-01.png),
+[live timing PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191106-01.png),
+[game-over](scratchpad/fsuae/pal512/fs-uae-crop-2609191106-02.png).
+
+Hexagoner NTSC A500 (512 KB Chip + 512 KB Slow) target checks and live timing
+passed. [NTSC live PASS](scratchpad/fsuae/ntsc/fs-uae-crop-2609191111-01.png)
+and [walls in gameplay](scratchpad/fsuae/ntsc/fs-uae-crop-2609191111-02.png).
+
+Separate PAL release artifacts are available as `out/hexagoner.adf` and
+`out/hexagoner_packed.adf`; executable sizes are 248,528 and 150,780 bytes.
+The default Hexagon PAL release was rebuilt as `out/hexagon.adf` and
+`out/hexagon_packed.adf` (248,828 and 150,900 executable bytes).
+Both packing self-checks passed; packed disks have not been boot-tested.
+The emulator runner accepts `FSUAE_ADF` to test a separate disk without
+replacing the default build.
+
+The uninstrumented Hexagoner PAL release booted and reached gameplay on the
+512 KB Chip-only A500. [Release title](scratchpad/fsuae/pal512/fs-uae-crop-2609191112-03.png),
+[release gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191112-04.png),
+[later gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191112-05.png).
+Verification emulator instances were closed after the captures.

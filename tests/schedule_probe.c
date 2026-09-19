@@ -9,10 +9,10 @@ static uint16_t draw(void *unused,uint16_t bound) {
     return (uint16_t)(x%bound);
 }
 int main(void) {
-    unsigned wave,sides,score,shape,input_seed;
-    while (scanf("%u %u %u %u %u",&wave,&sides,&score,&shape,&input_seed)==5) {
+    unsigned stage,wave,sides,score,shape,input_seed;
+    while (scanf("%u %u %u %u %u %u",&stage,&wave,&sides,&score,&shape,&input_seed)==6) {
         PcSchedule s;pc_schedule_reset(&s);pc_world_reset(&world);
-        s.wave=wave;s.shape_counter=(uint16_t)shape;seed=input_seed;draws=0;
+        s.stage=(uint8_t)stage;s.wave=wave;s.shape_counter=(uint16_t)shape;seed=input_seed;draws=0;
         pc_schedule_tick(&s,&world,(uint8_t)sides,score+1,draw,0);
         if (s.chosen>=0) printf("%d",s.chosen);
         printf(",%u,%u,%u,%.9g,%u\n",(unsigned)s.wave,s.shape_counter,world.speed,

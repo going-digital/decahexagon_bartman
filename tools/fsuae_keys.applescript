@@ -7,9 +7,9 @@ on run argv
             keystroke space
         else if item 1 of argv is "smoke" then
             keystroke space
-            delay 3
+            delay 3.5
             keystroke "s" using command down
-            delay 3
+            delay 2.5
             keystroke "s" using command down
         else if item 1 of argv is "quit" then
             keystroke "q" using command down

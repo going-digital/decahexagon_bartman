@@ -36,7 +36,7 @@ x86-64 routines in the locally owned desktop executable:
 - Audit date: 2026-09-19. External graphics/audio side effects were stubbed.
 - Collision tests use speed22, candidate30, previous90, slot0.
 
-The live normal-Hexagon path now uses the PC-unit store, generator, selector,
+The live normal-Hexagon and Hexagoner paths now use the PC-unit store, generator, selector,
 collision-before-motion ordering and uninterrupted integer-tick morphs.
 Fractional speeds/deltas, full stage transitions, death effects and camera/cue
 response remain outside this implementation. Marker22 is stored as a camera
@@ -73,15 +73,16 @@ seed identity with the desktop runtime is not promised.
 
 ## Selector and integration checks
 
-`make test` compares 61,440 normal-Hexagon selector outputs with original
-machine-code traces in `pc_selection_normal.csv.gz`, covering synthetic wave,
+`make test` compares 122,880 Hexagon/Hexagoner selector outputs with original
+machine-code traces in `pc_selection_normal.csv.gz` and
+`pc_selection_hexagoner.csv.gz`, covering synthetic wave,
 side, score, shape-counter and RNG-seed combinations. Inputs start at speed22,
 rotation mode0 and no active morph; the PC routine increments score before
 selection, which the probe reproduces. This is not a full-run oracle or a
 claim that every synthetic state occurs naturally.
 
-`tools/build_schedule_checks.py` selects 86 native cases spanning each observed
-(chosen ID, sides, speed) tuple. These run on the host and actual 68000, along
+`tools/build_schedule_checks.py` selects 274 native cases spanning each observed
+(stage, chosen ID, sides, speed) tuple. These run on the host and actual 68000, along
 with native morph endpoint timing, marker wait/resume, projection truncation
 and same-slot overlap checks. A self-test build also latches FAIL if the live
 first wave's travel disagrees with its simulation clock during the first 80
@@ -112,3 +113,32 @@ and 512 on the 68000, including a reproduced corner near-miss that previously
 escaped clipping. They verify both on-screen line endpoints and right-edge
 fill-parity spans. Raw blitter entry now rejects off-screen endpoints before
 updating fill bounds or calculating DMA addresses.
+
+## Playable Hexagoner build
+
+Hexagon remains the default. Hexagoner can be built separately while level
+selection and hyper progression are still unfinished:
+
+```
+tools/build.sh -B -j4 program=out/hexagoner EXTRA_CFLAGS="-DBUILD_DEBUG=0 -DPC_START_STAGE=1"
+```
+
+This produces `out/hexagoner.adf` and `out/hexagoner_packed.adf`. Run the
+unpacked PAL disk with:
+
+```
+FSUAE_ADF="$PWD/out/hexagoner.adf" tools/run_fsuae.sh pal512
+```
+
+`FSUAE_ADF` overrides the runner's default `out/hexagon.adf`. For target
+checks add `PC_CORE_SELFTEST=1`; for NTSC also add `-DTARGET_NTSC`. Build
+configurations still share object paths, so use `-B` when switching flags.
+The title reads HEXAGONER, with the wave91 opener and stage1 speed/selection
+rules. This build option is temporary and does not implement the desktop's
+six-level menu, unlock rules, or 180-second hyper handoff.
+
+There are now 274 shared native selector cases. Both stages also receive 256
+forced-survival stress runs through tick10800: Hexagon peaked at48 records
+with6,826 morph requests; Hexagoner peaked at61 records with no morphs.
+The latter is expected from its ordinary selection pool. These remain stress
+tests, not desktop full-run comparisons.

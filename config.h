@@ -11,6 +11,15 @@
 // TARGET_NTSC: 60Hz timing + pixel-aspect correction. Default is 50Hz PAL.
 //#define TARGET_NTSC
 
+// Temporary playable-stage build selection while the six-level menu and
+// hyper transitions are being implemented. 0=Hexagon, 1=Hexagoner.
+#ifndef PC_START_STAGE
+#define PC_START_STAGE 0
+#endif
+#if PC_START_STAGE < 0 || PC_START_STAGE > 1
+#error "PC_START_STAGE currently supports 0 (Hexagon) or 1 (Hexagoner)"
+#endif
+
 // Display cadence is independent of the 60 Hz reference simulation.
 #ifdef TARGET_NTSC
 #define DISPLAY_RATE 60

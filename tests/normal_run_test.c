@@ -9,12 +9,13 @@ static uint16_t draw(void *unused,uint16_t bound) {
     return (uint16_t)(rng_state%bound);
 }
 int main(void) {
+    for (unsigned stage=0;stage<2;++stage) {
     unsigned peak=0,morphs=0,side_mask=0;
     /* Force survival to exercise scheduling/storage, not an input replay or
      * a claim of reference-equivalent complete runs. Stop at stage boundary. */
     for (unsigned seed=1;seed<=256;++seed) {
         PcSchedule s;PcMorph m;
-        pc_world_reset(&world);pc_schedule_reset(&s);pc_morph_reset(&m);rng_state=seed;
+        pc_world_reset(&world);pc_schedule_reset(&s);pc_morph_reset(&m);s.stage=(uint8_t)stage;rng_state=seed;
         for (unsigned tick=1;tick<=10800;++tick) {
             pc_morph_tick(&m,&world);
             if (m.sides<3 || m.sides>6 || m.phase>11) return 1;
@@ -30,7 +31,8 @@ int main(void) {
             if (world.count>peak) peak=world.count;
         }
     }
-    if (side_mask!=0x70 || !morphs) return 4;
-    printf("256 forced-survival runs through tick10800: peak %u records, %u uninterrupted morphs, sides4..6 reached\n",peak,morphs);
+    if (stage==0 ? (side_mask!=0x70 || !morphs) : (side_mask!=0x40 || morphs)) return 4;
+    printf("Stage%u: 256 forced-survival runs through tick10800: peak %u records, %u uninterrupted morphs\n",stage,peak,morphs);
+    }
     return 0;
 }
