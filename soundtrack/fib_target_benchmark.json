@@ -1,0 +1,17 @@
+{
+  "status": "target decoder microbenchmark; no buffered playback yet",
+  "target": "PAL A500, 512 KiB Chip, no expansion",
+  "emulator": "FS-UAE, 68000 real speed, CPU and blitter cycle exact",
+  "display": "P080",
+  "target_checks": "all lengths 1..512, all delta codes, wraparound, nibble order, destination canaries",
+  "trials": 128,
+  "samples_per_decode": 512,
+  "max_observed_raster_lines_including_rounding": 80,
+  "approx_ms": 5.12,
+  "fraction_of_12khz_audio_duration": 0.12,
+  "concurrent_activity": "display DMA and LSP music; before rendering loop",
+  "executable_sha256": "7f3ae497f626923e05474e7aea2748ff5e1c459b66b864833f52b007fe4f82e3",
+  "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191746-01.png",
+  "host_music_blocks_verified": 804,
+  "release_decoder_and_diagnostic_absent": true
+}

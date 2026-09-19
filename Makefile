@@ -20,10 +20,16 @@ $(error CHEAT_MODE must be 0 or 1)
 endif
 c_sources += cheat.c
 endif
+MUSIC_FIB_BENCH ?= 0
+ifeq ($(MUSIC_FIB_BENCH),1)
+c_sources += fib_decode.c tests/fib_bench.c
+SELFTEST_CFLAGS += -DMUSIC_FIB_BENCH=1
+VPATH += tests
+endif
 PC_CORE_SELFTEST ?= 0
 ifeq ($(PC_CORE_SELFTEST),1)
 c_sources += tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c
-SELFTEST_CFLAGS := -DPC_CORE_SELFTEST=1
+SELFTEST_CFLAGS += -DPC_CORE_SELFTEST=1
 VPATH += tests
 endif
 c_objects := $(addprefix obj/,$(notdir $(c_sources:.c=.o)))

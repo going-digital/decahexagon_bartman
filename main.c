@@ -3,6 +3,9 @@
 // SDK copy, keeping struct Custom identical across every translation unit.
 #include "config.h"
 #include "pc_core.h"
+#if MUSIC_FIB_BENCH
+#include "tests/fib_bench.h"
+#endif
 #if PC_CORE_SELFTEST
 #include "tests/core_checks.h"
 #endif
@@ -210,6 +213,9 @@ int main() {
     unsigned core_failure = pc_core_checks();
 #endif
 
+#if MUSIC_FIB_BENCH
+    fib_bench_run();
+#endif
     for (;;) {
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
@@ -278,6 +284,10 @@ int main() {
                 }
 #endif
 
+#if MUSIC_FIB_BENCH
+        blit_wait();
+        fib_bench_draw((UBYTE*)bitplane_fg2);
+#endif
 #if CHEAT_MODE
         // Small 8 at the upper right confirms that held-key assist is active.
         if (input.cheat_held) {

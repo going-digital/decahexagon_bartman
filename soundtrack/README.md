@@ -752,3 +752,52 @@ was measured.
 The initial four host experiment priorities are now covered. Next is a minimal
 68000 Fibonacci decoder and buffered Paula playback benchmark, using the preferred
 12 kHz bank, to measure actual A500 deadlines and CPU cost before game integration.
+
+## Target decoder: first PAL A500 measurement
+
+`fib_decode.c` implements the FIB1 payload decoder in freestanding C. It takes
+one seeded block of 1–512 samples; callers must validate the file header, source
+length and destination capacity. Predictor addition wraps modulo 256, codes
+are consumed high nibble first, and an unused final low nibble is ignored.
+There is no allocation, multiplication or division in the decoding loop.
+
+The optional `MUSIC_FIB_BENCH=1` build adds the decoder and a target diagnostic.
+Normal builds omit both translation units. Build switches require a forced
+rebuild with the current Makefile:
+
+```sh
+tools/build.sh -B MUSIC_FIB_BENCH=1 EXTRA_CFLAGS=-DBUILD_DEBUG=0 \
+  OUT=out/fib_bench out/fib_bench.adf
+FSUAE_ADF="$PWD/out/fib_bench.adf" tools/run_fsuae.sh pal512
+venv/bin/python tools/audio/check_fib_decoder.py \
+  scratchpad/audio/courtesy/rate_test/12000/192k.bank
+```
+
+The target checks all block lengths, both nibble positions, all delta codes,
+wrapping and destination canaries. It then times 128 full blocks, displaying
+`P` for pass (`F` for failure) followed by the maximum observed raster-line
+count, rounded upward by one line. Raster reads retry across changes of the
+ninth vertical bit. Function inlining/cloning is disabled so the compiler cannot
+specialise decoding for this fixed test input. Host replay independently matches
+all 804 music blocks in the preferred Courtesy bank against the Python decoder.
+
+Timing runs after system takeover with the display and existing LSP music active,
+on a PAL 512 KiB Chip-only A500 configuration. FS-UAE logs confirm 68000, real
+CPU speed and cycle-exact CPU/blitter settings. It runs before the main rendering
+loop: **this is not a worst-case gameplay or underrun benchmark**. Code, tables,
+input and output all reside in Chip RAM. Raster timing includes interrupts and
+measurement overhead; there is no subtraction of an empty-loop cost.
+
+This step does not replace music playback. Buffered Paula DMA, bank parsing,
+slice sequencing (including rounding at boundaries), exact output-rate policy,
+underrun detection, NTSC validation and exit cleanup remain to be implemented
+and measured while the game renders. The existing soundtrack and accepted
+12 kHz reconstruction remain unchanged.
+
+Final PAL result: **P080**, all target checks passed; maximum observed 80 raster
+lines per 512-sample decode across 128 trials. Using approximately 64 microseconds
+per PAL line, this is about **5.1 ms**, or **12%** of the 42.67 ms represented by
+512 samples at 12 kHz. This is an observed upper sample, not a certified bound.
+Screenshot: `scratchpad/fsuae/pal512/fs-uae-crop-2609191746-01.png`.
+The normal release rebuilt successfully, passed its cheat audit, and its link
+map contains neither the Fibonacci decoder nor the benchmark.
