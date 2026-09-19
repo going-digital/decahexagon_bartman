@@ -648,3 +648,56 @@ decoder deadlines and worst-case CPU costs still need FS-UAE measurement.
 
 Next priority: variable-length musical slices and mixed codecs. Retain all three
 rates as audition candidates until listening feedback selects a preference.
+
+## Priority 3: adaptive-length replacements and mixed-codec selection
+
+The user prefers 12 kHz: the additional slices improve musicality. This feedback
+is recorded in listening_review.json. The existing 12 kHz/192 KiB reconstruction
+remains the accepted comparison baseline; it is not replaced automatically.
+
+`tools/audio/adaptive_slices.py` keeps a smaller shared half-beat dictionary and
+reserves 16 or 32 KiB of the same 192 KiB budget for unique replacements. Each
+poorly represented half beat can receive one first-quarter, second-quarter or
+full-half-beat replacement from the original audio. Replacements overwrite the
+base interval; they are not simultaneous layers. Candidates compare block-optimal
+Fibonacci coding against raw signed PCM after actual codec decoding. Selection
+ranks reduction in local spectral error per stored byte, including a proposed
+16-byte descriptor. This is a bounded greedy experiment, not globally optimal
+segmentation or a full multi-codec search; IMA is not in this selector yet.
+
+Reproduce:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/adaptive_slices.py
+```
+
+Files in `scratchpad/audio/courtesy/adaptive_12k/` include reserve16k.wav and
+reserve32k.wav, with serialized base/patch banks, preserved intro/outro and host
+layout/sequence JSON. Both trials retain the source gain and complete timeline.
+Prefix/suffix bytes, offset tables, base sequencing, patch descriptors and three
+512-byte decoded buffers count toward the budget. Target code, decoder state,
+allocator and loading overhead remain excluded. A target implementation also
+needs to handle starting/resuming inside a coded base slice; no free random
+access or extra cache memory is assumed demonstrated.
+
+The 16 KiB reservation uses 122 shared entries and 23 unique replacements,
+accounting for 196,506 bytes. The 32 KiB reservation uses 111 entries and 42
+replacements, accounting for 196,167 bytes. Neither chooses raw PCM: for this
+objective and these candidates, its quality improvement does not justify the
+additional bytes. This does not prove raw PCM is never useful.
+
+The common-reference spectral scores remain very close to the accepted baseline;
+consult courtesy.adaptive_slices.json for exact values. This is a small
+allocation experiment, not an established audible improvement. Listen against
+rate_test/12000/192k_fibonacci.wav before adopting either version. Larger numbers
+of unique fragments alone do not guarantee improved musical continuity.
+
+Next: measure cross-track reuse using the accepted 12 kHz baseline, while keeping
+these adaptive variants optional. Hardware decoding, seek/resume costs and
+worst-case scheduling still require a 68000/FS-UAE implementation and benchmark.
+
+Validation: independent replay from both serialized base/patch banks and their
+sequence metadata exactly matches the 12 kHz PCM previews. Common-reference MSE
+is 0.017870 for the 16 KiB reservation and 0.017983 for 32 KiB, versus 0.017902
+for the accepted uniform bank. The smaller reservation improves that metric by
+only about 0.18%; the larger is slightly worse. No target code changed.

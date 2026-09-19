@@ -1,0 +1,24 @@
+{
+  "status": "host only, unreviewed variable-length replacements",
+  "sample_rate": 12000,
+  "trials": [
+    {
+      "reserve_kib": 16,
+      "base_entries": 122,
+      "replacements": 23,
+      "pcm_replacements": 0,
+      "accounted_bytes": 196506,
+      "local_feature_mse": 0.017029850058672375,
+      "common_16k_feature_mse": 0.017869554232045923
+    },
+    {
+      "reserve_kib": 32,
+      "base_entries": 111,
+      "replacements": 42,
+      "pcm_replacements": 0,
+      "accounted_bytes": 196167,
+      "local_feature_mse": 0.01712610051699367,
+      "common_16k_feature_mse": 0.017983277349779846
+    }
+  ]
+}

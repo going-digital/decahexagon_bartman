@@ -10,5 +10,10 @@
     "suspected_cause": "very rapid arpeggios",
     "cause_confirmed": false
   },
-  "scope": "Listening acceptance of the existing beat previews; not an independent confirmation of meter, downbeats, or PC cue correspondence. Kept separate from regenerated analysis."
+  "scope": "Listening acceptance of the existing beat previews; not an independent confirmation of meter, downbeats, or PC cue correspondence. Kept separate from regenerated analysis.",
+  "sample_rate_comparison": {
+    "courtesy": "12 kHz preferred over 14/16 kHz at the tested budget",
+    "reason": "extra slices help musicality",
+    "scope": "user listening preference; not target playback validation"
+  }
 }
