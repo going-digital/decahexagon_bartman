@@ -384,3 +384,69 @@ Next: listening review of the full-track previews, then alignment and join
 improvements, phrase-aware substitutions and comparable reports for Focus/Otis.
 If 192 KiB for one song is audibly inadequate, report that before trying to fit
 three songs into the same budget or committing to a player.
+
+## Two simultaneous slices: additive dictionary experiment
+
+`tools/audio/reuse_layers.py` tests Courtesy at 64 and 192 KiB with half-beat
+slices. It fits a base dictionary and a correction dictionary using alternating
+waveform assignments and centroid updates (ten iterations, deterministic
+initialization). Both dictionaries are quantized to signed 8-bit throughout
+fitting, and clipping to that representation is part of the experiment.
+A comparable single-dictionary waveform baseline uses the same fitting method.
+These are synthesized dictionary averages, not isolated musical source layers.
+
+The two-layer sequence allowance is six bytes per slice (two sample IDs and
+length), versus four for one layer; both include the same header, padded sample
+slots, guards and verbatim incomplete intro/outro. Runtime and overlap buffers
+remain excluded. Assignment alternates between dictionaries and can converge to
+a local solution; it does not exhaustively optimize all base/correction pairs.
+Samples are aligned only to the approved grid with one-sample length correction.
+No fine time-shift/carrier-phase optimization is implemented in this experiment.
+
+| Budget | Base + correction entries | Accounted bytes | Waveform relative error | Feature MSE |
+| --- | ---: | ---: | ---: | ---: |
+| 64 KiB | 15 + 0 | 62,412 | 0.7756 | 0.1141 |
+| 64 KiB | 7 + 8 | 64,090 | 0.8864 | 0.1299 |
+| 64 KiB | 11 + 4 | 64,090 | 0.8932 | 0.1329 |
+| 192 KiB | 51 + 0 | 195,396 | 0.7006 | 0.0967 |
+| 192 KiB | 25 + 25 | 193,380 | 0.7293 | 0.1017 |
+| 192 KiB | 37 + 13 | 193,380 | 0.7630 | 0.1061 |
+
+Lower errors are better under each metric. Neither split beats its one-layer
+waveform baseline. The previous actual-slice spectral dictionary has much better
+feature MSE (0.0408 at 64 KiB; 0.0257 at 192 KiB), although worse waveform error.
+This illustrates how averaging differently phased recordings can improve sample
+error while damaging spectral content. No perceptual improvement or compression
+advantage is established. It does not rule out a better aligned or musically
+separated two-layer representation.
+
+Run:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/reuse_layers.py
+```
+
+Outputs under `scratchpad/audio/courtesy/layer_reuse/` include the reference,
+previous single-layer previews, and each trial's mix/base/correction WAVs, signed
+sample bank and assignment/layout JSON. All listening previews in this directory
+use a common half-gain, including the reference and previous reconstructions,
+so two full-range layers can sum without clipping. Do not compare their loudness
+against files in the earlier directory without accounting for this gain.
+The combined preview is the exact arithmetic sum of its exported layers.
+
+Start with `reference.wav`, `previous_192k.wav`,
+`192k_51base_0correction_mix.wav` and `192k_25base_25correction_mix.wav`.
+The correction-only file is a signed difference signal, not percussion or melody.
+No Amiga stereo routing, hardware mixer, replay timing or source separation is
+claimed. Current output is mono; an Amiga implementation would need to choose
+routing and headroom explicitly.
+
+Next: retain the previous spectral dictionary as the best measured spectral
+baseline. Test fine alignment and better joint selection before expanding this
+additive approach to other tracks. Continue to judge actual musical content by
+listening; waveform error alone is an unsuitable selection criterion here.
+
+Validation: all six stored banks and assignment files were decoded independently
+and reproduce every interior preview sample exactly. Each mix equals the sum of
+its exported layers, each output has 3,093,334 samples at 16 kHz, and bank plus
+sequence allowances fit the stated budgets. No Amiga runtime code changed.

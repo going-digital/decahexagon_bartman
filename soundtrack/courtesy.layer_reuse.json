@@ -1,0 +1,116 @@
+{
+  "status": "unreviewed lossy additive dictionary; no source separation or target player",
+  "sample_rate": 16000,
+  "beats_per_slice": 0.5,
+  "iterations": 10,
+  "trials": [
+    {
+      "name": "64k_15base_0correction",
+      "layers": 1,
+      "budget_kib": 64,
+      "base_slices": 15,
+      "correction_slices": 0,
+      "accounted_bytes": 62412,
+      "relative_waveform_error": 0.7756285578769866,
+      "feature_mse": 0.11411072935508082,
+      "preview": "scratchpad/audio/courtesy/layer_reuse/64k_15base_0correction_mix.wav"
+    },
+    {
+      "name": "64k_7base_8correction",
+      "layers": 2,
+      "budget_kib": 64,
+      "base_slices": 7,
+      "correction_slices": 8,
+      "accounted_bytes": 64090,
+      "relative_waveform_error": 0.8864454364984692,
+      "feature_mse": 0.12990700830121507,
+      "preview": "scratchpad/audio/courtesy/layer_reuse/64k_7base_8correction_mix.wav"
+    },
+    {
+      "name": "64k_11base_4correction",
+      "layers": 2,
+      "budget_kib": 64,
+      "base_slices": 11,
+      "correction_slices": 4,
+      "accounted_bytes": 64090,
+      "relative_waveform_error": 0.8931695372554834,
+      "feature_mse": 0.13286245540646213,
+      "preview": "scratchpad/audio/courtesy/layer_reuse/64k_11base_4correction_mix.wav"
+    },
+    {
+      "name": "192k_51base_0correction",
+      "layers": 1,
+      "budget_kib": 192,
+      "base_slices": 51,
+      "correction_slices": 0,
+      "accounted_bytes": 195396,
+      "relative_waveform_error": 0.7006349132667054,
+      "feature_mse": 0.09672232336711829,
+      "preview": "scratchpad/audio/courtesy/layer_reuse/192k_51base_0correction_mix.wav"
+    },
+    {
+      "name": "192k_25base_25correction",
+      "layers": 2,
+      "budget_kib": 192,
+      "base_slices": 25,
+      "correction_slices": 25,
+      "accounted_bytes": 193380,
+      "relative_waveform_error": 0.729305447366259,
+      "feature_mse": 0.101719407889468,
+      "preview": "scratchpad/audio/courtesy/layer_reuse/192k_25base_25correction_mix.wav"
+    },
+    {
+      "name": "192k_37base_13correction",
+      "layers": 2,
+      "budget_kib": 192,
+      "base_slices": 37,
+      "correction_slices": 13,
+      "accounted_bytes": 193380,
+      "relative_waveform_error": 0.7630112549023889,
+      "feature_mse": 0.1061408169381912,
+      "preview": "scratchpad/audio/courtesy/layer_reuse/192k_37base_13correction_mix.wav"
+    }
+  ],
+  "previous_spectral_dictionary": [
+    {
+      "budget_kib": 32,
+      "dictionary_slices": 6,
+      "estimated_bytes": 29166,
+      "weighted_feature_mse": 0.05544880870716511,
+      "waveform_relative_error": 1.3082534381807887,
+      "join_jump_p95_8bit_units": 23.0,
+      "reference_join_jump_p95_8bit_units": 12.0,
+      "preview": "scratchpad/audio/courtesy/beat_reuse/0.5beat_32k.wav"
+    },
+    {
+      "budget_kib": 64,
+      "dictionary_slices": 15,
+      "estimated_bytes": 62412,
+      "weighted_feature_mse": 0.040760220152169326,
+      "waveform_relative_error": 1.2126706956892273,
+      "join_jump_p95_8bit_units": 23.0,
+      "reference_join_jump_p95_8bit_units": 12.0,
+      "preview": "scratchpad/audio/courtesy/beat_reuse/0.5beat_64k.wav"
+    },
+    {
+      "budget_kib": 128,
+      "dictionary_slices": 33,
+      "estimated_bytes": 128904,
+      "weighted_feature_mse": 0.030783482500465427,
+      "waveform_relative_error": 1.149362150229989,
+      "join_jump_p95_8bit_units": 23.0,
+      "reference_join_jump_p95_8bit_units": 12.0,
+      "preview": "scratchpad/audio/courtesy/beat_reuse/0.5beat_128k.wav"
+    },
+    {
+      "budget_kib": 192,
+      "dictionary_slices": 51,
+      "estimated_bytes": 195396,
+      "weighted_feature_mse": 0.025740991394186043,
+      "waveform_relative_error": 1.1167179711691917,
+      "join_jump_p95_8bit_units": 24.0,
+      "reference_join_jump_p95_8bit_units": 12.0,
+      "preview": "scratchpad/audio/courtesy/beat_reuse/0.5beat_192k.wav"
+    }
+  ]
+}
