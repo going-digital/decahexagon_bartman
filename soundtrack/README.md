@@ -149,3 +149,40 @@ Revised fitting order:
 
 The existing synthetic pulse check establishes basic dictionary mechanics only;
 it does not validate accuracy on rapidly changing or mixed instruments.
+
+## Third fitting experiment: short-window voice paths
+
+`tools/audio/fit_sequences.py` fits two pulse hypotheses with a fixed duty per
+voice, 46.44 ms windows and 2.49 ms hops. A dynamic-programming path allows pitch
+jumps of any interval with a small switching cost. Rendering uses one pitch at
+a time per voice with continuous phase and no per-step envelope retrigger.
+It removes the prior median filter and 60 ms event cutoff.
+
+```sh
+OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=/private/tmp/hexagon-matplotlib venv/bin/python tools/audio/fit_sequences.py
+```
+
+Requires the previous analysis and pulse-fit outputs. New listening files under
+`scratchpad/audio/courtesy/` are `sequence_resynthesis.wav`,
+`sequence_voice_0.wav`, `sequence_voice_1.wav` and `sequence_mask_residual.wav`.
+Events and metrics are in `courtesy.sequence_candidates.json`.
+
+Result: this experiment is **not an improvement established by measurement**.
+Independent resyntheses compared with the recording using the same 2048-sample
+STFT have gain-aligned magnitude errors of 0.738526 (old) and 0.738728 (new),
+normalized by reference magnitude norm. These are diagnostic errors, not
+perceptual scores. The new model generates 948 pitch segments in 20 seconds,
+showing excessive fragmentation. Both pulse paths can still explain the same
+source's harmonics; they are not identified Game Boy channels.
+
+An independently generated pulse arpeggio changing pitch every 40 ms achieves
+100% pitch accuracy at evaluated step interiors. Transition frames are excluded
+from this test; it establishes basic temporal tracking on a simple isolated
+signal, not correctness on mixtures or faster steps. Output samples are finite.
+
+The user-approved beat maps remain unchanged. Rapid arpeggios remain a plausible
+explanation, but this result does not confirm them or identify their rate.
+Next fitting work should explicitly search repeating interval/table sequences
+across repeated phrases, compare against time-varying waveform alternatives,
+and handle noise and shared harmonics. Do not export these fragmented candidates
+to an Amiga sample bank. No game code or target playback changed.

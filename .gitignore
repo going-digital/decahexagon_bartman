@@ -4,3 +4,5 @@ out
 *.mp4
 assets/*.mp3
 /scratchpad
+
+/tools/audio/__pycache__/
