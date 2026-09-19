@@ -54,8 +54,13 @@ leaderboards, unlock announcements, fractional dt or persistence.
 
 Left/right arrows or the joystick select a profile; Space/fire starts an
 unlocked selection. Escape returns from play/results to selection; Escape
-again exits. The menu shows the profile name for two seconds, then its session
-best for one second, or `LOCKED` for a locked entry. Six immutable title canvases
+again exits. The menu continuously shows the selected profile's session best above its name.
+Locked entries alternate their name for two seconds with `LOCKED` for one second,
+while keeping the best visible. The copper reloads all eight sprite pointers and position/control registers
+between the score and banner rows, without allocating extra sprite data.
+After the upper terminators have been fetched, the lower pointers address pixel
+data directly and the copper supplies POS/CTL. This follows the register/DMA
+model in the [Amiga Hardware Reference Manual, Sprite Hardware](https://www.amigarealm.com/computing/knowledge/hardref/ch4.htm). Six immutable title canvases
 and a locked banner are allocated at startup, avoiding writes to active sprite
 DMA data. The six additional canvases cost 1,920 bytes of Chip RAM plus
 allocator overhead. The pointer is kept within the 200-line display by reducing menu zoom.

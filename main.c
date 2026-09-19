@@ -49,12 +49,12 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
     (void)bpl1;
     #endif
 
-    // HUD/title sprite pointers (SPRxPT), written by the copper every frame -
-    // see hud.h for why this must not be a direct CPU register write.
-    copPtr = hud_emit_copper(copPtr);
-
+    // Set scene colours before the HUD's mid-display multiplex WAIT.
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
+
+    // HUD/title pointers include a WAIT between their two sprite rows.
+    copPtr = hud_emit_copper(copPtr);
 
     *copPtr++ = offsetof(struct Custom, copjmp2);
     *copPtr++ = 0x7fff;

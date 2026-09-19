@@ -690,3 +690,33 @@ The recorded run freezes at 3.95 seconds during death:
 All verification emulator instances were closed. The default normal/packed
 PAL releases are `out/hexagon.adf` and `out/hexagon_packed.adf`;
 `out/hexagon_death_ntsc.adf` contains diagnostic self-tests.
+
+## Menu high score and text together
+
+The attract/menu screen now keeps the selected profile's session best visible
+above its name. Locked entries still alternate their name and `LOCKED`, with
+the score present throughout. Gameplay and result banner timing is unchanged.
+
+The copper draws the upper score, waits until its sprite terminators have been
+fetched, then reloads all eight pointers and POS/CTL registers for the lower
+banner. Lower pointers skip the headers supplied by the copper. Merely changing
+pointers after the terminator did not restart the sprites in FS-UAE; explicit
+control-register reloads resolve that. Existing immutable sprite buffers are
+reused, with no extra allocation. The HUD emits 110 words in every mode; the
+normal complete copper list occupies 276 bytes of its existing 1,024-byte buffer.
+Scene and HUD colours are set before the mid-display WAIT.
+
+PAL release verification in FS-UAE, A500 with 512 KB Chip and no expansion RAM:
+[earned 3.95-second best alongside HEXAGON](scratchpad/fsuae/pal512/fs-uae-crop-2609191455-02.png),
+[long profile name](scratchpad/fsuae/pal512/fs-uae-crop-2609191455-03.png), and
+[LOCKED with score](scratchpad/fsuae/pal512/fs-uae-crop-2609191455-04.png).
+The death/result sequence also retains its
+[GAME OVER banner](scratchpad/fsuae/pal512/fs-uae-crop-2609191454-10.png).
+Normal and packed PAL release builds pass the no-cheat audit.
+
+NTSC A500 (512 KB Chip + 512 KB Slow) reports target self-test PASS, with
+[both rows visible](scratchpad/fsuae/ntsc/fs-uae-crop-2609191456-01.png) and
+[selection updated to HEXAGONER](scratchpad/fsuae/ntsc/fs-uae-crop-2609191456-03.png).
+Verification instances were closed. Default normal/packed PAL releases remain
+`out/hexagon.adf` and `out/hexagon_packed.adf`; the NTSC diagnostic build is
+`out/hexagon_menu_ntsc.adf`.

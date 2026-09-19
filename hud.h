@@ -5,9 +5,9 @@
 // Sprite-based HUD + title screen. Composited by Denise independently of the
 // bitplane/blitter pipeline, so it costs nothing on the render frame budget.
 // OCS gives 8 sprite channels of 16px each, so this is good for a short
-// fixed-width readout (a timer) or a one-line title (all 8 channels, during
-// MODE_ATTRACT) - not prose. The title and the timer HUD are mutually
-// exclusive (both want most/all of the 8 channels), see hud_emit_copper.
+// fixed-width readout (a timer) and a one-line title (all 8 channels).
+// The copper reuses the channels below the timer so MODE_ATTRACT displays
+// both the selected profile's best and its menu text, see hud_emit_copper.
 //
 // SPRxPT is only ever written by the COPPER (hud_emit_copper), never the CPU,
 // even though the content it points at is fixed at hud_init() time and never

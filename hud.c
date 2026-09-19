@@ -324,7 +324,7 @@ void hud_init(void) {
 
 typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED } Banner;
 
-// Selection alternates name and best/lock.
+// Selection keeps its best visible; locked entries alternate name and lock.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
 static Banner banner_active(void) {
@@ -332,7 +332,7 @@ static Banner banner_active(void) {
     UWORD t = game_mode_timer();
     if (m == MODE_ATTRACT) {
         if (t%180<120) return BANNER_HEXAGON;
-        return game_selection_locked() ? BANNER_LOCKED:BANNER_NONE;
+        return game_selection_locked() ? BANNER_LOCKED:BANNER_HEXAGON;
     }
     if (m == MODE_GAMEOVER && t < GAMEOVER_HOLD_TICKS) return BANNER_GAMEOVER;
     return BANNER_NONE;
@@ -376,34 +376,13 @@ void hud_tick(void) {
 }
 
 USHORT* hud_emit_copper(USHORT* copPtr) {
-    // Reloads all 8 sprite channels, every frame - see blank_sprite above.
-    // Always emits exactly SPRITE_CHANNELS*4 words: the main loop rewrites
-    // this same-length tail of the copper list every frame, so a short
-    // write here (e.g. skipping a channel whose AllocMem somehow failed)
-    // would desync it from what the rest of the list expects to follow -
-    // fall back to the inert blank_sprite rather than ever skipping one.
     Banner banner = banner_active();
-    for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
-        UWORD* buf = (UWORD*)blank_sprite;
-        if (banner == BANNER_HEXAGON) {
-            if (title_buf[game_selected_profile()][ch]) buf = title_buf[game_selected_profile()][ch]; // all 8 channels carry a canvas slice
-        } else if (banner == BANNER_LOCKED) {
-            if (locked_buf[ch]) buf=locked_buf[ch];
-        } else if (banner == BANNER_GAMEOVER) {
-            if (gameover_buf[ch]) buf = gameover_buf[ch];
-        } else if (ch < HUD_SLOTS) {
-            UWORD* g = glyph_buf[ch][cur_glyph[ch]];
-            if (g) buf = g;
-        }
-        UWORD offset = (UWORD)(offsetof(struct Custom, sprpt) + ch * sizeof(APTR));
-        copPtr = copWritePtr(copPtr, offset, buf);
-    }
-
+    // Colours must be set before the upper row, not after the multiplex WAIT.
     // Celebratory blink on the digit HUD's 3 colour banks (0-5, the only
     // channels it ever uses) when this run just beat the record. Always
     // emitted - same length every frame regardless of whether it's actually
     // flashing - to keep this tail's total word count frame-invariant, same
-    // reasoning as the sprite loop above. Banks stay solid black-on-white
+    // reasoning as the sprite loops below. Banks stay solid black-on-white
     // any time this isn't true, i.e. every frame outside a fresh GAMEOVER.
     UBYTE flash_on = (UBYTE)(banner == BANNER_NONE && game_mode() == MODE_GAMEOVER
         && game_new_record()
@@ -412,6 +391,42 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     for (WORD i = 0; i < 3; i++) {
         copPtr = copWrite(copPtr, offsetof(struct Custom, color[bank_base[i] + 0]), fg);
         copPtr = copWrite(copPtr, offsetof(struct Custom, color[bank_base[i] + 1]), bg);
+    }
+    // Two fixed-size pointer batches reuse the channels below the score.
+    // Missing allocations use inert descriptors so every mode emits 110 words.
+    for (WORD row = 0; row < 2; row++) {
+        if (row) {
+            // Leave two lines after the upper sprites' stop/terminator fetch.
+            // Ten lines remain before the banner starts. Reload POS/CTL
+            // explicitly: after the terminator, a new pointer alone does
+            // not trigger another DMA control-word fetch.
+            copPtr = copWaitY(copPtr, DISPLAY_HW_Y + HUD_Y + HUD_CELL_H + 2);
+        }
+        for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
+            UWORD* buf = (UWORD*)blank_sprite;
+            if (!row) {
+                if ((game_mode() == MODE_ATTRACT || banner == BANNER_NONE)
+                    && ch < HUD_SLOTS && glyph_buf[ch][cur_glyph[ch]])
+                    buf = glyph_buf[ch][cur_glyph[ch]];
+            } else if (banner == BANNER_HEXAGON) {
+                if (title_buf[game_selected_profile()][ch])
+                    buf = title_buf[game_selected_profile()][ch];
+            } else if (banner == BANNER_LOCKED) {
+                if (locked_buf[ch]) buf = locked_buf[ch];
+            } else if (banner == BANNER_GAMEOVER) {
+                if (gameover_buf[ch]) buf = gameover_buf[ch];
+            }
+            UWORD offset = (UWORD)(offsetof(struct Custom, sprpt) + ch * sizeof(APTR));
+            if (row) {
+                // Hardware now receives the header from the copper, so DMA
+                // starts at the first pixel pair rather than the header.
+                copPtr = copWritePtr(copPtr, offset, buf + 2);
+                copPtr = copWrite(copPtr, offsetof(struct Custom, spr[ch].pos), buf[0]);
+                copPtr = copWrite(copPtr, offsetof(struct Custom, spr[ch].ctl), buf[1]);
+            } else {
+                copPtr = copWritePtr(copPtr, offset, buf);
+            }
+        }
     }
     return copPtr;
 }
