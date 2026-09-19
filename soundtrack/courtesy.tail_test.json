@@ -1,0 +1,59 @@
+{
+  "status": "unreviewed heuristic; reverb/delay presence and parameters unconfirmed",
+  "interval_seconds": [
+    0,
+    20
+  ],
+  "sample_rate": 22050,
+  "original_fit_error": 0.6576878348880872,
+  "variants": [
+    {
+      "name": "decay80_floor70",
+      "history_decay_seconds": 0.08,
+      "gain_floor": 0.7,
+      "measured_minimum_gain": 0.699999988079071,
+      "rms_ratio": 0.9358936548233032,
+      "processed_fit_error": 0.6638392693540524,
+      "reference_onset_count": 521,
+      "median_local_peak_shift_ms": 0.0,
+      "p95_local_peak_shift_ms": 14.96598639455815
+    },
+    {
+      "name": "decay160_floor70",
+      "history_decay_seconds": 0.16,
+      "gain_floor": 0.7,
+      "measured_minimum_gain": 0.699999988079071,
+      "rms_ratio": 0.9376620650291443,
+      "processed_fit_error": 0.6637261611030325,
+      "reference_onset_count": 521,
+      "median_local_peak_shift_ms": 0.0,
+      "p95_local_peak_shift_ms": 14.96598639455815
+    },
+    {
+      "name": "decay300_floor70",
+      "history_decay_seconds": 0.3,
+      "gain_floor": 0.7,
+      "measured_minimum_gain": 0.699999988079071,
+      "rms_ratio": 0.9388192892074585,
+      "processed_fit_error": 0.6639865567306471,
+      "reference_onset_count": 521,
+      "median_local_peak_shift_ms": 0.0,
+      "p95_local_peak_shift_ms": 14.96598639455815
+    },
+    {
+      "name": "decay160_floor50",
+      "history_decay_seconds": 0.16,
+      "gain_floor": 0.5,
+      "measured_minimum_gain": 0.5000000596046448,
+      "rms_ratio": 0.9237250089645386,
+      "processed_fit_error": 0.6666902682062554,
+      "reference_onset_count": 521,
+      "median_local_peak_shift_ms": 0.0,
+      "p95_local_peak_shift_ms": 14.96598639455815
+    }
+  ],
+  "controls": {
+    "dry_sustained_rms_ratio": 0.9988708910810589,
+    "known_tail_rms_ratio": 0.7051630571622816
+  }
+}

@@ -236,3 +236,67 @@ Next: investigate the remaining harmonic components with a broader waveform
 model and separate frequency-band evidence before attempting another full
 transcription. Preserve the accepted beat grids. No new Amiga playback assets
 were produced in this experiment.
+
+## Tail-suppression experiment
+
+The user's impression of reverb prompted a bounded preprocessing experiment on
+Courtesy 0–20 seconds. This does not establish that the recording contains room
+reverb, estimate RT60, or distinguish delay from instrument envelopes/retriggers.
+The original recording and accepted beat grids remain unchanged.
+
+`tools/audio/test_tail_suppression.py` uses a delayed, exponentially smoothed
+spectral-energy history, attenuating bins that fall below that history. A shared
+stereo gain mask preserves relative channel spectra; smoothing and a gain floor
+limit suppression. This is a simple heuristic, not an implementation of a
+published blind dereverberation algorithm. Spectral suppression is motivated by
+[late-reverberation research](https://pubmed.ncbi.nlm.nih.gov/21428508/), which
+also evaluates music, but its reported results do not validate this prototype.
+Sustained notes and repeated arpeggios can contaminate the history estimate.
+
+Run after decoding:
+
+```sh
+OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=/private/tmp/hexagon-matplotlib venv/bin/python tools/audio/test_tail_suppression.py
+```
+
+Listening outputs are in `scratchpad/audio/courtesy/tail_test/`:
+
+- `original.wav`: unprocessed 20-second excerpt, resampled to 22.05 kHz stereo.
+- `decay160_floor70.wav`: conservative starting preview.
+- `decay160_floor70_removed.wav`: exactly what that pass removed, at original gain.
+- Other previews test 80/300 ms history decays or a lower 0.5 gain floor.
+
+History decay is an experimental setting, not measured acoustic decay. No preview
+is independently normalized; all can be compared at the same playback volume.
+The removed signal should be auditioned for quiet notes and arpeggio steps, not
+assumed to contain only ambience.
+
+| Input | RMS relative to original | Pulse magnitude-fit error |
+| --- | ---: | ---: |
+| Original | 1.000 | 0.65769 |
+| 80 ms history, 0.7 floor | 0.936 | 0.66384 |
+| 160 ms history, 0.7 floor | 0.938 | 0.66373 |
+| 300 ms history, 0.7 floor | 0.939 | 0.66399 |
+| 160 ms history, 0.5 floor | 0.924 | 0.66669 |
+
+Each input is refitted using the same 1024-sample pulse dictionary and normalized
+magnitude-error calculation. This is not the independent-resynthesis metric from
+the earlier experiments and should not be compared numerically to that metric.
+All variants slightly worsen this diagnostic; none earns adoption as the default.
+That does not disprove reverb or establish that no other removal method can help.
+
+Local onset peaks have median measured movement zero and 95th percentile about
+15 ms. The search is restricted to ±15 ms, so this is not proof that attacks
+are preserved: disappearing peaks can match a search boundary. Listening review
+and a labelled note test are still needed before using processed input to
+transcribe. The test counts spectral onsets, not reviewed musical notes.
+
+Controls pass: a dry sustained tone retains 99.89% RMS in the checked interior;
+a known synthetic decaying tail is reduced to 70.52% RMS. Array lengths, finite
+outputs and mask floors are checked. Neither control validates mixed music.
+Full measurements are in `courtesy.tail_test.json`.
+
+Next decision: listen to the original, conservative preview and removed signal.
+If useful attacks are not clearer or musical content is removed, keep the dry
+estimation branch optional and return to joint instrument/ambience modeling.
+No game code, beat maps or Amiga playback assets changed.
