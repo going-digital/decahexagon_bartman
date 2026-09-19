@@ -1,0 +1,14 @@
+{
+  "reviewer": "user",
+  "beat_grids": {
+    "courtesy": "sounds accurate",
+    "focus": "sounds accurate",
+    "otis": "sounds accurate"
+  },
+  "instrument_fit": {
+    "courtesy_opening": "poor",
+    "suspected_cause": "very rapid arpeggios",
+    "cause_confirmed": false
+  },
+  "scope": "Listening acceptance of the existing beat previews; not an independent confirmation of meter, downbeats, or PC cue correspondence. Kept separate from regenerated analysis."
+}

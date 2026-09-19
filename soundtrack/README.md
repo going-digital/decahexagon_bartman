@@ -106,3 +106,46 @@ the input and synthesis is finite. Next: add continuous pitch trajectories and
 a noise/wave model, enforce temporal voice continuity, and compare the resulting
 excerpts before selecting a target sample bank. No game code changed and no new
 FS-UAE audio validation is claimed yet.
+
+## Listening feedback and arpeggio investigation
+
+The user confirms that beat tracking sounds accurate for all three tracks.
+That listening acceptance is recorded separately in `listening_review.json` so
+regenerating automatic estimates will not erase it. Retain the current beat
+grids; the local onset-phase diagnostic is not a reason to override this review.
+Meter, downbeat labels and PC cue alignment are still separate questions.
+
+The user rates the instrument fitting as poor and suspects very rapid arpeggios.
+This is a strong hypothesis to investigate, not yet a recovered table sequence.
+The first model's 4096-sample window at 22050 Hz spans 185.8 ms; its approximately
+10 ms hop does not undo that temporal averaging. Several successive pitches can
+therefore be fitted as simultaneous harmonics or an incorrect duty shape. The
+five-frame median filter and 60 ms event cutoff can additionally suppress short
+steps. Its candidate events should not be used as transcription input.
+
+`tools/audio/inspect_arpeggios.py` creates 185.8, 46.4 and 23.2 ms spectrogram
+comparisons with a 2.49 ms hop for each track's 0–4 and 15–19 second intervals.
+It also renders a known single-voice arpeggio changing pitch every 20 ms as a
+resolution control. Outputs: `scratchpad/audio/<track>/arpeggio_resolution_*.png`
+and `scratchpad/audio/arpeggio_control.png`. Short windows improve temporal
+localization at the cost of low-frequency pitch resolution; they are not a
+standalone solution to polyphonic transcription.
+
+Revised fitting order:
+
+1. Locate rapid transitions using short windows and high harmonics; use longer
+   windows only where the signal is locally stable or to constrain low pitches.
+2. Fit sequences of short pitch steps and repeating interval patterns jointly
+   over longer phrases. Allow abrupt arpeggio jumps, rather than penalizing all
+   pitch discontinuities as errors. Infer table rate/phase separately from beats.
+3. Compare those sequences against competing sustained, sliding, vibrato and
+   waveform-changing explanations. Require repeated evidence and a better
+   independently resynthesized excerpt, not merely stronger spectral masking.
+4. Keep a parent note, its envelope and its rapid pitch/wave sequence separate
+   in the event representation. Test whether each step retriggers or continues
+   the envelope/phase. Do not turn every fast step into a fresh instrument note.
+5. Only fit instrument timbre after accounting for temporal pitch changes.
+   Do not assume the current pulse-duty estimates identify the original sounds.
+
+The existing synthetic pulse check establishes basic dictionary mechanics only;
+it does not validate accuracy on rapidly changing or mixed instruments.
