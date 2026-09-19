@@ -9,7 +9,8 @@ opening/handoff ticks pass. Runtime six-profile selection, session unlocks and
 per-mode records now have 1,992 native reference cases. Disk persistence,
 scripted ending and remaining presentation fidelity are still unfinished.
 Immediate starts, angle-preserving retries and the death/retry gate now match
-1,698 native snapshots; full death presentation is not yet implemented.
+1,698 native snapshots. Death wall movement and polygon restoration now match
+17,280 native ticks; camera, flash and audio presentation remain unfinished.
 
 ## First batch completed (historical)
 
@@ -646,3 +647,46 @@ and `out/hexagon_packed.adf`. `out/hexagon_lifecycle_ntsc.adf` is diagnostic.
 
 Next: finish the PC death presentation and unlock transitions, implement saved
 records/unlocks, then continue with scripted ending and camera/cue parity.
+
+## Ninth batch: death wall movement and polygon restoration
+
+The death path now continues polygon interpolation, freezes wall distances
+until death timer 60, then retreats walls by 200 PC units per tick. It preserves
+widths/active flags and command-marker waits. Inactive holes move with the record
+array; inactive tails are trimmed only after movement. The result renderer
+continues to draw remaining walls rather than removing them at a mode switch.
+
+Hexagon returns toward six sides once the result extent opens, completing any
+in-progress shrink/grow first. Native continuation probes exposed another
+boundary: once the PC would grow extent past 320, it clears continuation flags
+before stage-specific death logic. The port therefore applies the originally
+selected stage's polygon restoration from that point, including after either
+Hexagon handoff.
+
+Verification: 17,280 native ticks match wall hashes/counts, polygon arc and
+state, marker wait, frozen score and death/extent counters. Cases cover six
+profiles, six continuation setups, six polygon trajectories and two initial
+death timers over 120 ticks. 181 boundary cases are also included in shared
+host/68000 checks. The full host regression suite passes. See
+[death reference and limitations](tests/DEATH_REFERENCE.md).
+
+Still pending: PC camera/field motion, flash and audio fade/cues, tutorial,
+unlock announcement/selection transitions, saved records/unlocks and scripted
+ending. This batch implements death geometry, not full presentation parity.
+
+PAL A500 verification, 512 KB Chip-only: target PASS and captured death
+sequence. The score remains 2.43 seconds while the walls are still present
+([first frame](scratchpad/fsuae/pal512/fs-uae-crop-2609191441-04.png),
+[following frame](scratchpad/fsuae/pal512/fs-uae-crop-2609191441-05.png));
+then walls have retreated out of view at
+[results](scratchpad/fsuae/pal512/fs-uae-crop-2609191441-06.png).
+The native capture reproduces the fixture byte-for-byte. Both normal and
+packed PAL release builds pass the no-cheat audit.
+
+NTSC A500 (512 KB Chip + 512 KB Slow) also passes all shared target checks.
+The recorded run freezes at 3.95 seconds during death:
+[wall hold](scratchpad/fsuae/ntsc/fs-uae-crop-2609191442-07.png),
+[retreat/results](scratchpad/fsuae/ntsc/fs-uae-crop-2609191442-09.png).
+All verification emulator instances were closed. The default normal/packed
+PAL releases are `out/hexagon.adf` and `out/hexagon_packed.adf`;
+`out/hexagon_death_ntsc.adf` contains diagnostic self-tests.

@@ -4,6 +4,7 @@
 #include "patterns.h"
 #include "pc_menu.h"
 #include "pc_lifecycle.h"
+#include "pc_death.h"
 #if CHEAT_MODE
 #include "cheat.h"
 #endif
@@ -215,7 +216,8 @@ void game_update(const InputState* in) {
         if ((in->fire || in->fire_edge) && pc_lifecycle_can_start(&lifecycle)) {
             start_playing(in);
         } else {
-            pc_lifecycle_tick(&lifecycle);
+            pc_death_tick(&lifecycle,&game_world,&morph,patterns_stage(),selected_profile%3);
+            project_state();
             if (mode==MODE_DEAD && pc_lifecycle_can_start(&lifecycle))
                 set_mode(MODE_GAMEOVER);
         }

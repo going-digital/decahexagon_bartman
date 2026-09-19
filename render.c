@@ -136,7 +136,7 @@ void render_game(void* buf) {
 
     GameMode m = game_mode();
 
-    if (m == MODE_PLAYING || m == MODE_DEAD) {
+    if (m == MODE_PLAYING || m == MODE_DEAD || m == MODE_GAMEOVER) {
         n_active=pc_project_spans(&game_world,gamestate.num_sides,spans);
         for (UWORD k=0;k<n_active;++k) draw_wall(&spans[k],buf);
     }

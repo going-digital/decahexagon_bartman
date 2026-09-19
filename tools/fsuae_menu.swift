@@ -19,9 +19,9 @@ func screenshot() {
 guard CGPreflightPostEventAccess() else {
     fatalError("macOS event-posting permission is required for the smoke test")
 }
-let codes: [String: CGKeyCode] = ["left":123,"right":124,"start":49,"back":53,"retry":49]
+let codes: [String: CGKeyCode] = ["left":123,"right":124,"start":49,"back":53,"retry":49,"death":49]
 guard CommandLine.arguments.count == 2, let code=codes[CommandLine.arguments[1]] else {
-    fatalError("usage: fsuae_menu left|right|start|back|retry")
+    fatalError("usage: fsuae_menu left|right|start|back|retry|death")
 }
 guard let app=NSWorkspace.shared.runningApplications.first(where: { $0.executableURL?.lastPathComponent == "fs-uae" }) else { fatalError("FS-UAE is not running") }
 app.activate(options:[.activateAllWindows])
@@ -35,6 +35,12 @@ if CommandLine.arguments[1] == "retry" {
     screenshot()
 }
 key(code,false)
+if CommandLine.arguments[1] == "death" {
+    for _ in 0..<12 {
+        Thread.sleep(forTimeInterval:0.5)
+        screenshot()
+    }
+}
 Thread.sleep(forTimeInterval:0.4)
 screenshot()
 Thread.sleep(forTimeInterval:2)

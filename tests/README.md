@@ -234,3 +234,10 @@ Instantaneous AppleScript arrow taps can fall entirely between input polls.
 Twenty-four boundary states also run in shared host/68000 checks. See
 [start/retry rules and scope](LIFECYCLE_REFERENCE.md). The macOS menu helper's
 `retry` action holds Space across a death/retry cycle and captures both states.
+
+## Death movement
+
+`make test-death` (also in `make test`) compares 17,280 native death ticks.
+The shared host/68000 checks include 181 boundary cases. See
+[death ordering, continuation behavior and limits](DEATH_REFERENCE.md).
+`out/fsuae_menu death` captures a sequence after starting/retrying a run.
