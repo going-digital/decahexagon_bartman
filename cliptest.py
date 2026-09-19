@@ -1,4 +1,5 @@
-# Clipping test
+# Historical clipping prototype. Production now uses render_clip.c;
+# tests/clip_checks.c covers the off-screen endpoint defect in this version.
 
 class Point:
     x:int

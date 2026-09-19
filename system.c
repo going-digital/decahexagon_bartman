@@ -48,22 +48,12 @@ APTR GetInterruptHandler(void) {
     return *(volatile APTR*)(((UBYTE*)VBR) + 0x6c);
 }
 
-//vblank begins at vpos 312 hpos 1 and ends at vpos 25 hpos 1
-//vsync begins at line 2 hpos 132 and ends at vpos 5 hpos 18
+// Wait for the next vertical beam wrap. Both PAL and NTSC reach line256;
+// a PAL-only wait for line311 deadlocks before startup on an NTSC machine.
 void WaitVbl(void) {
     debug_start_idle();
-    while (1) {
-        ULONG vpos = custom->vposr;
-        vpos &= 0x1ff00;
-        if (vpos != (311 << 8))
-            break;
-    }
-    while (1) {
-        ULONG vpos = *(volatile ULONG*)&custom->vposr;
-        vpos &= 0x1ff00;
-        if (vpos == (311 << 8))
-            break;
-    }
+    while ((*(volatile ULONG*)&custom->vposr & 0x1ff00) < (256UL << 8)) {}
+    while ((*(volatile ULONG*)&custom->vposr & 0x1ff00) >= (256UL << 8)) {}
     debug_stop_idle();
 }
 

@@ -3,6 +3,7 @@
 #include "blitter.h"
 #include "trig.h"
 #include "game.h"
+#include "pc_projection.h"
 
 #define CX (SCREEN_WIDTH / 2)
 #define CY (SCREEN_HEIGHT / 2)
@@ -44,7 +45,7 @@ static void draw_hub(void* buf) {
     UBYTE n = gamestate.num_sides;
     for (WORD i = 0; i < n; i++) {
         pt(a, rr, &xs[i], &ys[i]);
-        a += gamestate.segment_angle;
+        a -= gamestate.segment_angle;
     }
     poly(xs, ys, n, buf);
 }
@@ -60,23 +61,14 @@ static void draw_player(void* buf) {
     poly(xs, ys, 3, buf);
 }
 
-// Active-wall indices, rebuilt each frame so the hot loops skip dead slots.
-static WORD active_idx[MAX_WALLS];
-static WORD n_active;
-
-// Adjacent slots without a 32-bit `%` (which compiled to __modsi3 - ~1ms/frame
-// across all the walls). gamestate.num_sides is a runtime side-count morph,
-// but this is still just a compare + conditional subtract - no multiply/divide.
-static UWORD slot_prev(UBYTE s) { return s ? (UWORD)(s - 1) : (UWORD)(gamestate.num_sides - 1); }
-static UWORD slot_next(UBYTE s) { UBYTE n = s + 1; return n >= gamestate.num_sides ? 0 : n; }
-
-// Is an active wall sitting in `slot` at exactly `dist`? (Walls from one ring
-// share a dist and step together, so this identifies angular neighbours.)
-static UBYTE wall_at(WORD dist, UWORD slot) {
-    for (WORD k = 0; k < n_active; k++) {
-        const Wall* w = &walls[active_idx[k]];
-        if (w->dist == dist && w->slot == slot) return 1;
-    }
+// Render-only unions keep overlapping same-slot walls solid under XOR fill.
+static PcSpan spans[PC_WALL_CAPACITY];
+static UWORD n_active;
+static UWORD slot_prev(UBYTE s) { return s ? s-1 : gamestate.num_sides-1; }
+static UWORD slot_next(UBYTE s) { return s+1>=gamestate.num_sides ? 0:s+1; }
+static UBYTE wall_at(WORD inner,WORD outer,UWORD slot) {
+    for (UWORD i=0;i<n_active;++i)
+        if (spans[i].slot==slot && spans[i].inner==inner && spans[i].outer==outer) return 1;
     return 0;
 }
 
@@ -87,11 +79,11 @@ static UBYTE wall_at(WORD dist, UWORD slot) {
 //  - skip a radial edge where an angular neighbour at the same dist draws the
 //    identical edge - those cancel under XOR anyway.
 // A closed ring of 5 walls near spawn: ~2 culled, the rest 12 edges not 20.
-static void draw_wall(const Wall* w, void* buf) {
-    UWORD a0 = gamestate.field_angle + (UWORD)w->slot * gamestate.segment_angle;
-    UWORD a1 = a0 + gamestate.segment_angle;
-    WORD r0 = zscale(w->dist);
-    WORD r1 = zscale(w->dist + w->width);
+static void draw_wall(const PcSpan* w, void* buf) {
+    UWORD a0 = gamestate.field_angle - (UWORD)w->slot * gamestate.segment_angle;
+    UWORD a1 = w->slot+1==gamestate.num_sides ? gamestate.field_angle : a0-gamestate.segment_angle;
+    WORD r0 = zscale(w->inner);
+    WORD r1 = zscale(w->outer);
     WORD x00, y00, x10, y10, x11, y11, x01, y01;
     pt(a0, r0, &x00, &y00);
     pt(a1, r0, &x10, &y10);
@@ -106,13 +98,13 @@ static void draw_wall(const Wall* w, void* buf) {
     blit_clipped_line_onedot(x00, y00, x10, y10, 0, buf); // inner chord
     blit_clipped_line_onedot(x01, y01, x11, y11, 0, buf); // outer chord
 
-    if (!wall_at(w->dist, slot_prev(w->slot)))
+    if (!wall_at(w->inner, w->outer, slot_prev(w->slot)))
         blit_clipped_line_onedot(x01, y01, x00, y00, 0, buf); // leading radial
-    if (!wall_at(w->dist, slot_next(w->slot)))
+    if (!wall_at(w->inner, w->outer, slot_next(w->slot)))
         blit_clipped_line_onedot(x11, y11, x10, y10, 0, buf); // trailing radial
 }
 
-#define SPOKE_OUTER     95  // spoke length, world units (pre-zoom)
+#define SPOKE_OUTER     190  // spoke length, world units (pre-zoom)
 #define SPOKE_OUTER_MAX 95  // safety clamp on the ZOOMED (screen-space) length
 
 void render_spokes(void* buf) {
@@ -120,12 +112,7 @@ void render_spokes(void* buf) {
 
     WORD inner = zscale(HUB_RADIUS);
     WORD outer = zscale(SPOKE_OUTER);
-    // blit_line() is unclipped - it assumes both endpoints are already
-    // on-screen. That held when zoom stayed near ZOOM_ONE, but the camera
-    // now targets wall_spawn_dist (game.c) and can zoom in well past that at
-    // low wall_speed, pushing the zoomed spoke length past the screen edge
-    // and feeding blit_line() garbage coordinates - clamp the SCREEN-SPACE
-    // result instead of assuming zoom stays bounded.
+    // Raw blit_line requires on-screen endpoints, including title zoom.
     if (outer > SPOKE_OUTER_MAX) outer = SPOKE_OUTER_MAX;
     UWORD a = gamestate.field_angle;
     for (WORD i = 0; i < gamestate.num_sides; i++) {
@@ -134,7 +121,7 @@ void render_spokes(void* buf) {
         polar_to_cartesian(a, (UWORD)outer, &ex, &ey);
         blit_line((UWORD)(CX + sx), (UWORD)(CY + sy),
                   (UWORD)(CX + ex), (UWORD)(CY + ey), buf);
-        a += gamestate.segment_angle;
+        a -= gamestate.segment_angle;
     }
 }
 
@@ -150,11 +137,8 @@ void render_game(void* buf) {
     GameMode m = game_mode();
 
     if (m == MODE_PLAYING || m == MODE_DEAD) {
-        n_active = 0;
-        for (WORD i = 0; i < MAX_WALLS; i++)
-            if (walls[i].active) active_idx[n_active++] = i;
-        for (WORD k = 0; k < n_active; k++)
-            draw_wall(&walls[active_idx[k]], buf);
+        n_active=pc_project_spans(&game_world,gamestate.num_sides,spans);
+        for (UWORD k=0;k<n_active;++k) draw_wall(&spans[k],buf);
     }
 #if BUILD_DEBUG
     custom->color[0] = 0x033; // cyan: wall seeds done

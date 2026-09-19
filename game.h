@@ -1,95 +1,39 @@
 #pragma once
-
 #include <exec/types.h>
 #include "input.h"
 #include "config.h"
+#include "pc_world.h"
 
-// ---- radial geometry (screen pixels from centre) -----------------------
-// Shared by the game logic and the renderer so collision matches what's drawn.
-#define HUB_RADIUS       18
-#define PLAYER_RADIUS    27   // player sits just outside the hub
-// Camera zoom target (game.c) - not the tighter (vertical) screen half-extent:
-// wall/hub/player rendering all go through the clipped line renderer, which
-// handles off-screen coordinates safely, so nothing here needs to guarantee
-// staying within the shorter dimension. Only render_spokes()'s raw,
-// UNCLIPPED blit_line() call needs its own hard on-screen bound, which it
-// has independently (SPOKE_OUTER_MAX in render.c) - so this can target the
-// wider extent instead, for a fuller, more zoomed-in field. A wall spawning
-// near straight up/down will briefly be off the top/bottom edge before
-// curving into view - expected and safely clipped, not a bug.
-#define SCREEN_EDGE_RADIUS (SCREEN_WIDTH / 2 - 10)
+/* Temporary 2D renderer coordinates. PC walls project at hub+distance/5;
+ * screen scaling is independent of their simulation speed/spawn distance. */
+#define HUB_RADIUS 40
+#define PLAYER_RADIUS 54
+#define ZOOM_ONE 256
 
-// wall_thickness/wall_spawn_dist (in GameState below) are expressed in TIME,
-// not fixed distance: thickness ~1/7s of travel, spawn dist ~1.5s of
-// travel, at the CURRENT wall_speed - see game.c's update_difficulty(). That keeps
-// the visual read (how much empty gap surrounds a wall, how long you get to
-// react) constant as wall_speed ramps up through a run, instead of walls
-// visually thickening relative to their spacing as they speed up.
-
-#define MAX_WALLS        32   // ~2 full rings of MAX_NUM_SIDES-1 walls, plus slack
-
-typedef struct sWall {
-    UBYTE active;
-    UBYTE slot;   // 0..gamestate.num_sides-1 (whatever it was when spawned)
-    WORD  dist;   // radius of the wall's inner (leading, hub-facing) edge
-    // Snapshot of gamestate.wall_thickness at spawn time - the wall's own
-    // frozen thickness, used for both its collision hitbox and its rendered
-    // outer edge (dist+width). While approaching, this just sits at whatever
-    // wall_thickness was when the wall was born (so an in-flight wall doesn't
-    // visually "fatten" if wall_thickness ramps up while it's still travelling -
-    // see game.c). Once dist clamps at HUB_RADIUS, this instead counts down to
-    // 0 before the wall deactivates - the source PC game's two-stage despawn
-    // (scratchpad/super_hexagon_pattern_reverse_engineering.md Part 3 §3.1):
-    // the leading edge holds at the hub while the trailing edge keeps
-    // sweeping in, rather than an instant cutoff.
-    WORD  width;
-} Wall;
-
-typedef struct sGameState {
+typedef struct {
     UWORD field_angle;
     WORD field_rotation;
     UWORD segment_angle;
-    UWORD segment_angle_target;
-    UBYTE num_sides;              // field side count - fixed at STARTING_SIDES for the whole run (see game.c)
-    WORD  wall_thickness;         // ~1/7s of travel at the current wall_speed
-    WORD  wall_spawn_dist;        // ~1.5s of travel at the current wall_speed (+ HUB_RADIUS)
-    UWORD player_angle;          // field-relative, 0..65535 around the ring
-    UWORD wall_fraction;
-    UWORD draw_distance;
-    UWORD draw_distance_target;
-    UWORD time_seconds;
-    UWORD time_subsecond_frames;
-    UWORD record_seconds;
-    UWORD record_subsecond_frames;
+    UBYTE num_sides;
+    UWORD player_angle;
+    UWORD draw_distance,draw_distance_target;
+    UWORD time_seconds,time_subsecond_frames;
+    UWORD record_seconds,record_subsecond_frames;
 } GameState;
-
 extern GameState gamestate;
-extern Wall walls[MAX_WALLS];    // read by the renderer
+extern PcWorld game_world;
 
-// High-level flow. Rendering branches on this.
-typedef enum {
-    MODE_ATTRACT,   // title / idle, field drifts
-    MODE_READY,     // "BEGIN" lead-in
-    MODE_PLAYING,   // live run
-    MODE_DEAD,      // hit: brief freeze / shake
-    MODE_GAMEOVER,  // results, waiting for fire
-} GameMode;
-
+typedef enum { MODE_ATTRACT,MODE_READY,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER } GameMode;
 void game_init(void);
-void game_update(const InputState* in);  // advance one logic tick
-
-// For the pattern sequencer (patterns.c):
-UWORD game_rng(void);                        // shared 16-bit PRNG
-void  game_spawn_wall(UBYTE slot, WORD dist); // add a wall; no-op if walls[] is full
-UBYTE game_slot_blocked(UBYTE slot);          // does any in-flight wall (any distance) occupy this slot?
-
+void game_update(const InputState *in);
+UWORD game_rng(void);
 GameMode game_mode(void);
-UWORD    game_mode_timer(void);          // ticks elapsed in the current mode
-WORD     game_shake_x(void);             // camera offset (non-zero during DEAD)
-WORD     game_shake_y(void);
-UBYTE    game_on_beat(void);             // 1 on the tick a (placeholder) beat lands
-UBYTE    game_new_record(void);          // this run beat the previous best (latches for the GAMEOVER screen)
+UWORD game_mode_timer(void);
+WORD game_shake_x(void);
+WORD game_shake_y(void);
+UBYTE game_on_beat(void);
+UBYTE game_new_record(void);
 
-// Camera zoom, Q8 fixed point (ZOOM_ONE = 1.0). Renderer scales every radius
-// by gamestate.draw_distance; it breathes on the beat and drifts with difficulty.
-#define ZOOM_ONE 256
+#if PC_CORE_SELFTEST
+UWORD game_live_failure(void);
+#endif

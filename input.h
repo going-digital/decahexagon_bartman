@@ -12,6 +12,7 @@
 #include <exec/types.h>
 
 typedef struct sInputState {
+    UBYTE held;        // PC_INPUT_POSITIVE / PC_INPUT_NEGATIVE, both preserved
     WORD  turn;        // -1 = anticlockwise (left), +1 = clockwise (right), 0
     UBYTE fire;        // 1 while select/confirm (space or joy fire) is held
     UBYTE fire_edge;   // 1 only on the tick select goes 0 -> 1

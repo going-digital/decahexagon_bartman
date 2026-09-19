@@ -1,4 +1,5 @@
 #include "input.h"
+#include "pc_core.h"
 #include "system.h"
 
 // JOY1DAT direction decode (digital joystick in port 1).
@@ -87,8 +88,9 @@ void input_poll(InputState* in) {
     WORD left  = k_left  || JOY1_LEFT(joy)  || rmb;
     WORD right = k_right || JOY1_RIGHT(joy) || lmb;
 
-    // Opposing directions cancel rather than jitter.
-    in->turn = (WORD)(right != 0) - (WORD)(left != 0);
+    // PC input43 is left/positive; it wins when both directions are held.
+    in->held = (left ? PC_INPUT_POSITIVE : 0) | (right ? PC_INPUT_NEGATIVE : 0);
+    in->turn = left ? -1 : (right ? 1 : 0);
 
     UBYTE fire = (k_space || JoyFire()) ? 1 : 0;
     in->fire = fire;

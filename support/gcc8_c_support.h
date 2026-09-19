@@ -69,13 +69,17 @@ void debug_save(const void* addr, unsigned int size, const char* name);
 	extern const void* incbin_ ## name ## _end;\
     const void* name = &incbin_ ## name ## _start;
 
+// MULU/MULS produce a full 32-bit result: the output operand must be 32-bit
+// too, otherwise C truncates it when returning the original short variable.
 __attribute__((always_inline)) inline unsigned int muluw(unsigned short a, unsigned short b) {
-    asm("muluw %1,%0":"+d"(a): "mid"(b): "cc");
-    return a;
+    unsigned int product = a;
+    asm("muluw %1,%0":"+d"(product): "mid"(b): "cc");
+    return product;
 }
 __attribute__((always_inline)) inline int mulsw(short a, short b) {
-    asm("mulsw %1,%0":"+d"(a): "mid"(b): "cc");
-    return a;
+    int product = a;
+    asm("mulsw %1,%0":"+d"(product): "mid"(b): "cc");
+    return product;
 }
 __attribute__((always_inline)) inline unsigned short divuw(unsigned int a, unsigned short b) {
     asm("divuw %1,%0":"+d"(a): "mid"(b): "cc");

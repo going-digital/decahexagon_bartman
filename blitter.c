@@ -1,4 +1,5 @@
 #include "blitter.h"
+#include "render_clip.h"
 
 // Y span touched by fill seeds this frame, so blit_fill only processes the
 // rows that actually contain toggles instead of the whole 200-line screen.
@@ -23,119 +24,15 @@ void blit_line_mode(void) {
     custom->bltcmod_bmod = (SCREEN_WIDTH_BYTES << 16) | SCREEN_WIDTH_BYTES;
 }
 
-// --- viewport-clip helper ----------------------------------------------
-// Edge-crossing offset: (c * n) / d, as a 16x16->32 multiply then 32/16->16
-// divide. Every call site guarantees |c| < |d| (the fully-off-screen cases
-// return earlier), so the quotient always fits a WORD - no divs.w overflow,
-// which previously produced a garbage coordinate and a multi-millisecond blit.
-static WORD clip_isect(WORD c, WORD n, WORD d) {
-#ifdef ASM_OPT
-    WORD r = c;
-    asm(
-        "muls.w %[n],%[r]\n"   // r = c * n  (full 32-bit product)
-        "divs.w %[d],%[r]\n"   // r = product / d  (fits 16 bits by construction)
-        : [r]"+&d"(r)
-        : [n]"d"(n), [d]"d"(d)
-        : "cc"
-    );
-    return r;
-#else
-    return (WORD)(((LONG)c * n) / d);
-#endif
-}
-
-// Clip x0,y0 -> x1,y1 to the 0..XMAX / 0..YMAX viewport and, if anything
-// survives, hand it to blit_line_onedot as XOR fill seeds. Where the line
-// leaves the right edge, the off-screen remainder is still walked down the
-// x=XMAX column by blit_fill_fix_onedot so the fill parity stays correct.
-// Mirrors clipline() in cliptest.py. `angle` is reserved for angled fills.
-void blit_clipped_line_onedot(
-    WORD x0, WORD y0, WORD x1, WORD y1, UWORD angle, void *bitplane
-) {
+// Clip before any seed tracking or DMA address calculation. The portable
+// helper is tested with large PC-world projections and corner near-misses.
+void blit_clipped_line_onedot(WORD x0,WORD y0,WORD x1,WORD y1,
+                            UWORD angle,void *bitplane) {
     (void)angle;
-    WORD outside_viewport = 4;
-    WORD viewport_intersection = 0;
-
-    // Order endpoints by y for the top/bottom tests.
-    if (y0 > y1) {
-        WORD t;
-        t = x0; x0 = x1; x1 = t;
-        t = y0; y0 = y1; y1 = t;
-    }
-
-    // Top edge (y = 0)
-    if (y1 < 0) {
-        return; // wholly above the viewport
-    } else if (y0 < 0) {
-        WORD nx = x0 - clip_isect(y0, x1 - x0, y1 - y0);
-        if (nx >= 0 && nx <= XMAX) {
-            x0 = nx;
-            y0 = 0;
-            viewport_intersection = 1;
-        }
-    } else {
-        outside_viewport--;
-    }
-
-    // Bottom edge (y = YMAX)
-    if (y0 > YMAX) {
-        return; // wholly below the viewport
-    } else if (y1 > YMAX) {
-        WORD nx = x1 + clip_isect(YMAX - y1, x1 - x0, y1 - y0);
-        if (nx >= 0 && nx <= XMAX) {
-            x1 = nx;
-            y1 = YMAX;
-            viewport_intersection = 1;
-        }
-    } else {
-        outside_viewport--;
-    }
-
-    // Order endpoints by x for the left/right tests.
-    if (x0 > x1) {
-        WORD t;
-        t = x0; x0 = x1; x1 = t;
-        t = y0; y0 = y1; y1 = t;
-    }
-
-    // Left edge (x = 0)
-    if (x1 < 0) {
-        return; // wholly left of the viewport
-    } else if (x0 < 0) {
-        WORD ny = y0 - clip_isect(x0, y1 - y0, x1 - x0);
-        if (ny >= 0 && ny <= YMAX) {
-            x0 = 0;
-            y0 = ny;
-            viewport_intersection = 1;
-        }
-    } else {
-        outside_viewport--;
-    }
-
-    // Right edge (x = XMAX). Done last: the part beyond XMAX still needs
-    // fill-fixup toggles down the x=XMAX column.
-    if (x0 > XMAX) {
-        // Nothing visible, but every scanline it spans still toggles the fill.
-        blit_fill_fix_onedot(y0, y1, bitplane);
-        return;
-    } else if (x1 > XMAX) {
-        WORD ny = y1 + clip_isect(XMAX - x1, y1 - y0, x1 - x0);
-        // Walk the beyond-XMAX part down the right column. blit_fill_fix_onedot
-        // clamps the y range to the screen, so ny < 0 / ny > YMAX are covered
-        // here too (this is what the old three-way branch was reaching for).
-        blit_fill_fix_onedot(y1, ny, bitplane);
-        if (ny >= 0 && ny <= YMAX) {
-            x1 = XMAX;
-            y1 = ny;
-            viewport_intersection = 1;
-        }
-    } else {
-        outside_viewport--;
-    }
-
-    if (outside_viewport == 0 || viewport_intersection) {
-        blit_line_onedot(x0, y0, x1, y1, bitplane);
-    }
+    RenderClip clip;
+    render_clip_line(x0,y0,x1,y1,&clip);
+    if (clip.fix) blit_fill_fix_onedot(clip.fix_y0,clip.fix_y1,bitplane);
+    if (clip.line) blit_line_onedot(clip.x0,clip.y0,clip.x1,clip.y1,bitplane);
 }
 
 // Plots ONE toggle pixel per scanline along x0,y0 -> x1,y1 to seed the XOR
@@ -151,7 +48,7 @@ void blit_line_onedot(
     void *bitplane
 ) {
     // Horizontal segments contribute no scanline crossings to the fill.
-    if (y0 == y1) return;
+    if (y0 == y1 || x0 > XMAX || x1 > XMAX || y0 > YMAX || y1 > YMAX) return;
 
     // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
     if (y0 > y1) {

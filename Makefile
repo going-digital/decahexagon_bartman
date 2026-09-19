@@ -7,15 +7,21 @@ ifdef OS
 	SHELL = cmd.exe
 endif
 
-subdirs := $(wildcard */)
-VPATH = $(subdirs)
-cpp_sources := $(wildcard *.cpp) $(wildcard $(addsuffix *.cpp,$(subdirs)))
-cpp_objects := $(addprefix obj/,$(patsubst %.cpp,%.o,$(notdir $(cpp_sources))))
-c_sources := $(wildcard *.c) $(wildcard $(addsuffix *.c,$(subdirs)))
-c_objects := $(addprefix obj/,$(patsubst %.c,%.o,$(notdir $(c_sources))))
+# Keep host-only tests/tools out of the freestanding Amiga link.
+VPATH = support
+cpp_sources :=
+cpp_objects :=
+c_sources := main.c system.c coplist.c blitter.c trig.c audio.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c support/gcc8_c_support.c
+PC_CORE_SELFTEST ?= 0
+ifeq ($(PC_CORE_SELFTEST),1)
+c_sources += tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/clip_checks.c
+SELFTEST_CFLAGS := -DPC_CORE_SELFTEST=1
+VPATH += tests
+endif
+c_objects := $(addprefix obj/,$(notdir $(c_sources:.c=.o)))
 s_sources := support/gcc8_a_support.s support/depacker_doynax.s
 s_objects := $(addprefix obj/,$(patsubst %.s,%.o,$(notdir $(s_sources))))
-vasm_sources := $(wildcard *.asm) $(wildcard $(addsuffix *.asm, $(subdirs)))
+vasm_sources := LightSpeedPlayer.asm LightSpeedPlayer_cia.asm support/depacker_doynax_vasm.asm
 vasm_objects := $(addprefix obj/, $(patsubst %.asm,%.o,$(notdir $(vasm_sources))))
 objects := $(cpp_objects) $(c_objects) $(s_objects) $(vasm_objects)
 
@@ -35,7 +41,7 @@ EXECRAM = execram
 # another backend, e.g. make pack EXECRAM_FLAGS="--backend=auto"
 # (store|inflate|zultra|zx0|salvador|shrinkler|auto - auto tries them all and
 # keeps the smallest). https://github.com/going-digital/execram
-EXECRAM_FLAGS ?= --backend=store
+EXECRAM_FLAGS ?= --backend=zultra
 
 ifdef WINDOWS
 	SDKDIR = $(abspath $(dir $(shell where $(CC)))..\m68k-amiga-elf\sys-include)
@@ -48,7 +54,7 @@ endif
 #   make EXTRA_CFLAGS="-DTARGET_NTSC"          60Hz NTSC timing
 EXTRA_CFLAGS ?=
 
-CCFLAGS   = -g -MP -MMD -m68000 -Ofast -nostdlib -Wextra -Wno-unused-function -Wno-volatile-register-var -fomit-frame-pointer -fno-tree-loop-distribution -flto -fwhole-program -fno-exceptions -ffunction-sections -fdata-sections $(EXTRA_CFLAGS)
+CCFLAGS   = -g -MP -MMD -m68000 -Ofast -nostdlib -Wextra -Wno-unused-function -Wno-volatile-register-var -Wno-missing-field-initializers -fomit-frame-pointer -fno-tree-loop-distribution -flto -fwhole-program -fno-exceptions -ffunction-sections -fdata-sections $(EXTRA_CFLAGS) $(SELFTEST_CFLAGS)
 CPPFLAGS  = $(CCFLAGS) -fno-rtti -fcoroutines -fno-use-cxa-atexit
 ASFLAGS   = -mcpu=68000 -g --register-prefix-optional -I$(SDKDIR)
 LDFLAGS   = -Wl,--emit-relocs,--gc-sections,-Ttext=0,-Map=$(OUT).map
@@ -113,3 +119,25 @@ $(s_objects): obj/%.o : %.s
 $(vasm_objects): obj/%.o : %.asm
 	$(info Assembling $<)
 	@$(VASM) $(VASMFLAGS) -dependall=make -depfile $(@D)/$*.d -o $@ $(CURDIR)/$<
+
+.PHONY: test
+HOST_CC ?= cc
+test:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
+	./out/core_test
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c tests/wave_probe.c -o out/wave_probe
+	python3 tests/compare_waves.py
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c tests/schedule_probe.c -o out/schedule_probe
+	python3 tests/compare_schedule.py
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c tests/normal_run_test.c -o out/normal_run_test
+	./out/normal_run_test
+
+$(objects): | obj
+$(OUT).elf: | out
+obj out:
+ifdef WINDOWS
+	@if not exist "$@" mkdir "$@"
+else
+	@mkdir -p $@
+endif

@@ -11,23 +11,13 @@
 // TARGET_NTSC: 60Hz timing + pixel-aspect correction. Default is 50Hz PAL.
 //#define TARGET_NTSC
 
-// CONTROL_FLICK: player turning model. 1 = discrete slot-to-slot "flick"
-// (matches the real PC game - fixed-duration hop, hard-snaps to the
-// destination slot's centre, see game.c). 0 = continuous free rotation at a
-// constant rate (this project's original model). On real hardware the flick
-// model reads correctly on a joystick but has tested worse than continuous
-// on keyboard - kept as a build-time choice rather than picking one and
-// deleting the other, until that's settled. Override with
-// `make EXTRA_CFLAGS="-DCONTROL_FLICK=0"`.
-#ifndef CONTROL_FLICK
-#define CONTROL_FLICK 1
-#endif
-
+// Display cadence is independent of the 60 Hz reference simulation.
 #ifdef TARGET_NTSC
-#define FRAME_RATE (60)
+#define DISPLAY_RATE 60
 #else
-#define FRAME_RATE (50) // Keeps difficulty consistent between PAL and NTSC
+#define DISPLAY_RATE 50
 #endif
+#define FRAME_RATE 60 // simulation ticks per second (legacy consumers)
 
 // Startup banner text (BUILD_DEBUG only). Pick one.
 #define DEBUG_NAG
@@ -41,10 +31,7 @@
 //#define SHOW_DRAW_PLANE  // show the work buffer as a 2nd bitplane
 //#define SKIP_FILL        // skip the area fill (wireframe)
 
-// Hexagon is the side count, fixed for the whole run (the side-count morph
-// this comment used to describe was removed - it had no basis in the real
-// PC game, see game.c). MAX_NUM_SIDES sizes fixed-capacity buffers and
-// matches gamestate.num_sides, which no longer changes at runtime.
+// Polygon morph buffers support up to six sides.
 #define MAX_NUM_SIDES (6)
 
 #define SCREEN_WIDTH (320) // Currently fixed at 320 due to cls routine
@@ -52,7 +39,7 @@
 #define SCREEN_WIDTH_BYTES (SCREEN_WIDTH >> 3)
 
 // Pixel aspect correction for NTSC
-#if FRAME_RATE == 60
+#ifdef TARGET_NTSC
 // Should be *0.8333
 // n - (n>>2) = 0.75
 // n - (n>>2) + (n>>4) = 0.8125 close enough

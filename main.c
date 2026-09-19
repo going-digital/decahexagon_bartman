@@ -2,6 +2,10 @@
 // <hardware/custom.h> include guard before any <proto/*> header can pull the
 // SDK copy, keeping struct Custom identical across every translation unit.
 #include "config.h"
+#include "pc_core.h"
+#if PC_CORE_SELFTEST
+#include "tests/core_checks.h"
+#endif
 #include "system.h"
 #include "coplist.h"
 #include "blitter.h"
@@ -199,18 +203,24 @@ int main() {
     input_init();
     game_init();
     InputState input;
-    short last_frame = frameCounter;
+    UWORD last_frame = (UWORD)frameCounter;
+    PcClock simulation_clock = {0};
+#if PC_CORE_SELFTEST
+    unsigned core_failure = pc_core_checks();
+#endif
 
     for (;;) {
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
         // frame rate instead of the whole-frame stall Wait10() caused when
         // work crept past raster line 16.
-        while (frameCounter == last_frame) {}
+        while ((UWORD)frameCounter == last_frame) {}
         // white marker: if in sync it sits at a fixed line near the top;
         // if it crawls down the screen, the loop body is over one frame.
-        short missed = (short)(frameCounter - last_frame - 1);
-        last_frame = frameCounter;
+        UWORD now = (UWORD)frameCounter;
+        UWORD elapsed_frames = (UWORD)(now - last_frame);
+        UWORD missed = elapsed_frames - 1;
+        last_frame = now;
 #if BUILD_DEBUG
         custom->color[0] = missed > 0 ? 0x300 : 0x333;
 #endif
@@ -219,8 +229,13 @@ int main() {
         input_poll(&input);
         if (input.quit) break;                                  // dev: both mouse buttons
         if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
-        game_update(&input);
-        hud_tick(); // picks this frame's glyphs; the copper writes SPRxPT below
+        ULONG ticks = pc_clock_advance(&simulation_clock, elapsed_frames, DISPLAY_RATE);
+        while (ticks--) {
+            game_update(&input);
+            hud_tick();
+            // Held state persists; one-shot actions belong to only the first tick.
+            input.fire_edge = input.back_edge = 0;
+        }
 #if BUILD_DEBUG
         custom->color[0] = 0x303; // after input+update
 #endif
@@ -243,6 +258,23 @@ int main() {
 #if BUILD_DEBUG
         custom->color[0] = 0x300;
 #endif
+#if PC_CORE_SELFTEST
+        // Visible target-executed test result: PASS or FAIL at top left.
+        // This overlay is excluded from normal builds.
+        static const UBYTE pass[4][5] = {{14,9,14,8,8},{6,9,15,9,9},{7,8,6,1,14},{7,8,6,1,14}};
+        static const UBYTE fail[4][5] = {{15,8,14,8,8},{6,9,15,9,9},{14,4,4,4,14},{8,8,8,8,15}};
+        const UBYTE (*letters)[5] = (core_failure || game_live_failure()) ? fail : pass;
+        for (WORD ch = 0; ch < 4; ++ch)
+            for (WORD y = 0; y < 10; ++y)
+                for (WORD x = 0; x < 8; ++x) {
+                    WORD px = 8 + ch * 10 + x;
+                    UBYTE *pixel = (UBYTE*)bitplane_fg2 + (26+y)*SCREEN_WIDTH_BYTES + (px>>3);
+                    UBYTE mask = 0x80 >> (px & 7);
+                    if (letters[ch][y/2] & (8 >> (x/2))) *pixel |= mask;
+                    else *pixel &= (UBYTE)~mask;
+                }
+#endif
+
         // Clear next frame's draw buffer with the blitter (async): it overlaps
         // the copper writes + Wait10 + next frame's input/update, so it's
         // effectively free. (cpu_cls was ~2.5ms of blocking CPU time.)
