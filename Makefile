@@ -11,7 +11,7 @@ endif
 VPATH = support
 cpp_sources :=
 cpp_objects :=
-c_sources := main.c system.c coplist.c blitter.c trig.c audio.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
+c_sources := main.c system.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
 # Default release behavior: omit the entire steering-assist translation unit.
 CHEAT_MODE ?= 0
 ifneq ($(CHEAT_MODE),0)
@@ -45,9 +45,9 @@ SELFTEST_CFLAGS += -DPC_CORE_SELFTEST=1
 VPATH += tests
 endif
 c_objects := $(addprefix obj/,$(notdir $(c_sources:.c=.o)))
-s_sources := support/gcc8_a_support.s support/depacker_doynax.s
+s_sources := support/gcc8_a_support.s
 s_objects := $(addprefix obj/,$(patsubst %.s,%.o,$(notdir $(s_sources))))
-vasm_sources := LightSpeedPlayer.asm LightSpeedPlayer_cia.asm support/depacker_doynax_vasm.asm
+vasm_sources :=
 vasm_objects := $(addprefix obj/, $(patsubst %.asm,%.o,$(notdir $(vasm_sources))))
 objects := $(cpp_objects) $(c_objects) $(s_objects) $(vasm_objects)
 

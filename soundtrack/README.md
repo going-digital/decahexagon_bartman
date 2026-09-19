@@ -1,5 +1,9 @@
 # Soundtrack analysis progress
 
+The placeholder LSP/ThePlayer backends and demo music assets have been removed.
+Only the PCM soundtrack option remains (`MUSIC_FIB_STREAM=1`); builds without
+that option are silent. The PCM start/death/retry lifecycle remains in place.
+
 **Current decision: runtime soundtrack decompression is abandoned.** CPU time
 must remain available to the game. The supported soundtrack trial now plays
 word-aligned, offline-predecoded PCM slices, with no runtime interpolation.
@@ -1181,7 +1185,7 @@ and `scratchpad/decompile_gfx2.txt`; the evidence is local PC binary analysis.
 restart during fade, post-death silence and return to selection. The PCM trial
 still uses Courtesy and restarts it at sample zero; PC song selection/random
 retry offsets and normal-release soundtrack integration remain separate work.
-The legacy placeholder LSP backend is not changed by this PCM lifecycle patch.
+The legacy placeholder backend was subsequently removed.
 
 PAL 512 KiB FS-UAE lifecycle check passed: initial B=0, playback after start,
 B=72 unchanged across two post-death captures, retry reset to B=12, return to

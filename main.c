@@ -16,7 +16,6 @@
 #include "coplist.h"
 #include "blitter.h"
 #include "trig.h"
-#include "audio.h"
 #include "input.h"
 #include "game.h"
 #include "render.h"
@@ -121,19 +120,11 @@ int main() {
     // Generate sin table
     init_tables();
 
-    #ifdef MUSIC
-    if(p61Init(module) != 0)
-        KPrintF("p61Init failed!\n");
-    #endif
-
 #if BUILD_DEBUG
     warpmode(0);
 #endif
 
     TakeSystem();
-#ifdef MUSIC_LSP
-    p61Init(GetSystemVBR());
-#endif
     WaitVbl();
 
     // Allocate bitplanes
@@ -198,12 +189,6 @@ int main() {
     // DEMO
     SetInterruptHandler((APTR)interruptHandler);
     custom->intena = INTF_SETCLR | INTF_INTEN | INTF_VERTB;
-#ifdef MUSIC
-    custom->intena = INTF_SETCLR | INTF_EXTER; // ThePlayer needs INTF_EXTER
-#endif
-#ifdef MUSIC_LSP
-    custom->intena = INTF_SETCLR | INTF_EXTER; // LightSpeed Player CIA mode needs INTF_EXTER
-#endif
 
     custom->intreq = (1 << INTB_VERTB); // Reset vbl req
 
@@ -348,9 +333,6 @@ int main() {
 
 #if MUSIC_FIB_STREAM
     fib_stream_stop();
-#endif
-#if defined(MUSIC) || defined(MUSIC_LSP)
-    p61End();
 #endif
 
     // END

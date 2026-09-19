@@ -25,7 +25,7 @@ void WaitLine(USHORT line);
 void SetInterruptHandler(APTR interrupt);
 APTR GetInterruptHandler(void);
 
-// VBL interrupt handler: services music (ThePlayer builds) and bumps frameCounter.
+// VBL interrupt handler: advances frameCounter and services optional PCM buffers.
 __attribute__((interrupt)) void interruptHandler(void);
 
 __attribute__((always_inline)) inline void WaitBlt(void) {

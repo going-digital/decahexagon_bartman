@@ -8,9 +8,6 @@
 #if CHEAT_MODE
 #include "cheat.h"
 #endif
-#ifdef MUSIC_LSP
-#include "audio.h"
-#endif
 
 #define STARTING_ZOOM_TARGET 128
 #define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 50 / HUB_RADIUS)
@@ -61,16 +58,6 @@ UBYTE game_new_record(void) { return new_record; }
 /* Existing presentation/audio placeholders, not PC cue or camera emulation. */
 // Beat-driven camera zoom breathing. Runs in every mode.
 static void update_ambient(void) {
-#ifdef MUSIC_LSP
-    // Recompute only when the music tempo changes.
-    // 0 is never a real BPM; guards a torn/pre-init read rather than latch a
-    // bogus period.
-    UWORD live_bpm = audio_get_bpm();
-    if (live_bpm != 0 && live_bpm != beat_bpm) {
-        beat_bpm = live_bpm;
-        beat_period = (UWORD)(FRAME_RATE * 60 / beat_bpm);
-    }
-#endif
     if (++beat_ctr >= beat_period) {
         beat_ctr = 0;
         on_beat = 1;

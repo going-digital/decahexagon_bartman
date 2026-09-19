@@ -1,3 +1,6 @@
+> Historical baseline: placeholder LSP/ThePlayer code and music assets have
+> since been removed. See soundtrack/README.md for the current PCM approach.
+
 # Soundtrack conversion plan
 
 ## Objective and baseline

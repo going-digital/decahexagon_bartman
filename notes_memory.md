@@ -1,3 +1,6 @@
+> Historical baseline: placeholder LSP/ThePlayer code and music assets have
+> since been removed. See soundtrack/README.md for the current PCM approach.
+
 # Memory budget
 
 Target min spec: **A500, OCS, 1 MB (512 KB chip + 512 KB trapdoor/slow)**.
