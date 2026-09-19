@@ -13,7 +13,7 @@
 #define CHEAT_MODE 0
 #endif
 
-// PAL/NTSC is detected from the running raster at startup.
+// PAL/NTSC is selected from AmigaOS GfxBase->DisplayFlags at startup.
 #include "video.h"
 
 // Initial menu selection: 0=Hexagon, 1=Hexagoner, 2=Hexagonest.

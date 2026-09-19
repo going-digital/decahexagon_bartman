@@ -16,7 +16,6 @@ extern struct GfxBase *GfxBase;
 extern volatile short frameCounter;
 
 void TakeSystem(void);
-void DetectVideoTiming(void);
 void FreeSystem(void);
 APTR GetSystemVBR(void);
 

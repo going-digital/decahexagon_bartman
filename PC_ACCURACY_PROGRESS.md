@@ -804,3 +804,12 @@ underruns. Gameplay captures:
 `scratchpad/fsuae/pal/fs-uae-crop-2609192053-03.png` and
 `scratchpad/fsuae/ntsc/fs-uae-crop-2609192055-03.png`.
 These are short startup/gameplay checks, not new full-song stress trials.
+
+### AmigaOS video-standard selection
+
+Replaced raster measurement with `(GfxBase->DisplayFlags & PAL) != 0`, using
+the SDK's PAL flag immediately after opening graphics.library, before system
+takeover. Removed the extra field-wait/measurement function. The universal
+binary still selects all display/audio timings together; the cue clock uses
+nominal 312/262-line fields. Host timing/pulse checks and release build pass.
+This supersedes the raster-detection mechanism described above.

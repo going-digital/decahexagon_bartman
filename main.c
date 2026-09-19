@@ -97,6 +97,8 @@ int main() {
     GfxBase = (struct GfxBase *)OpenLibrary((CONST_STRPTR)"graphics.library",0);
     if (!GfxBase) Exit(0);
 
+    video_select((GfxBase->DisplayFlags & PAL) != 0);
+
 #if BUILD_DEBUG
 #ifdef __cplusplus
     KPrintF("Hello debugger from Amiga: %ld!\n", staticClass.i);
@@ -127,7 +129,6 @@ int main() {
 #endif
 
     TakeSystem();
-    DetectVideoTiming();
 #if SOUND_EFFECTS || MUSIC_FIB_STREAM
     paula_irq_init();
 #endif

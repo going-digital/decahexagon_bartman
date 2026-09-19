@@ -1,14 +1,13 @@
 #include <assert.h>
 #include "../config.h"
 int main(void) {
-    const unsigned fields[]={312,313,262,263};
-    for(unsigned i=0;i<4;++i) {
-        video_select(fields[i]);
-        assert(video_timing.lines==fields[i]);
-        assert(DISPLAY_RATE==(i<2?50:60));
-        assert(DISPLAY_HW_Y==(i<2?72:44));
-        assert(video_timing.music_period==(i<2?296:298));
-        assert(video_timing.sfx_period==(i<2?443:447));
+    for(unsigned pal=0;pal<2;++pal) {
+        video_select(pal);
+        assert(video_timing.lines==(pal?312:262));
+        assert(DISPLAY_RATE==(pal?50:60));
+        assert(DISPLAY_HW_Y==(pal?72:44));
+        assert(video_timing.music_period==(pal?296:298));
+        assert(video_timing.sfx_period==(pal?443:447));
         assert(DISPLAY_HW_Y+SCREEN_HEIGHT<video_timing.lines);
     }
     return 0;

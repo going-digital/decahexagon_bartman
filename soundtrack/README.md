@@ -1204,7 +1204,7 @@ See [VISUAL_SYNC.md](VISUAL_SYNC.md) for timing evidence, tests and limitations.
 
 ## Universal PAL/NTSC build
 
-The current executable measures the running raster at startup and selects the
+The current executable reads `GfxBase->DisplayFlags & PAL` before takeover and selects the
 display origin, simulation cadence, music/SFX periods and cue-clock timing.
 `out/hexagon.adf` runs on either standard; `TARGET_NTSC` is no longer used.
 The existing common pixel geometry is preserved.
