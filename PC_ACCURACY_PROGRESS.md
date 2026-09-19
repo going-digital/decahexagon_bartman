@@ -833,3 +833,30 @@ is unchanged and aligned; only digital-zero suffixes were removed. PAL FS-UAE
 boot, timer/HUD and gameplay check passed (music/effects release, 1 MB):
 `scratchpad/fsuae/pal/fs-uae-crop-2609192103-03.png`. This release omits the
 counter overlay, so this screenshot does not measure underruns.
+
+## Default execram ADF
+
+`make` and `make adf` now boot the execram-packed executable from the canonical
+`out/hexagon.adf`. The `_packed.adf` name is an identical compatibility copy;
+`make adf-unpacked` explicitly builds the diagnostic alternative. Incremental
+builds skip packing and disk creation when their inputs are unchanged.
+
+Execram merges mixed-memory hunks into Chip RAM. Packing the old combined
+executable directly failed to load on the 512 KB Chip + 512 KB expansion A500.
+The CPU-only music prefix is therefore an ADF file, `music.pcm0`, loaded and
+validated before takeover and freed on exit. The DMA bank remains embedded.
+No music quality changes, gameplay decompression or gameplay disk access were
+introduced. Direct executable launches need the bank in the current directory.
+
+The combined release now contains a 173,308-byte packed executable plus a
+137,610-byte music file: 310,918 bytes of payload, about 33% below the preceding
+465,072-byte executable. The ADF itself remains the standard 901,120 bytes.
+See `MEMORY_USAGE.md` for the new Chip/expansion distribution and startup costs.
+
+Execram's host decompression check, the release cheat audit, video/pulse/SFX/
+PCM lifecycle tests, and the 2,324,096-sample PCM equivalence check pass.
+Both music and effects-only packed disk targets build successfully. The music
+disk passed PAL FS-UAE boot, gameplay and return-to-menu checks with 512 KB
+Chip + 512 KB expansion RAM; gameplay capture:
+`scratchpad/fsuae/pal/fs-uae-crop-2609192111-03.png`. This is a short smoke check,
+not a new full-song or underrun measurement.

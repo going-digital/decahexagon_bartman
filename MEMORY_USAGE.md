@@ -1,5 +1,14 @@
 # Release memory use
 
+**Packed-disk update:** the default now uses execram plus a separately loaded
+137,610-byte CPU music bank. Execram merges its resident image into Chip RAM:
+329,020 bytes, plus 31,672 bytes of runtime Chip allocations. Accounted runtime
+RAM is therefore **498,302 bytes**, of which **360,692 bytes** are mandatory
+Chip RAM; the separate music bank uses MEMF_ANY (normally expansion RAM).
+The startup depacker has an additional 1,188-byte scratch hunk, released before
+the game starts. OS/stack/loader overhead remains excluded. The breakdown below
+records the preceding unpacked release and its cleanup savings.
+
 Measured for the universal music + SFX build, `BUILD_DEBUG=0`, `CHEAT_MODE=0`,
 Courtesy 12 kHz / 96 slices. Executable sizes come from the actual HUNK file;
 resident sections come from its allocation table, not ELF debug-file size.

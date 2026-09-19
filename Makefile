@@ -35,7 +35,7 @@ $(error Runtime decompression is retired; soundtrack playback requires predecode
 endif
 c_sources += fib_pcm.c pcm_lifecycle.c tests/fib_stream.c
 SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1 -DFIB_TRIAL_SONG=1 -DFIB_TRIAL_PCM=1
-SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).pcm1"'
+SELFTEST_CFLAGS += -DPCM_BANK_SECOND='"$(PCM_ASSET).pcm1"'
 VPATH += tests
 endif
 SOUND_EFFECTS ?= 1
@@ -94,30 +94,41 @@ ASFLAGS   = -mcpu=68000 -g --register-prefix-optional -I$(SDKDIR)
 LDFLAGS   = -Wl,--emit-relocs,--gc-sections,-Ttext=0,-Map=$(OUT).map
 VASMFLAGS = -m68000 -Felf -opt-fconst -nowarn=62 -dwarf=3 -quiet -x -I. -I$(SDKDIR)
 
-all: $(OUT).exe adf pack
+# The canonical disk always boots the self-decrunching executable. Keep the
+# raw executable/ELF for debugging; an unpacked disk is an explicit opt-in.
+ifeq ($(MUSIC_FIB_STREAM),1)
+ADF_ASSETS := $(OUT)_disk/music.pcm0
+ADF_ASSET_FLAGS := -d $(OUT)_disk
+endif
 
-# Bootable floppy image: exe2adf writes a disk with a bootblock that loads
-# and runs the .exe directly, no AmigaDOS filesystem/Workbench needed - drop
-# it straight into an emulator or write it to a real disk with a real Amiga.
+$(OUT)_disk/music.pcm0: $(PCM_ASSET).pcm0
+	@python3 -c "from pathlib import Path; import shutil; Path('$(OUT)_disk').mkdir(parents=True, exist_ok=True); shutil.copyfile('$<', '$@')"
+
+.DEFAULT_GOAL := all
+.PHONY: all adf pack adf-unpacked
+all: adf
 adf: $(OUT).adf $(OUT)_packed.adf
+pack: $(OUT)_packed.exe $(ADF_ASSETS)
+adf-unpacked: $(OUT)_unpacked.adf
 
-$(OUT).adf: $(OUT).exe
-	$(info Building ADF $(OUT).adf)
-	@$(EXE2ADF) -i $(OUT).exe -l Hexagon -a $(OUT).adf
+# exe2adf creates an AmigaDOS disk whose S/startup-sequence runs the payload.
+# execram decrunches once at launch, before the game takes over the hardware.
+$(OUT).adf: $(OUT)_packed.exe $(ADF_ASSETS)
+	$(info Building packed ADF $@)
+	@$(EXE2ADF) -i $< -l Hexagon -a $@ $(ADF_ASSET_FLAGS)
 
-$(OUT)_packed.adf: pack
-	$(info Building ADF $(OUT)_packed.adf)
-	@$(EXE2ADF) -i $(OUT)_packed.exe -l Hexagon -a $(OUT)_packed.adf
+# Compatibility filename for existing launchers; identical to the default ADF.
+$(OUT)_packed.adf: $(OUT).adf
+	@python3 -c "import shutil; shutil.copyfile('$(OUT).adf', '$@')"
 
-# execram-compressed executable, built alongside the uncompressed one rather
-# than replacing it - self-decrunching, same hunk format, just smaller and
-# slower to load. execram self-checks (decompresses host-side, compares
-# byte-for-byte) before writing anything. https://github.com/going-digital/execram
-pack: $(OUT)_packed.exe
+$(OUT)_unpacked.adf: $(OUT).exe $(ADF_ASSETS)
+	$(info Building unpacked diagnostic ADF $@)
+	@$(EXE2ADF) -i $< -l Hexagon -a $@ $(ADF_ASSET_FLAGS)
 
+# The packer verifies decompressed bytes against the input before writing.
 $(OUT)_packed.exe: $(OUT).exe
-	$(info execram-compressing $(program)_packed.exe)
-	@$(EXECRAM) pack $(EXECRAM_FLAGS) $(OUT).exe $@
+	$(info execram-compressing $@)
+	@$(EXECRAM) pack $(EXECRAM_FLAGS) $< $@
 
 $(OUT).exe: $(OUT).elf
 	$(info Elf2Hunk $(program).exe)
@@ -273,3 +284,7 @@ test-video:
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror video.c tests/video_test.c -o out/video_test
 	out/video_test
+
+ifeq ($(MUSIC_FIB_STREAM),1)
+obj/fib_stream.o: $(PCM_ASSET).pcm1
+endif
