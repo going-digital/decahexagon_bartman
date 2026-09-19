@@ -11,9 +11,9 @@
 void* doynaxdepack(const void* input, void* output);
 
 #ifdef MUSIC_LSP
-int p61Init(void);
+int p61Init(APTR vbr);
 int p61Music(void);
-int p61End(void);
+void p61End(void);
 UWORD audio_get_bpm(void); // current music BPM, live (tracks a mid-song tempo change)
 #endif
 

@@ -3,6 +3,13 @@
 #include "audio.h"
 #include <graphics/gfxmacros.h>
 #include <devices/trackdisk.h>
+#ifdef MUSIC_LSP
+#include <proto/cia.h>
+static struct Library *CIABResource;
+static APTR SystemLevel6;
+static UBYTE SystemCIABMask, SystemCRA, SystemCRB, SystemAudioFilter;
+static UBYTE SystemTALO, SystemTAHI, SystemTBLO, SystemTBHI;
+#endif
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
@@ -40,6 +47,8 @@ static APTR GetVBR(void) {
 
     return vbr;
 }
+
+APTR GetSystemVBR(void) { return (APTR)VBR; }
 
 void SetInterruptHandler(APTR interrupt) {
     *(volatile APTR*)(((UBYTE*)VBR) + 0x6c) = interrupt;
@@ -100,6 +109,9 @@ static void StopFloppyMotors(void) {
 void TakeSystem(void) {
     StopFloppyMotors();
     Forbid();
+#ifdef MUSIC_LSP
+    CIABResource = (struct Library*)OpenResource((CONST_STRPTR)"ciab.resource");
+#endif
     //Save current interrupts and DMA settings so we can restore them upon exit.
     SystemADKCON = custom->adkconr;
     SystemInts = custom->intenar;
@@ -135,6 +147,22 @@ void TakeSystem(void) {
 
     VBR = GetVBR();
     SystemIrq = GetInterruptHandler(); // Store interrupt register
+#ifdef MUSIC_LSP
+    /* Snapshot before LSP installs its vector. AbleICR is required because
+     * reading the hardware ICR returns pending flags, not the enable mask. */
+    SystemLevel6 = *(volatile APTR*)((UBYTE*)VBR + 0x78);
+    SystemCIABMask = AbleICR(CIABResource, 0);
+    SystemAudioFilter = ciaa->ciapra & 2;
+    SystemCRA = ciab->ciacra;
+    SystemCRB = ciab->ciacrb;
+    ciab->ciacra = SystemCRA & ~1;
+    ciab->ciacrb = SystemCRB & ~1;
+    /* Resume the OS timers from their paused counts. CIA reload latches
+     * are write-only; this does not preserve arbitrary third-party
+     * continuous-timer periods across a full machine takeover. */
+    SystemTALO = ciab->ciatalo; SystemTAHI = ciab->ciatahi;
+    SystemTBLO = ciab->ciatblo; SystemTBHI = ciab->ciatbhi;
+#endif
 }
 
 void FreeSystem(void) {
@@ -146,6 +174,17 @@ void FreeSystem(void) {
 
     // Restore interrupts
     SetInterruptHandler(SystemIrq);
+#ifdef MUSIC_LSP
+    /* LSP has stopped both timers and masked EXTER before we get here.
+     * Restore the OS vector before allowing any CIA interrupt through. */
+    *(volatile APTR*)((UBYTE*)VBR + 0x78) = SystemLevel6;
+    ciab->ciatalo = SystemTALO; ciab->ciatahi = SystemTAHI;
+    ciab->ciatblo = SystemTBLO; ciab->ciatbhi = SystemTBHI;
+    ciab->ciacra = SystemCRA;
+    ciab->ciacrb = SystemCRB;
+    ciab->ciaicr = 0x80 | SystemCIABMask;
+    ciaa->ciapra = (ciaa->ciapra & ~2) | SystemAudioFilter;
+#endif
 
     /* Restore system copper list(s). */
     custom->cop1lc = (ULONG)GfxBase->copinit;

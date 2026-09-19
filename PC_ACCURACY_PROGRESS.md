@@ -377,3 +377,42 @@ issue. The LSP CIA player has no OS restoration in its driver and the current
 LSP `p61End` is empty; that is a candidate for the follow-up investigation,
 not a proven diagnosis. Normal/packed `out/hexagon` artifacts contain the
 motor fix; the baseline disk is an ignored verification artifact only.
+
+
+## LSP shutdown and return-to-OS cleanup
+
+The LSP exit wrapper was empty and excluded from main's shutdown condition.
+Its level-6 vector was therefore left pointing into the executable after DOS
+unloaded it. Startup also ran before TakeSystem, contaminating the saved OS
+interrupt/DMA state. These are now corrected:
+
+- Start LSP after takeover, passing the detected VBR rather than assuming zero.
+- Preserve D2 and A4 as well as the existing saved registers across LSP init;
+  the underlying music initializer modifies both.
+- Call the exported stop routine on exit. Mask EXTER first, stop both CIAB
+  timers, disable/acknowledge CIA interrupts, then stop all four audio DMA
+  channels so timer B cannot restart them after shutdown.
+- Save/restore the OS level-6 vector, CIAB interrupt mask, timer controls/counts
+  and audio-filter bit while custom interrupts are disabled. The original
+  OS vector is back before interrupts are enabled.
+- Release all allocated HUD sprites, three bitplanes and the copper buffer
+  after FreeSystem has restored OS display DMA.
+
+The CIA interrupt enable mask is obtained through AbleICR(resource,0), not a
+hardware ICR read (which returns pending flags). See the
+[CIA resource documentation](https://wiki.amigaos.net/wiki/Cia.resource).
+Timer counters are restored from their paused values; the hardware's write-only
+reload latches cannot be recovered this way, so arbitrary third-party periodic
+CIA users are not promised exact phase/period preservation across takeover.
+
+Normal and packed release builds pass, including both no-cheat audits.
+Disassembly confirms the wrapper preserves D2/A4 and calls the stop routine.
+FS-UAE PAL A500, Kickstart1.3, 512 KB Chip/no expansion: boot, play, exit to
+AmigaDOS, reload from floppy, play again and exit all pass without a Guru.
+[First clean exit](scratchpad/fsuae/pal512/fs-uae-crop-2609191232-04.png),
+[reloaded gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191234-02.png),
+[second clean exit](scratchpad/fsuae/pal512/fs-uae-crop-2609191235-01.png).
+This resolves the previously recorded reload failure on that configuration.
+A second floppy reload also reaches the title and exits cleanly (three launches
+within one emulator boot): [third title](scratchpad/fsuae/pal512/fs-uae-crop-2609191236-01.png),
+[third exit](scratchpad/fsuae/pal512/fs-uae-crop-2609191237-01.png).

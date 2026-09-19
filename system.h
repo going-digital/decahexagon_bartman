@@ -17,6 +17,7 @@ extern volatile short frameCounter;
 
 void TakeSystem(void);
 void FreeSystem(void);
+APTR GetSystemVBR(void);
 
 void WaitVbl(void);
 void WaitLine(USHORT line);

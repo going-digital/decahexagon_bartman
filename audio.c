@@ -18,15 +18,15 @@ void* doynaxdepack(const void* input, void* output) { // returns end of output d
 INCBIN_CHIP(LSPMusic, "technova_main.lsmusic");
 INCBIN_CHIP(LSPBank, "technova_main.lsbank");
 
-int p61Init(void) {
+int p61Init(APTR vbr) {
     register volatile void* _a0 ASM("a0") = (void*) LSPMusic;
     register volatile void* _a1 ASM("a1") = (void*) LSPBank;
-    register volatile void* _a2 ASM("a2") = 0; // VBR
+    register volatile void* _a2 ASM("a2") = vbr; // VBR
     register volatile void* _d0 ASM("d0") = 0; // PAL
     __asm volatile (
-        "movem.l %%d1/%%a3/%%a5,-(%%sp)\n"
+        "movem.l %%d1-%%d2/%%a3-%%a5,-(%%sp)\n"
         "jsr LSP_MusicDriver_CIA_Start\n"
-        "movem.l (%%sp)+,%%d1/%%a3/%%a5\n"
+        "movem.l (%%sp)+,%%d1-%%d2/%%a3-%%a5\n"
         : "+rf"(_a0), "+rf"(_a1), "+rf"(_a2), "+rf"(_d0)
         :
         : "cc", "memory"
@@ -51,7 +51,8 @@ UWORD audio_get_bpm(void) {
     return _d0;
 }
 
-int p61End(void) {
+void p61End(void) {
+    __asm volatile ("jsr LSP_MusicDriver_CIA_Stop" : : : "cc", "memory");
 }
 #endif
 #ifdef MUSIC

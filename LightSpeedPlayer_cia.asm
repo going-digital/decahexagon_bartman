@@ -1,3 +1,4 @@
+	public LSP_MusicDriver_CIA_Stop
 	public LSP_MusicDriver_CIA_Start
 	public LSP_MusicDriver_CIA_GetBPM
 	xdef LSP_MusicPlayTick
@@ -148,9 +149,14 @@ LSP_MusicDriver_CIA_GetBPM:
 			move.w	LSP_CurrentBPM(pc),d0
 			rts
 
+; Mask level 6 before stopping timers: no late timer-B DMA restart may
+; survive exit. The caller restores the saved OS CIA state and vector.
 LSP_MusicDriver_CIA_Stop:
-			move.b	#$7f,$bfdd00
 			move.w	#$2000,$dff09a
+			move.b	#0,$bfde00
+			move.b	#0,$bfdf00
+			move.b	#$7f,$bfdd00
+			tst.b	$bfdd00
 			move.w	#$2000,$dff09c
 			move.w	#$000f,$dff096
 			rts

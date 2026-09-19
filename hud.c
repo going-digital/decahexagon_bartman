@@ -254,6 +254,21 @@ static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
     }
 }
 
+static void free_sprite(UWORD **buf) {
+    if (*buf) FreeMem(*buf, (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD));
+    *buf = 0;
+}
+
+void hud_free(void) {
+    for (WORD slot = 0; slot < HUD_SLOTS; ++slot)
+        for (WORD g = 0; g < GLYPH_COUNT; ++g)
+            free_sprite(&glyph_buf[slot][g]);
+    for (WORD ch = 0; ch < SPRITE_CHANNELS; ++ch) {
+        free_sprite(&title_buf[ch]);
+        free_sprite(&gameover_buf[ch]);
+    }
+}
+
 void hud_init(void) {
     set_hud_colours();
     // No sprpt[] writes here: hud_emit_copper() reloads every channel, every

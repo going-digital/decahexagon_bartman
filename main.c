@@ -119,15 +119,15 @@ int main() {
     if(p61Init(module) != 0)
         KPrintF("p61Init failed!\n");
     #endif
-    #ifdef MUSIC_LSP
-    p61Init();
-    #endif
 
 #if BUILD_DEBUG
     warpmode(0);
 #endif
 
     TakeSystem();
+#ifdef MUSIC_LSP
+    p61Init(GetSystemVBR());
+#endif
     WaitVbl();
 
     // Allocate bitplanes
@@ -326,12 +326,17 @@ int main() {
         // before anything draws into the buffer.
     }
 
-#ifdef MUSIC
+#if defined(MUSIC) || defined(MUSIC_LSP)
     p61End();
 #endif
 
     // END
     FreeSystem();
+    hud_free();
+    FreeMem(bitplane_fg1, BITPLANE_SIZE);
+    FreeMem(bitplane_fg2, BITPLANE_SIZE);
+    FreeMem(bitplane_fg3, BITPLANE_SIZE);
+    FreeMem(copper1, 1024);
 
     CloseLibrary((struct Library*)DOSBase);
     CloseLibrary((struct Library*)GfxBase);

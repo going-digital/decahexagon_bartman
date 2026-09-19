@@ -16,6 +16,7 @@
 // sprite's pos/ctl - hitting it mid-write yields a torn pointer and garbage
 // on screen. The copper's MOVE runs inside the same DMA arbitration Agnus
 // uses, so it can't race it the way the CPU can.
+void hud_free(void); // call after restoring OS DMA/copper
 void hud_init(void);                     // build the glyph/title buffers, set static sprite colours
 void hud_tick(void);                     // pick this frame's HUD glyphs (pure logic, no hardware writes)
 USHORT* hud_emit_copper(USHORT* copPtr); // append this frame's SPRxPT copper writes, return the new end
