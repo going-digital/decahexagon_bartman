@@ -1,0 +1,64 @@
+{
+  "status": "host-only fixed-fragment comparison; not approved beat-bank replacement",
+  "rate": 12000,
+  "fragment_samples": 1024,
+  "candidate_limit_per_track": 256,
+  "budget_kib": 192,
+  "entries": 320,
+  "trials": [
+    {
+      "mode": "restricted",
+      "accounted_bytes": 196253,
+      "tracks": [
+        {
+          "track": "courtesy",
+          "gain": 1.0,
+          "cross_track_assignments": 0,
+          "total_fragments": 2265,
+          "feature_mse": 0.03865175683229562
+        },
+        {
+          "track": "focus",
+          "gain": 0.9179570363855912,
+          "cross_track_assignments": 0,
+          "total_fragments": 1901,
+          "feature_mse": 0.06391036971031029
+        },
+        {
+          "track": "otis",
+          "gain": 1.0,
+          "cross_track_assignments": 0,
+          "total_fragments": 1833,
+          "feature_mse": 0.0413339472695152
+        }
+      ]
+    },
+    {
+      "mode": "shared",
+      "accounted_bytes": 196253,
+      "tracks": [
+        {
+          "track": "courtesy",
+          "gain": 1.0,
+          "cross_track_assignments": 61,
+          "total_fragments": 2265,
+          "feature_mse": 0.03838959009078688
+        },
+        {
+          "track": "focus",
+          "gain": 0.9179570363855912,
+          "cross_track_assignments": 101,
+          "total_fragments": 1901,
+          "feature_mse": 0.06354975570505163
+        },
+        {
+          "track": "otis",
+          "gain": 1.0,
+          "cross_track_assignments": 85,
+          "total_fragments": 1833,
+          "feature_mse": 0.040778497210858126
+        }
+      ]
+    }
+  ]
+}

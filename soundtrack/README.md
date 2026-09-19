@@ -701,3 +701,54 @@ sequence metadata exactly matches the 12 kHz PCM previews. Common-reference MSE
 is 0.017870 for the 16 KiB reservation and 0.017983 for 32 KiB, versus 0.017902
 for the accepted uniform bank. The smaller reservation improves that metric by
 only about 0.18%; the larger is slightly worse. No target code changed.
+
+## Priority 4: cross-track fragment reuse
+
+`tools/audio/cross_track_reuse.py` compares one shared dictionary with a dictionary
+whose entries can only be reused within their source song. Both cover all three
+complete tracks at 12 kHz, using the same combined 192 KiB budget. This is a much
+smaller per-song allowance than the accepted Courtesy-only 192 KiB bank.
+
+The songs have different beat durations. To isolate cross-track sharing without
+pitch changes or time stretching, this experiment uses fixed 1,024-sample
+fragments (85.33 ms), not beat-aligned slices. It therefore measures sharing
+against its own same-granularity control, not against the accepted musical
+baseline. Fragment boundaries may interrupt notes; listening is still required.
+
+Each song contributes at most 256 evenly spaced candidate fragments. All target
+fragments participate in greedy dictionary selection, with equal total weight
+per song. Selected entries use block-optimal Fibonacci coding; evaluation uses
+the decoded audio. Both variants store 320 entries and account for 196,253 bytes,
+including verbatim tails, proposed sequence/offset tables and 1,536 decoded-buffer
+bytes. Target code/state, OS, allocator and loading overhead are excluded. JSON
+is host metadata; the proposed compact sequence format is not yet implemented.
+Focus is attenuated to avoid clipping in both controls (gain 0.917957); the other
+two tracks retain unity gain.
+
+| Track | Same-track spectral MSE | Shared spectral MSE | Reduction | Cross-song fragments |
+| --- | ---: | ---: | ---: | ---: |
+| Courtesy | 0.038652 | 0.038390 | 0.68% | 61 / 2,265 |
+| Focus | 0.063910 | 0.063550 | 0.56% | 101 / 1,901 |
+| Otis | 0.041334 | 0.040778 | 1.34% | 85 / 1,833 |
+
+These small improvements do not establish an audible benefit or justify replacing
+the accepted beat-aligned bank. The bounded candidate pool and greedy search do
+not rule out better cross-track reuse. Scores use this experiment's fragment
+features and should not be compared directly with earlier half-beat scores.
+
+Reproduce:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/cross_track_reuse.py
+```
+
+Results: cross_track_reuse.json. Full-track references and paired
+`<track>_restricted.wav` / `<track>_shared.wav` previews are in
+`scratchpad/audio/cross_track/`, alongside serialized banks, sequences and tails.
+Independent replay of all six saved-bank sequences exactly matches the previews;
+all retain the reference sample count. No target code changed or emulator timing
+was measured.
+
+The initial four host experiment priorities are now covered. Next is a minimal
+68000 Fibonacci decoder and buffered Paula playback benchmark, using the preferred
+12 kHz bank, to measure actual A500 deadlines and CPU cost before game integration.
