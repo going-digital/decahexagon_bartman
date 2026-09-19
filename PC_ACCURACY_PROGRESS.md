@@ -766,3 +766,19 @@ FS-UAE trials on 512 KiB Chip + 512 KiB Slow: PAL reached 45.51 seconds,
 NTSC 45.56 seconds, both with zero music underruns. Final NTSC geometry keeps
 player size constant while moving its centre. Release build/audit passed;
 `out/pcm_pulse.adf` contains music, speech/effects and synchronized pulsing.
+
+## PAL/NTSC display-window alignment
+
+Fixed `DISPLAY_HW_Y`, which incorrectly used SCREEN_WIDTH and a PAL-only
+reference for both standards. The 200-line NTSC viewport now starts at line 44
+instead of 76 (stop 244 instead of 276, beyond the NTSC frame). PAL now centres
+200 lines within its 256-line area, starting at 72 instead of 76. Bitplanes,
+sprite positions and HUD multiplex waits share this origin. DIWSTOP explicitly
+masks its low coordinate bytes, avoiding a negative shift for NTSC stops below
+256. Music-enabled PAL and NTSC release builds pass the cheat audit.
+
+NTSC FS-UAE menu/gameplay verification passed with the music/effects build
+(512 KiB Chip + 512 KiB Slow), with zero reported music underruns. Evidence:
+`scratchpad/fsuae/ntsc/fs-uae-crop-2609192048-02.png` (menu) and
+`fs-uae-crop-2609192049-02.png` (gameplay). The shared origin moved both sprite
+HUD and scene up 32 lines. Updated output: `out/hexagon_ntsc.adf`.

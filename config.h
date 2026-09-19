@@ -75,7 +75,12 @@
 // corner. screenScanDefault() uses these for DIWSTRT/DIWSTOP; the sprite HUD
 // shares them so sprites line up with the bitplane display.
 #define DISPLAY_HW_X (129 + (SCREEN_WIDTH - 320) / 2)
-#define DISPLAY_HW_Y (44 + (SCREEN_WIDTH - 256) / 2)
+#ifdef TARGET_NTSC
+#define DISPLAY_VISIBLE_HEIGHT 200
+#else
+#define DISPLAY_VISIBLE_HEIGHT 256
+#endif
+#define DISPLAY_HW_Y (44 + (DISPLAY_VISIBLE_HEIGHT - SCREEN_HEIGHT) / 2)
 
 // Viewport clipping bounds and line-slope fixed point
 #define XMAX (SCREEN_WIDTH-1)

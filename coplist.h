@@ -35,7 +35,7 @@ USHORT* copWaitY(USHORT* copListEnd, USHORT i) {
     return copWrite(copListEnd, (i << 8) | 4 | 1, 0xfffe);
 }
 
-// set up a 320x240 lowres display
+// Set up the configured low-resolution display window.
 __attribute__((always_inline)) inline USHORT* screenScanDefault(USHORT* copListEnd) {
     const USHORT width = SCREEN_WIDTH;
     const USHORT height = SCREEN_HEIGHT;
@@ -49,6 +49,6 @@ __attribute__((always_inline)) inline USHORT* screenScanDefault(USHORT* copListE
     copListEnd = copWrite(copListEnd, offsetof(struct Custom, ddfstrt), fw);
     copListEnd = copWrite(copListEnd, offsetof(struct Custom, ddfstop), fw + (((width >> 4) - 1) << 3));
     copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstrt), x + (y << 8));
-    copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstop), (xstop - 256) + ((ystop - 256) << 8));
+    copListEnd = copWrite(copListEnd, offsetof(struct Custom, diwstop), (xstop & 0xff) | ((ystop & 0xff) << 8));
     return copListEnd;
 }
