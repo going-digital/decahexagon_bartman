@@ -300,3 +300,87 @@ Next decision: listen to the original, conservative preview and removed signal.
 If useful attacks are not clearer or musical content is removed, keep the dry
 estimation branch optional and return to joint instrument/ambience modeling.
 No game code, beat maps or Amiga playback assets changed.
+
+## Beat-aligned sample reuse: first full-track experiment
+
+The alternative sample-reuse approach now has a reproducible full-track pilot
+for Courtesy. Run after decoding:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/reuse_beats.py
+```
+
+The approved candidate grid is retained as the slice origin. Three slice sizes
+(half, one and two beats) are evaluated at total storage budgets of 32, 64, 128
+and 192 KiB. Every preview spans the full 193.333375-second resampled recording,
+including the incomplete introduction and ending, which are retained verbatim.
+
+Audio is mono 16 kHz quantized to signed 8-bit with one common gain. Compare
+against `scratchpad/audio/courtesy/beat_reuse/reference_16k_8bit.wav`, not only
+the original MP3: that separates downsampling/mono/quantization loss from slice
+substitution. Preview WAVs use a 16-bit container but contain only 8-bit levels.
+There is no independent slice loudness normalization, crossfade or added silence.
+
+The dictionary contains actual recording slices chosen by a greedy reduction of
+aggregate time-varying spectral error. Descriptors retain loudness and frequency
+content. This is approximate, lossy reuse, not verified musical equivalence or
+a globally optimal dictionary. It does not yet search fine time offsets,
+transpositions, different beat-grid phases or cross-track reuse. Rounded slice
+lengths can differ by one sample; host preview reconstruction interpolates that
+one-sample difference to preserve the absolute timeline. Target playback must
+implement an equivalent timing policy; these files are not a finished player.
+
+### Results at 192 KiB
+
+| Slice duration | Source slices | Exact unique slices | Dictionary entries | Accounted bytes | Feature MSE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Half beat | 837 | 824 | 51 | 195,396 | 0.0257 |
+| One beat | 418 | 413 | 25 | 193,668 | 0.0291 |
+| Two beats | 209 | 208 | 12 | 185,398 | 0.0324 |
+
+Exact uniqueness is computed on the quantized slice bytes, with no alignment
+search. It does not imply that all these passages sound different. Nearly all
+slices are byte-distinct, so exact deduplication alone is insufficient here.
+Half-beat dictionaries have the lowest feature error among these tested choices;
+this is not listening approval and does not establish preservation of melody,
+drums or arrangement. Waveform errors are large and phase-sensitive; they are
+reported for transparency, not treated as perceptual scores.
+
+At 192 KiB, the 95th-percentile immediate join jumps are 24, 25 and 15 signed
+8-bit amplitude units respectively, versus 12 in the corresponding reference.
+These increased discontinuities flag possible clicks. No joins have been hidden
+with crossfades; doing so would require explicit buffer/channel/timing costs.
+
+### Outputs and memory accounting
+
+`soundtrack/courtesy.beat_reuse.json` records all 12 trials. Under
+`scratchpad/audio/courtesy/beat_reuse/`, each configuration has:
+
+- `<beats>beat_<budget>k.wav`: full-track reconstruction.
+- `<beats>beat_<budget>k.s8`: actual signed-byte sample bank.
+- Matching JSON: source slice indices, dictionary assignments, active lengths,
+  absolute slice boundaries and bank layout, sufficient to reproduce the preview.
+
+For example, audition `0.5beat_192k.wav`, then `1beat_192k.wav` and
+`0.5beat_64k.wav` against the common reference. Those comparisons expose the
+quality tradeoff instead of assuming the smallest dictionary is acceptable.
+
+Accounted storage includes word-padded intro/outro samples, word-aligned fixed
+sample slots with guard words, and a proposed sequence allowance of four bytes
+per event plus a 32-byte header. The sequence is currently emitted as host JSON,
+not that packed target representation. Runtime code, seek tables, crossfade
+buffers, track switching, OS and loader peaks are excluded. The budget covers
+Courtesy alone: fitting all three tracks in the old music allocation has not
+been demonstrated. Raw reference audio alone occupies about 3.09 MB at this rate.
+
+Validation: all reconstructions retain the reference sample count and original
+edge fragments; each bank plus proposed sequencing allowance fits its budget.
+An identity dictionary reconstructs the quantized track byte-for-byte, and a
+synthetic repeated-descriptor control verifies exact coverage by two entries.
+No Amiga runtime changed; FS-UAE playback remains a later gate after choosing
+an acceptable reconstruction and implementing its replay format.
+
+Next: listening review of the full-track previews, then alignment and join
+improvements, phrase-aware substitutions and comparable reports for Focus/Otis.
+If 192 KiB for one song is audibly inadequate, report that before trying to fit
+three songs into the same budget or committing to a player.
