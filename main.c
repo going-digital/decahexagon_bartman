@@ -98,16 +98,6 @@ int main() {
     if (!GfxBase) Exit(0);
 
     video_select((GfxBase->DisplayFlags & PAL) != 0);
-#if MUSIC_FIB_STREAM
-    if(!fib_stream_load()) {
-        static const char error[]="Cannot load music.pcm0 from the current directory.\n";
-        Write(Output(),(APTR)error,sizeof(error)-1);
-        CloseLibrary((struct Library*)GfxBase);
-        CloseLibrary((struct Library*)DOSBase);
-        return 20;
-    }
-#endif
-
 
 #if BUILD_DEBUG
 #ifdef __cplusplus
@@ -351,7 +341,6 @@ int main() {
 
 #if MUSIC_FIB_STREAM
     fib_stream_stop();
-    fib_stream_unload();
 #endif
 
     sfx_shutdown();

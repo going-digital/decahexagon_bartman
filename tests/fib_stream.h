@@ -7,6 +7,3 @@ void fib_stream_frame(unsigned elapsed);
 void fib_stream_tick(unsigned playing,unsigned menu);
 
 unsigned fib_stream_cue(void);
-
-int fib_stream_load(void);
-void fib_stream_unload(void);

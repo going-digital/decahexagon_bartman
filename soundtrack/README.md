@@ -1222,9 +1222,8 @@ and the release audio overlay have been removed. Accepted music is unchanged.
 `make adf-unpacked` for an explicit unpacked diagnostic disk. Keep the existing
 MUSIC_FIB_STREAM/PCM_ASSET/BUILD_DEBUG build options when invoking these targets.
 
-Music builds stage the CPU-only bank as `out/hexagon_disk/music.pcm0` and copy
-it to the ADF root. It loads once before takeover. This avoids execram merging
-that bank into scarce Chip RAM; the packed program retains the DMA assets.
-There is no gameplay disk access or runtime audio decompression. When launching
-the raw or packed executable directly under AmigaDOS, make `music.pcm0` available
-in its current directory; the supplied ADF does this automatically.
+Execram **1.3.0 or newer** is required to preserve Chip and ordinary-memory
+hunks. Both music banks are embedded in the executable; no separate
+`music.pcm0` file is needed, including for direct AmigaDOS launches. Executable
+decompression happens only at launch. There is no gameplay disk access or
+runtime audio decompression.

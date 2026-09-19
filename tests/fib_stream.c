@@ -7,11 +7,9 @@
 #include "../paula_irq.h"
 #include "../sfx.h"
 #include "../pc_pulse.h"
-#include <proto/dos.h>
 INCBIN(CourtesyCues, "assets/music1.cues");
 static PcmLifecycle lifecycle;
-static UBYTE *FibSongData;
-static ULONG FibSongBytes;
+INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
 static PcmSong song;
 #define FIB_BUFFERS 4
@@ -92,34 +90,9 @@ static void fill_one(void) {
     state[fill_slot]=1;
     fill_slot=(fill_slot+1)%FIB_BUFFERS;
 }
-/* Keep the CPU-only music bank outside execram's merged Chip hunk.
- * Load once while AmigaOS/trackdisk still own the machine, never in-game. */
-int fib_stream_load(void) {
-    BPTR file=Open((CONST_STRPTR)"music.pcm0",MODE_OLDFILE);
-    if(!file) return 0;
-    LONG bytes=-1;
-    if(Seek(file,0,OFFSET_END)>=0) bytes=Seek(file,0,OFFSET_BEGINNING);
-    if(bytes>=32 && bytes<=300000) {
-        FibSongData=AllocMem((ULONG)bytes,MEMF_ANY);
-        if(FibSongData) {
-            FibSongBytes=(ULONG)bytes;
-            if(Read(file,FibSongData,bytes)==bytes &&
-               fib_pcm_init_split(&song,FibSongData,FibSongBytes,FibSongTail,
-                   (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail)) {
-                Close(file);return 1;
-            }
-            FreeMem(FibSongData,FibSongBytes);FibSongData=0;FibSongBytes=0;
-        }
-    }
-    Close(file);return 0;
-}
-void fib_stream_unload(void) {
-    if(FibSongData) FreeMem(FibSongData,FibSongBytes);
-    FibSongData=0;FibSongBytes=0;
-}
 void fib_stream_start(void) {
     underruns=blocks=0;
-    unsigned bytes=FibSongBytes;
+    unsigned bytes=(ULONG)&incbin_FibSongData_end-(ULONG)FibSongData;
     if(!fib_pcm_init_split(&song,FibSongData,bytes,FibSongTail,
         (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail)) {
         underruns=999; return;

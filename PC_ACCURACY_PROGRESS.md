@@ -860,3 +860,25 @@ disk passed PAL FS-UAE boot, gameplay and return-to-menu checks with 512 KB
 Chip + 512 KB expansion RAM; gameplay capture:
 `scratchpad/fsuae/pal/fs-uae-crop-2609192111-03.png`. This is a short smoke check,
 not a new full-song or underrun measurement.
+
+### Execram 1.3.0: embedded music restored
+
+Retested after the fix for https://github.com/going-digital/execram/issues/2.
+Execram 1.3.0 preserves ordinary and Chip memory classes with cross-region
+relocations. Removed the external music loader and ADF sidecar staging; both
+PCM banks are embedded again. Both bank files are explicit object dependencies.
+The packed ADF remains the default, and direct launches need no music file.
+Use execram 1.3.0 or newer for this layout.
+
+The 465,072-byte release packs to 256,500 bytes, 54,418 bytes less than the
+previous packed executable plus sidecar. Resident regions are 222,904 ordinary
+bytes and 242,604 Chip bytes; temporary depacker scratch is 1,580 bytes.
+With runtime allocations, accounted RAM is 497,180 bytes, including 274,276
+mandatory Chip bytes (86,416 fewer than the sidecar workaround).
+
+Host video, pulse, SFX and PCM lifecycle tests pass, as do the release cheat
+audit, execram self-check and full-song PCM sample/canary check. The new disk
+boots and runs gameplay in PAL FS-UAE with 512 KB Chip + 512 KB Slow RAM:
+`scratchpad/fsuae/pal/fs-uae-crop-2609192215-03.png`. This supersedes the
+sidecar requirement above; it is a short smoke check, not a full-song audio
+or underrun measurement.
