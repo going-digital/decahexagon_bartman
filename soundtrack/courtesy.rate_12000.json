@@ -1,0 +1,22 @@
+{
+  "status": "host only; decoder runtime/code and disk-loading overhead unmeasured",
+  "sample_rate": 12000,
+  "pcm_buffers_bytes": 1536,
+  "encoder": "block-optimal",
+  "trials": [
+    {
+      "budget_kib": 64,
+      "dictionary_slices": 41,
+      "accounted_bytes": 65280,
+      "feature_mse": 0.02808381078696772,
+      "preview": "scratchpad/audio/courtesy/rate_test/12000/64k_fibonacci.wav"
+    },
+    {
+      "budget_kib": 192,
+      "dictionary_slices": 134,
+      "accounted_bytes": 196038,
+      "feature_mse": 0.017092765497162904,
+      "preview": "scratchpad/audio/courtesy/rate_test/12000/192k_fibonacci.wav"
+    }
+  ]
+}

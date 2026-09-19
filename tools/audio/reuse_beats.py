@@ -15,14 +15,14 @@ RATE=16000
 BUDGETS=[32,64,128,192]
 
 
-def features(slices):
+def features(slices, sample_rate=RATE):
     rows=[]
     for s in slices:
         x=s.astype(float)/128
-        f,t,z=signal.stft(x,RATE,nperseg=512,noverlap=384)
+        f,t,z=signal.stft(x,sample_rate,nperseg=512,noverlap=384)
         # Preserve both loudness and evolving spectral content. Warping descriptor
         # time is only for comparison; all candidates have the same beat duration.
-        bands=np.geomspace(40,8000,49)
+        bands=np.geomspace(40,min(8000,sample_rate/2),49)
         descriptor=[]
         for a,b in zip(bands[:-1],bands[1:]):
             bins=(f>=a)&(f<b)

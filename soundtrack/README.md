@@ -585,3 +585,66 @@ two four-sample signals including signed wrapping; reset-boundary lengths
 encoded block stream is decoded with the previous Python decoder and its exact
 squared error checked against the dynamic-programming result. The 68000 timing
 benchmark remains unperformed; this change makes no runtime performance claim.
+
+## Priority 2: equal-budget 12/14/16 kHz comparison
+
+Courtesy now has full-track block-optimal Fibonacci reconstructions at all three
+rates and both 64/192 KiB budgets. Beat times, source gain, half-beat duration,
+codec and 1,536-byte decoded-buffer allowance are held fixed. Each rate selects
+its dictionary independently from that rate's signal, using the same algorithm.
+This is a comparison of rate-plus-dictionary configurations, not rate alone.
+
+| Rate | Budget | Unique dictionary slices | Accounted bytes | Common-reference feature MSE |
+| --- | ---: | ---: | ---: | ---: |
+| 12 kHz | 64 KiB | 41 | 65,280 | 0.02908 |
+| 14 kHz | 64 KiB | 35 | 65,415 | 0.03078 |
+| 16 kHz | 64 KiB | 30 | 64,624 | 0.03196 |
+| 12 kHz | 192 KiB | 134 | 196,038 | 0.01790 |
+| 14 kHz | 192 KiB | 115 | 196,455 | 0.01862 |
+| 16 kHz | 192 KiB | 100 | 195,489 | 0.01970 |
+
+Evaluation resamples each output to the same 16 kHz timeline and compares against
+the original quantized 16 kHz reference using identical frequency/time features.
+Rate-specific selection scores are retained separately and must not be compared
+across differing feature-band definitions. Unsubstituted 12/14 kHz references
+have common-reference feature errors of 0.000501/0.000149 respectively, versus
+zero at 16 kHz. The reconstruction errors are not a simple additive decomposition
+of rate loss and substitution loss.
+
+At both budgets 12 kHz has the lowest measured end-to-end feature error. At
+192 KiB this is about 9.1% below 16 kHz, with 34% more dictionary entries. This
+supports listening to 12 kHz as a candidate, not declaring perceptual superiority:
+it removes content above 6 kHz, which can affect percussion and brightness.
+These measurements cover Courtesy only. Do not extrapolate to the other songs.
+
+Run:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compare_rates.py
+```
+
+Each `scratchpad/audio/courtesy/rate_test/<rate>/` contains reference.wav,
+64k/192k_fibonacci.wav, the corresponding before-codec versions, actual compressed
+banks, intro/outro fragments and sequencing JSON. Files ending `_at16k.wav` are
+common-rate evaluation/listening versions; upsampling cannot restore lost high
+frequencies. Gain is identical across references and previews, with no per-file
+loudness normalization. Previous previews remain intact.
+
+Listen first to 12000/192k_fibonacci.wav versus 16000/192k_fibonacci.wav; use each
+rate's reference.wav to distinguish bandwidth loss from musical substitutions.
+Then compare 14000 if 12 kHz loses too much brightness.
+
+Validation: the 16 kHz reference and 192 KiB reconstruction remain byte-identical
+to the previous experiment. All six serialized bank/sequence pairs were replayed
+independently and match their previews exactly; budgets and comparison lengths
+are checked. Reports: courtesy.rate_comparison.json and courtesy.rate_*.json.
+
+Target caveats: exact nominal rates are host settings. Paula's integer periods
+and PAL/NTSC clocks require an explicit rate/timeline policy; no hardware timing
+claim is made. Code/state, allocator and OS overhead remain outside the stated
+budget; the near-full banks leave little margin. Three 512-byte buffers span
+128 ms at 12 kHz, approximately 110 ms at 14 kHz and 96 ms at 16 kHz, but actual
+decoder deadlines and worst-case CPU costs still need FS-UAE measurement.
+
+Next priority: variable-length musical slices and mixed codecs. Retain all three
+rates as audition candidates until listening feedback selects a preference.

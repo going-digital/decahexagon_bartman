@@ -8,26 +8,39 @@ import reuse_beats as reuse
 from codec_experiment import fib_encode,fib_decode
 
 
-def main(optimal=False):
+def main(optimal=False, sample_rate=None):
     root=reuse.ROOT;work=root/'scratchpad/audio/courtesy'
-    out=work/('compressed_beats_optimal' if optimal else 'compressed_beats');out.mkdir(exist_ok=True)
+    out=work/('compressed_beats_optimal' if optimal else 'compressed_beats')
+    if sample_rate: out=work/'rate_test'/str(sample_rate)
+    out.mkdir(parents=True,exist_ok=True)
     encoder=fib_encode
     if optimal:
         from compare_fib_encoders import load_encoder,encode
         fn=load_encoder()
         encoder=lambda q: encode(q,fn)
-    sr,pcm=wavfile.read(work/'beat_reuse/reference_16k_8bit.wav');q=(pcm//256).astype(np.int8)
+    if sample_rate:
+        from scipy import signal
+        original_rate,stereo=wavfile.read(work/'decoded.wav')
+        sr=sample_rate
+        x=signal.resample_poly(stereo.mean(axis=1),sr,original_rate)
+        # Courtesy uses unity gain in the existing reference; keep that gain
+        # fixed across rates, and reject clipping rather than renormalizing.
+        assert np.max(np.abs(x))<1
+        q=np.clip(np.rint(x*127),-128,127).astype(np.int8)
+        wavfile.write(out/'reference.wav',sr,q.astype(np.int16)*256)
+    else:
+        sr,pcm=wavfile.read(work/'beat_reuse/reference_16k_8bit.wav');q=(pcm//256).astype(np.int8)
     meta=json.loads((root/'soundtrack/courtesy.analysis.json').read_text())['constant_grid_hypothesis']
     edges=np.rint(np.arange(meta['phase_seconds'],len(q)/sr,30/meta['bpm'])*sr).astype(int)
     slices=[q[a:b] for a,b in zip(edges[:-1],edges[1:])]
-    descriptors=reuse.features(slices);dist=cdist(descriptors,descriptors,'sqeuclidean')
+    descriptors=reuse.features(slices,sr);dist=cdist(descriptors,descriptors,'sqeuclidean')
     # Prefix and tail remain verbatim; offsets for independent compressed samples
     # need four bytes each. Three 512-byte decoded buffers are budgeted explicitly.
     prefix=q[:edges[0]];suffix=q[edges[-1]:]
     fixed=len(prefix)+len(suffix)+32+4*(len(slices)+2)+1536
     slots=max(len(fib_encode(np.zeros(n,dtype=np.int8))) for n in set(map(len,slices)))
     report={'status':'host only; decoder runtime/code and disk-loading overhead unmeasured',
-            'pcm_buffers_bytes':1536,'encoder':'block-optimal' if optimal else 'greedy','trials':[]}
+            'sample_rate':sr,'pcm_buffers_bytes':1536,'encoder':'block-optimal' if optimal else 'greedy','trials':[]}
     for budget in [64,192]:
         k=int((budget*1024-fixed-4)//(slots+4))
         chosen,ids=reuse.choose(dist,k)
@@ -49,12 +62,15 @@ def main(optimal=False):
             'suffix_length':len(suffix)})+'\n')
         accounted=fixed+len(bank)+4*len(offsets)
         assert accounted<=budget*1024
-        f=reuse.features([result[a:b] for a,b in zip(edges[:-1],edges[1:])])
+        f=reuse.features([result[a:b] for a,b in zip(edges[:-1],edges[1:])],sr)
         report['trials'].append({'budget_kib':budget,'dictionary_slices':k,'accounted_bytes':accounted,
                                 'feature_mse':float(np.mean((f-descriptors)**2)),
                                 'preview':str((out/f'{budget}k_fibonacci.wav').relative_to(root))})
-    (root/('soundtrack/courtesy.compressed_beats_optimal.json' if optimal else 'soundtrack/courtesy.compressed_beats.json')).write_text(json.dumps(report,indent=2)+'\n')
-    print(json.dumps(report,indent=2))
+    target=(root/'soundtrack'/f'courtesy.rate_{sample_rate}.json' if sample_rate else
+            root/('soundtrack/courtesy.compressed_beats_optimal.json' if optimal else 'soundtrack/courtesy.compressed_beats.json'))
+    target.write_text(json.dumps(report,indent=2)+'\n')
+    print(json.dumps(report,indent=2),flush=True)
+    return report
 
 if __name__=='__main__':
     import argparse
