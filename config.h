@@ -16,8 +16,8 @@
 // TARGET_NTSC: 60Hz timing + pixel-aspect correction. Default is 50Hz PAL.
 //#define TARGET_NTSC
 
-// Temporary playable-stage build selection while the six-level menu and
-// hyper transitions are being implemented. 0=Hexagon, 1=Hexagoner, 2=Hexagonest.
+// Initial menu selection: 0=Hexagon, 1=Hexagoner, 2=Hexagonest.
+// All six profiles are available in the runtime selector.
 #ifndef PC_START_STAGE
 #define PC_START_STAGE 0
 #endif
@@ -25,7 +25,7 @@
 #error "PC_START_STAGE currently supports 0 (Hexagon), 1 (Hexagoner), or 2 (Hexagonest)"
 #endif
 
-// Temporary profile choice until the six-level menu lands: 0=normal, 1=hyper.
+// Initial menu bank: 0=normal, 1=hyper. Does not bypass session unlocks.
 #ifndef PC_START_HYPER
 #define PC_START_HYPER 0
 #endif

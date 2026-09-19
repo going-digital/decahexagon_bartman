@@ -2,6 +2,7 @@
 #include "pc_morph.h"
 #include "system.h"
 #include "patterns.h"
+#include "pc_menu.h"
 #if CHEAT_MODE
 #include "cheat.h"
 #endif
@@ -10,7 +11,7 @@
 #endif
 
 #define STARTING_ZOOM_TARGET 128
-#define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 80 / HUB_RADIUS)
+#define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 50 / HUB_RADIUS)
 #define READY_TICKS (FRAME_RATE * 3 / 2)
 #define DEAD_TICKS FRAME_RATE
 #define FALLBACK_BEAT_BPM 132
@@ -19,6 +20,16 @@ PcWorld game_world;
 PcPalette game_palette;
 static PcPlayer player;
 static PcMorph morph;
+static PcMenu menu;
+static PcRecords records;
+static UBYTE selected_profile;
+UBYTE game_selected_profile(void) { return selected_profile; }
+UBYTE game_selection_locked(void) { return !pc_profile_unlocked(&records,selected_profile); }
+static void load_record(void) {
+    uint32_t best=records.best[selected_profile];
+    gamestate.record_seconds=(UWORD)(best/60);
+    gamestate.record_subsecond_frames=(UWORD)(best%60);
+}
 #if PC_CORE_SELFTEST
 static UWORD live_failure;
 UWORD game_live_failure(void) { return live_failure; }
@@ -82,7 +93,7 @@ static void reset_run(void) {
 #if CHEAT_MODE
     cheat_reset();
 #endif
-    pc_palette_start(&game_palette,PC_START_STAGE,PC_START_HYPER);
+    pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
     pc_world_reset(&game_world);pc_morph_reset(&morph);patterns_reset();
     player.angle=player.previous_angle=30;player.hit=player.blocked=0;
     project_state();
@@ -91,22 +102,22 @@ static void reset_run(void) {
     gamestate.time_seconds=gamestate.time_subsecond_frames=0;
     shake_x=shake_y=0;new_record=0;beat_ctr=beat_env=0;
 }
-void game_init(void) { reset_run();set_mode(MODE_ATTRACT); }
+void game_init(void) {
+    selected_profile=PC_START_STAGE+3*PC_START_HYPER;
+    pc_menu_reset(&menu,selected_profile);reset_run();set_mode(MODE_ATTRACT);
+}
 
 static void record_time(void) {
-    UWORD s = gamestate.time_seconds, f = gamestate.time_subsecond_frames;
-    if (s > gamestate.record_seconds ||
-        (s == gamestate.record_seconds && f > gamestate.record_subsecond_frames)) {
-        gamestate.record_seconds = s;
-        gamestate.record_subsecond_frames = f;
-        new_record = 1;
-    }
+    uint32_t elapsed=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
+    if (pc_record_tick(&records,selected_profile,elapsed)) new_record=1;
+    load_record();
 }
 
 static void update_playing(const InputState *in) {
     if (++gamestate.time_subsecond_frames>=FRAME_RATE) {
         gamestate.time_subsecond_frames=0;++gamestate.time_seconds;
     }
+    record_time();
     UBYTE held=in->held;
 #if CHEAT_MODE
     if (in->cheat_held) held=cheat_steer(&player,&game_world,morph.sides,patterns_turn_rate());
@@ -120,7 +131,7 @@ static void update_playing(const InputState *in) {
     pc_collide(&player,game_world.walls,game_world.count,morph.sides,(int16_t)game_world.speed);
     project_state();
     if (player.hit || game_world.overflow) {
-        record_time();set_mode(MODE_DEAD);return;
+        set_mode(MODE_DEAD);return;
     }
     pc_world_move(&game_world);
     patterns_tick();
@@ -132,10 +143,10 @@ static void update_playing(const InputState *in) {
     /* First-wave travel invariant independently checks the live clock/store
      * connection on 68000, not just isolated portable functions. */
     uint32_t tick=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
-    const int32_t opening_speed=PC_START_HYPER ? (PC_START_STAGE==2 ? 40:33):
-        (PC_START_STAGE==2 ? 35:PC_START_STAGE==1 ? 24:22);
-    const int32_t opening_distance=PC_START_HYPER ? (PC_START_STAGE==2 ? 4375:3950):
-        (PC_START_STAGE==2 ? 4050:PC_START_STAGE==1 ? 3435:3300);
+    const int32_t opening_speed=selected_profile>=3 ? (selected_profile%3==2 ? 40:33):
+        (selected_profile%3==2 ? 35:selected_profile%3==1 ? 24:22);
+    const int32_t opening_distance=selected_profile>=3 ? (selected_profile%3==2 ? 4375:3950):
+        (selected_profile%3==2 ? 4050:selected_profile%3==1 ? 3435:3300);
     if (tick<=80 && (game_world.speed!=opening_speed || game_world.count==0 ||
         game_world.walls[0].distance!=opening_distance-opening_speed*(int32_t)(tick-1))) live_failure=1;
 #endif
@@ -155,6 +166,7 @@ void game_update(const InputState* in) {
     // main.c turns Escape into a quit.
     if (in->back_edge && mode != MODE_ATTRACT) {
         reset_run();
+        pc_menu_reset(&menu,selected_profile);
         set_mode(MODE_ATTRACT);
         gamestate.field_angle += gamestate.field_rotation;
         return;
@@ -162,10 +174,16 @@ void game_update(const InputState* in) {
 
     switch (mode) {
     case MODE_ATTRACT:
-        // Idle close-up on the hub; eases back out via reset_run() below the
-        // instant fire is pressed (see ATTRACT_ZOOM_TARGET's comment).
+        // Keep the menu pointer visible; ease to gameplay zoom on confirmation.
         gamestate.draw_distance_target = ATTRACT_ZOOM_TARGET;
-        if (in->fire_edge) {
+        pc_menu_tick(&menu,in->held);
+        if (selected_profile!=pc_menu_profile(&menu)) {
+            selected_profile=pc_menu_profile(&menu);load_record();
+            pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
+            mode_timer=0;
+        }
+        player.angle=player.previous_angle=menu.angle;project_state();
+        if (in->fire_edge && !game_selection_locked()) {
             rng_state ^= (UWORD)frameCounter | 1u;
             if (!rng_state) rng_state=0x2545;
             reset_run();
@@ -175,7 +193,7 @@ void game_update(const InputState* in) {
 
     case MODE_READY:
         if (mode_timer >= READY_TICKS) {
-            pc_palette_start(&game_palette,PC_START_STAGE,PC_START_HYPER);
+            pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
             set_mode(MODE_PLAYING);
         }
         break;

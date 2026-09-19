@@ -39,3 +39,6 @@ UBYTE game_new_record(void);
 #if PC_CORE_SELFTEST
 UWORD game_live_failure(void);
 #endif
+
+UBYTE game_selected_profile(void);
+UBYTE game_selection_locked(void);

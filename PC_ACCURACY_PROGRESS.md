@@ -5,7 +5,8 @@ Updated 2026-09-19. See [the implementation plan](PC_ACCURACY_PLAN.md).
 Current milestone: PC-unit walls, collision, exact waves, all six normal/hyper
 launch profiles and both automatic stage handoffs are connected to playable
 builds. The 193,479 saved wave/selector cases, 21,900 palette ticks and 2,048
-opening/handoff ticks pass. The six-level menu, unlocks, per-mode records,
+opening/handoff ticks pass. Runtime six-profile selection, session unlocks and
+per-mode records now have 1,992 native reference cases. Disk persistence,
 scripted ending and remaining presentation fidelity are still unfinished.
 
 ## First batch completed (historical)
@@ -541,3 +542,64 @@ Final release smoke check: uninstrumented Hyper Hexagon boots and plays on
 PAL A500 with 512 KB Chip RAM: [title](scratchpad/fsuae/pal512/fs-uae-crop-2609191343-01.png),
 [gameplay at 1.93 seconds](scratchpad/fsuae/pal512/fs-uae-crop-2609191344-01.png).
 All verification emulator instances were closed. The final `make test` passes.
+
+## Seventh batch: runtime selection and session records
+
+All six profiles now share one executable. Left/right or joystick rotates the
+selection pointer using the PC's ten-tick moves, including held-repeat, release
+and reversal behavior and left priority when both directions are held.
+Space/fire starts an unlocked profile. Each normal profile starts unlocked;
+completing it at tick 3601 unlocks the corresponding hyper entry for the session.
+The selected profile determines the opening speed, palette, selector and turn
+rate at runtime. Build profile flags choose the initial entry without bypassing
+locks.
+
+Records update during play, including the final collision tick, and survive
+abandoning a run or changing profiles. Automatic stage handoffs keep recording
+against the original selected profile. The selector alternates its name with
+its session best, or LOCKED. Immutable startup sprite canvases avoid modifying
+active sprite data; cleanup frees every new canvas. The smaller menu zoom keeps
+the selection pointer visible within the 200-line viewport.
+
+`make test-menu` compares 1,992 executed-PC cases: 1,920 movement ticks, 48 lock
+confirmations, six record/completion slot checks and 18 completion-boundary
+cases. The native capture is hash-guarded and reproduces the saved fixture
+byte-for-byte. Shared host/68000 checks cover wraps, ties, shorter retries,
+independent records/unlocks and long-run attribution. The full host regression
+suite passes. See [specification and remaining limits](tests/MENU_REFERENCE.md).
+
+Records/unlocks are session-only: no disk save is claimed. The compact menu
+layout, cycling name/record display, menu palette resets and existing ready/death
+presentation remain Amiga adaptations. PC unlock announcements/automatic
+selection, options, persistence, camera/cues and scripted ending remain pending.
+
+Target verification:
+
+- PAL A500, 512 KB Chip-only: shared checks pass, selector/pointer and gameplay
+  run; [menu PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191406-01.png).
+- NTSC A500, 512 KB Chip + 512 KB Slow: runtime selection starts Hexagoner,
+  passes its live first-wall invariant and retains its 5.50-second record on
+  return; [record](scratchpad/fsuae/ntsc/fs-uae-crop-2609191415-05.png).
+  Selecting Hexagonest shows its independent zero record:
+  [other profile](scratchpad/fsuae/ntsc/fs-uae-crop-2609191415-07.png).
+- Locked Hyper Hexagon displays [LOCKED](scratchpad/fsuae/ntsc/fs-uae-crop-2609191415-09.png)
+  and remains in selection after confirmation:
+  [rejected start](scratchpad/fsuae/ntsc/fs-uae-crop-2609191415-11.png).
+- Native unlock/boundary cases and shared 68000 tests verify completion flags;
+  this session did not include a full 60-second interactive unlock run.
+- Normal and packed PAL release builds pass the no-cheat audit. The diagnostic
+  NTSC image is `out/hexagon_menu_ntsc.adf`; the default release is
+  `out/hexagon.adf` (all six profiles), with `out/hexagon_packed.adf` also built.
+
+The macOS menu helper uses 80 ms held keys and explicit screenshots. Initial
+instantaneous arrow automation did not reliably cross a hardware input poll;
+only the held-key captures above are used as runtime profile-switch evidence.
+
+Final uninstrumented PAL release smoke check on 512 KB Chip-only A500:
+[Hexagoner selected at runtime](scratchpad/fsuae/pal512/fs-uae-crop-2609191417-01.png),
+[gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191417-04.png), and
+[clean return to AmigaDOS](scratchpad/fsuae/pal512/fs-uae-crop-2609191417-08.png).
+All verification emulator instances were closed.
+
+Next: exact ready/death/retry and unlock presentation, saved records/unlocks,
+then the remaining scripted ending and camera/cue work.

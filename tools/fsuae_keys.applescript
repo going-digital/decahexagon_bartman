@@ -4,6 +4,22 @@ on run argv
         if item 1 of argv is "focus" then return
         if item 1 of argv is "screenshot" then
             keystroke "s" using command down
+        else if item 1 of argv is "left" then
+            key code 123
+            delay 0.35
+            keystroke "s" using command down
+            delay 2
+            keystroke "s" using command down
+        else if item 1 of argv is "right" then
+            key code 124
+            delay 0.35
+            keystroke "s" using command down
+            delay 2
+            keystroke "s" using command down
+        else if item 1 of argv is "back" then
+            key code 53
+            delay 2.3
+            keystroke "s" using command down
         else if item 1 of argv is "start" then
             keystroke space
         else if item 1 of argv is "smoke" then

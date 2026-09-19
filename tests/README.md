@@ -22,7 +22,7 @@ local defaults. ROMs are not supplied by this repository.
 Use `-B` when changing build flags because the original build shares object
 paths between configurations. A normal build omits `PC_CORE_SELFTEST`.
 
-`tools/fsuae_keys.applescript` accepts `start`, `screenshot`, `smoke`, or `quit` and
+`tools/fsuae_keys.applescript` accepts `start`, `left`, `right`, `back`, `screenshot`, `smoke`, or `quit` and
 addresses only FS-UAE via macOS accessibility automation. Screenshots and logs
 are saved under `scratchpad/fsuae/<configuration>/`. Manual keyboard/joystick
 verification is still needed for latency and feel; synthetic core inputs do
@@ -215,3 +215,15 @@ then runs 384 forced-survival stress runs across all six launch profiles.
 Twelve compact native cases also run under `PC_CORE_SELFTEST=1` on the 68000.
 See [PROGRESSION_REFERENCE.md](PROGRESSION_REFERENCE.md) for provenance, exact
 handoff ordering, build flags and remaining menu/ending work.
+
+## Menu and session records
+
+`make test-menu` (included in `make test`) compares 1,992 native cases and runs
+shared host/68000 menu and record checks. All six profiles now share one runtime
+selector. See [rules, controls, fixture provenance and remaining limits](MENU_REFERENCE.md).
+
+For reliable held-arrow tests on macOS, compile
+`swiftc tools/fsuae_menu.swift -o out/fsuae_menu` and run
+`out/fsuae_menu right` (also `left`, `start`, `back`) from the repository root.
+It focuses FS-UAE, holds the key for 80 ms and captures the resulting screen.
+Instantaneous AppleScript arrow taps can fall entirely between input polls.

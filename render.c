@@ -146,6 +146,5 @@ void render_game(void* buf) {
 
     draw_hub(buf);
 
-    if (m != MODE_ATTRACT)
-        draw_player(buf);
+    draw_player(buf);
 }

@@ -13,7 +13,7 @@ static uint16_t random_draw(void *unused,uint16_t bound) {
 }
 void patterns_reset(void) {
     uint8_t old=progress.schedule.rotation_mode;
-    pc_progress_reset(&progress,&game_world,PC_START_STAGE,PC_START_HYPER,old,random_draw,0);
+    pc_progress_reset(&progress,&game_world,game_selected_profile()%3,game_selected_profile()/3,old,random_draw,0);
 }
 void patterns_tick(void) {
     uint32_t score=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;

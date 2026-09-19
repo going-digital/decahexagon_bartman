@@ -74,7 +74,7 @@ static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
 // font. Only the letters actually needed by title_str_*[] below are
 // authored (not a full alphabet) - add more here as more banners want them.
 enum {
-    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P,
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P, TF_L, TF_C, TF_K, TF_D,
     TITLE_GLYPH_COUNT
 };
 static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
@@ -93,19 +93,22 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     /* T */ { 0xF, 0x2, 0x2, 0x2, 0x2, 0x2 },
     /* Y */ { 0x9, 0x9, 0x6, 0x2, 0x2, 0x2 },
     /* P */ { 0xE, 0x9, 0x9, 0xE, 0x8, 0x8 },
+    /* L */ { 0x8, 0x8, 0x8, 0x8, 0x8, 0xF },
+    /* C */ { 0x7, 0x8, 0x8, 0x8, 0x8, 0x7 },
+    /* K */ { 0x9, 0xA, 0xC, 0xA, 0x9, 0x9 },
+    /* D */ { 0xE, 0x9, 0x9, 0x9, 0x9, 0xE },
 };
 
-static const UBYTE title_str_hexagon[] = {
-#if PC_START_HYPER
-    TF_H, TF_Y, TF_P, TF_E, TF_R, TF_SPACE,
-#endif
-    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N
-#if PC_START_STAGE == 1
-    , TF_E, TF_R
-#elif PC_START_STAGE == 2
-    , TF_E, TF_S, TF_T
-#endif
+static const UBYTE title_names[6][16] = {
+ {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
+ {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
+ {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T},
+ {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
+ {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
+ {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T}
 };
+static const UBYTE title_lengths[6]={7,9,10,13,15,16};
+static const UBYTE title_locked[]={TF_L,TF_O,TF_C,TF_K,TF_E,TF_D};
 static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF_O, TF_V, TF_E, TF_R };
 
 // One pre-built, STATIC sprite descriptor (pos, ctl, data rows, terminator)
@@ -115,7 +118,8 @@ static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF
 // hud_emit_copper / hud.h) - the CPU never writes SPRxPT or any sprite data.
 static UWORD* glyph_buf[HUD_SLOTS][GLYPH_COUNT];
 static UBYTE  cur_glyph[HUD_SLOTS]; // this frame's HUD choice per slot, from hud_tick()
-static UWORD* title_buf[SPRITE_CHANNELS];    // "HEXAGON" canvas, one slice per channel
+static UWORD* locked_buf[SPRITE_CHANNELS];
+static UWORD* title_buf[6][SPRITE_CHANNELS];    // six profile canvases, one slice per channel
 static UWORD* gameover_buf[SPRITE_CHANNELS]; // "GAME OVER" canvas, same layout
 
 // A degenerate (0,0) pos/ctl descriptor: 0-height, so the DMA channel goes
@@ -276,7 +280,8 @@ void hud_free(void) {
         for (WORD g = 0; g < GLYPH_COUNT; ++g)
             free_sprite(&glyph_buf[slot][g]);
     for (WORD ch = 0; ch < SPRITE_CHANNELS; ++ch) {
-        free_sprite(&title_buf[ch]);
+        for (WORD p=0;p<6;++p) free_sprite(&title_buf[p][ch]);
+        free_sprite(&locked_buf[ch]);
         free_sprite(&gameover_buf[ch]);
     }
 }
@@ -308,25 +313,29 @@ void hud_init(void) {
         for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
             UWORD pos, ctl;
             pos_ctl(base_hstart + ch * 16, DISPLAY_HW_Y + TITLE_Y, &pos, &ctl);
-            title_buf[ch]    = alloc_canvas_slice(pos, ctl);
+            for (WORD p=0;p<6;++p) title_buf[p][ch]=alloc_canvas_slice(pos,ctl);
+            locked_buf[ch]=alloc_canvas_slice(pos,ctl);
             gameover_buf[ch] = alloc_canvas_slice(pos, ctl);
         }
-        paint_banner(title_buf, title_str_hexagon,
-                     sizeof(title_str_hexagon) / sizeof(title_str_hexagon[0]));
+        for (WORD p=0;p<6;++p) paint_banner(title_buf[p],title_names[p],title_lengths[p]);
+        paint_banner(locked_buf,title_locked,sizeof(title_locked));
         paint_banner(gameover_buf, title_str_gameover,
                      sizeof(title_str_gameover) / sizeof(title_str_gameover[0]));
     }
 }
 
-typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER } Banner;
+typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED } Banner;
 
-// HEXAGON shows over the whole of ATTRACT, then holds briefly into READY.
+// Selection alternates name and best/lock; the name holds briefly into READY.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
 static Banner banner_active(void) {
     GameMode m = game_mode();
     UWORD t = game_mode_timer();
-    if (m == MODE_ATTRACT) return BANNER_HEXAGON;
+    if (m == MODE_ATTRACT) {
+        if (t%180<120) return BANNER_HEXAGON;
+        return game_selection_locked() ? BANNER_LOCKED:BANNER_NONE;
+    }
     if (m == MODE_READY && t < TITLE_HOLD_TICKS) return BANNER_HEXAGON;
     if (m == MODE_GAMEOVER && t < GAMEOVER_HOLD_TICKS) return BANNER_GAMEOVER;
     return BANNER_NONE;
@@ -382,7 +391,9 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
         UWORD* buf = (UWORD*)blank_sprite;
         if (banner == BANNER_HEXAGON) {
-            if (title_buf[ch]) buf = title_buf[ch]; // all 8 channels carry a canvas slice
+            if (title_buf[game_selected_profile()][ch]) buf = title_buf[game_selected_profile()][ch]; // all 8 channels carry a canvas slice
+        } else if (banner == BANNER_LOCKED) {
+            if (locked_buf[ch]) buf=locked_buf[ch];
         } else if (banner == BANNER_GAMEOVER) {
             if (gameover_buf[ch]) buf = gameover_buf[ch];
         } else if (ch < HUD_SLOTS) {
