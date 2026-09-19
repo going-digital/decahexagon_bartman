@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Check the target sequencer against the accepted full-track preview."""
-import ctypes,subprocess
+import ctypes,subprocess,sys
+pcm = "--pcm" in sys.argv
 import numpy as np
 from scipy.io import wavfile
 from codec_experiment import ROOT
-subprocess.run(['cc','-O2','-shared','-fPIC',str(ROOT/'fib_song.c'),str(ROOT/'fib_decode.c'),'-o',str(ROOT/'out/fib_song_host.dylib')],check=True)
+subprocess.run(['cc','-O2','-shared','-fPIC',str(ROOT/('fib_pcm.c' if pcm else 'fib_song.c')),str(ROOT/'fib_decode.c'),'-o',str(ROOT/'out/fib_song_host.dylib')],check=True)
 lib=ctypes.CDLL(str(ROOT/'out/fib_song_host.dylib'))
 lib.fib_song_init.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_uint]
 lib.fib_song_read.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_uint]
 lib.fib_song_read.restype=None
-blob=(ROOT/'out/courtesy.fbs').read_bytes()
+blob=(ROOT/('out/courtesy.pcm' if pcm else 'out/courtesy.fbs')).read_bytes()
 s=ctypes.create_string_buffer(2048)
 assert lib.fib_song_init(s,blob,len(blob))
 sr,reference=wavfile.read(ROOT/'scratchpad/audio/courtesy/rate_test/12000/192k_fibonacci.wav')
@@ -36,8 +37,23 @@ for cut in [0,31,32,len(blob)//2,len(blob)-1]:
 for pos in [0,4,8,12,16,20,24,28,32]:
  broken=bytearray(blob);broken[pos:pos+4]=b'\xff'*4
  assert not lib.fib_song_init(s2,bytes(broken),len(broken))
-wavfile.write(ROOT/'out/courtesy_target_sequence.wav',sr,q[:len(ref)].astype(np.int16)*256)
+wavfile.write(ROOT/('out/courtesy_pcm_sequence.wav' if pcm else 'out/courtesy_target_sequence.wav'),sr,q[:len(ref)].astype(np.int16)*256)
 print('Chunking, loop, canaries and invalid-layout checks passed')
+
+if pcm:
+ # Target uses two noncontiguous load hunks. Exercise that exact pointer path.
+ lib.fib_pcm_init_split.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_uint,ctypes.c_void_p,ctypes.c_uint]
+ first=(ROOT/'out/courtesy.pcm0').read_bytes(); second=(ROOT/'out/courtesy.pcm1').read_bytes()
+ assert first+second == blob
+ assert lib.fib_pcm_init_split(s2,first,len(first),second,len(second))
+ out=ctypes.create_string_buffer(len(q))
+ lib.fib_song_read(s2,out,len(q))
+ assert np.array_equal(np.frombuffer(out.raw,dtype=np.int8),q)
+ for split in (31,32,len(first)-2,len(first)+2):
+  assert not lib.fib_pcm_init_split(s2,blob[:split],split,blob[split:],len(blob)-split)
+ assert not lib.fib_pcm_init_split(s2,first,len(first),None,len(second))
+ print("PCM duration variants and split load hunks match the accepted preview exactly")
+ sys.exit(0)
 
 # Independent small-vector interpolation checks, especially codec boundaries
 # and the first/last-sample cases of the specialized +/- one-sample path.
@@ -48,12 +64,13 @@ rng=np.random.default_rng(9182)
 for source_length in [2,3,4,17,511,512,513,520]:
     original=rng.integers(-128,128,source_length,dtype=np.int16).astype(np.int8)
     encoded=fib_encode(original);decoded=fib_decode(encoded).astype(int)
+    aligned=bytearray(encoded[:12]);cursor=12
+    for i in range(0,source_length,512):
+        size=1+min(512,source_length-i)//2
+        aligned+=encoded[cursor:cursor+size]+b'\0'*(size&1)
+        cursor+=size
     for target_length in [source_length-1,source_length,source_length+1]:
         if target_length<2: continue
-        packet=struct.pack('>4s7I',b'FBS1',target_length+2,3,1,32,40,52,52+len(encoded))
-        packet+=struct.pack('>2I6H',0,len(encoded),65535,1,0,target_length,65534,1)+encoded+b'\x37\xb9'
-        state=ctypes.create_string_buffer(2048)
-        assert lib.fib_song_init(state,packet,len(packet))
         expected=[55]
         for i in range(target_length):
             pos=Fraction(i*(source_length-1),target_length-1)
@@ -61,9 +78,15 @@ for source_length in [2,3,4,17,511,512,513,520]:
             a=int(decoded[j]);b=int(decoded[min(j+1,source_length-1)])
             expected.append(round(Fraction(a)+(b-a)*(pos-j)))
         expected.append(-71)
-        # One-byte calls stress persistence at every possible boundary.
-        for value in expected*2:
-            result=ctypes.create_string_buffer(1)
-            lib.fib_song_read(state,result,1)
-            assert int.from_bytes(result.raw,'big',signed=True)==value
-print('Small-vector and 511/512/513-sample codec-boundary checks passed')
+        for magic,data,edges in [(b'FBS1',encoded,b'\x37\xb9'),
+                                  (b'FBS2',aligned,b'\x37\0\xb9\0')]:
+            packet=struct.pack('>4s7I',magic,target_length+2,3,1,32,40,52,52+len(data))
+            packet+=struct.pack('>2I6H',0,len(data),65535,1,0,target_length,65534,1)+data+edges
+            state=ctypes.create_string_buffer(2048)
+            assert lib.fib_song_init(state,packet,len(packet))
+            # One-byte calls stress persistence at every possible boundary.
+            for value in expected*2:
+                result=ctypes.create_string_buffer(1)
+                lib.fib_song_read(state,result,1)
+                assert int.from_bytes(result.raw,'big',signed=True)==value
+print('FBS1/FBS2 small-vector, padding and codec-boundary checks passed')

@@ -1,0 +1,101 @@
+{
+  "scope": "Exact 12 kHz Courtesy reconstruction: lookup decoding, word alignment, offline predecode",
+  "assets": {
+    "out/fib_bench.exe": {
+      "bytes": 268512,
+      "sha256": "2d4fb8b9dad931d437435189325e1ead9c5062677ed6402c56e0c46795896cf2"
+    },
+    "out/fib_pcm_game.exe": {
+      "bytes": 761868,
+      "sha256": "3bc06e702091205ccab8e641e3f6789b06b7e2a5c236d424e26dbd4047b7b972"
+    },
+    "out/fib_pcm.exe": {
+      "bytes": 758040,
+      "sha256": "52191c3e0c6fbc7484b4f6885b4f998b22d181c77a4ceee1b981be29283e1940"
+    },
+    "out/fib_lookup_game.exe": {
+      "bytes": 272996,
+      "sha256": "0416eba9589b0e3e4fda55cf6c9b8d2d0f06ff8f524ae4f9efb79a94afc7afcf"
+    },
+    "out/courtesy.pcm": {
+      "bytes": 688266,
+      "sha256": "4b5a13f36563e1ce0da10b226cc77bbe73510b61649a575632cb72fa6993419a"
+    },
+    "out/courtesy.fbs": {
+      "bytes": 195308,
+      "sha256": "31b3459d501d9de07288b34ebf19236c0e7ed2409c58f83ee874a45b724ed061"
+    }
+  },
+  "host": {
+    "samples": 2320000,
+    "mismatches": 0,
+    "loop_and_chunk_canaries": true,
+    "noncontiguous_pcm_chunks": true,
+    "lookup_predictor_code_pairs": 65536,
+    "block_lengths": [
+      1,
+      512
+    ],
+    "music_blocks": 804,
+    "formats": [
+      "FBS1",
+      "FBS2",
+      "FBP1"
+    ]
+  },
+  "lookup_microbenchmark": {
+    "profile": "PAL A500 512 KiB Chip only",
+    "old_raster_lines": 80,
+    "new_raster_lines": 68,
+    "time_reduction_percent": 15,
+    "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191922-01.png",
+    "limitation": "Display and LSP active; not worst-case gameplay"
+  },
+  "pcm": {
+    "profile": "PAL A500 512 KiB Chip + 512 KiB Slow",
+    "packed_bytes": 688266,
+    "cpu_chunk_bytes": 345842,
+    "chip_chunk_bytes": 342424,
+    "dma_buffer_bytes": 2048,
+    "music_data_and_dma_chip_bytes": 344472,
+    "excludes": "Sequencer state, code, game and OS allocations",
+    "menu": {
+      "R": 730,
+      "V": 732,
+      "nominal_fps": 49.86338797814208,
+      "screenshot": "scratchpad/fsuae/pal/fs-uae-crop-2609191926-01.png"
+    },
+    "gameplay_seconds": 45.53,
+    "underruns": 0,
+    "gameplay_screenshot": "scratchpad/fsuae/pal/fs-uae-crop-2609191927-01.png",
+    "clean_exit_screenshot": "scratchpad/fsuae/pal/fs-uae-crop-2609191927-05.png",
+    "failed_layout": "Single contiguous PCM hunk: AmigaDOS error 103; replaced by two load hunks"
+  },
+  "compressed": {
+    "profile": "PAL A500 512 KiB Chip only",
+    "packed_bytes": 195308,
+    "alignment_overhead_bytes": 806,
+    "lookup_table_bytes": 512,
+    "dma_buffer_bytes": 2048,
+    "decode_cache_bytes": 512,
+    "menu": {
+      "R": 942,
+      "V": 1670,
+      "nominal_fps": 28.20359281437126,
+      "underruns": 0,
+      "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191930-01.png"
+    },
+    "trial_wall_seconds": 45,
+    "game_clock_seconds": 44.2,
+    "underruns": 0,
+    "gameplay_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191931-03.png",
+    "clean_exit_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191932-04.png"
+  },
+  "limitations": [
+    "No target audio capture compared to reference",
+    "No NTSC PCM trial",
+    "PCM and compressed menu results use different memory configurations",
+    "No full-song PCM target loop trial",
+    "Normal release excludes both experimental backends"
+  ]
+}

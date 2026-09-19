@@ -986,3 +986,95 @@ cheat audit and excludes all experimental music objects and assets.
 Artifacts: `out/fib_song.adf` is the cheat-free experimental full-song image;
 `out/courtesy_target_sequence.wav` is the exact host reconstruction. Results,
 screenshots and executable hashes are in fib_song_trials.json.
+
+### Lookup decoding and predecoded playback (19 September 2026)
+
+Two optional backends now address playback cost without changing the accepted
+12 kHz reconstruction. The normal release still excludes both.
+
+* The compressed backend uses a 512-byte table containing both cumulative deltas
+  for each encoded byte. The target microbenchmark fell from 80 to 68 PAL raster
+  lines per 512 samples (about 5.12 to 4.35 ms, 15% less time). This benchmark
+  includes display/LSP activity but is not a worst-case gameplay measurement.
+* `FIB_TRIAL_PCM=1` prepares every required slice duration **offline**, including
+  exact interpolation. Playback only copies samples. There is no startup decode
+  pause and no second lossy encoding; the cost is larger disk and RAM usage.
+  This is an expanded-memory option, not a solution for a 512 KiB-only machine.
+
+The 134 original dictionary entries require 246 distinct `(entry, duration)`
+variants. Those occupy 681,174 bytes including word padding. With the two raw
+edge slices and sequencing metadata, `courtesy.pcm` is **688,266 bytes**. Four
+DMA buffers add 2,048 bytes; sequencer state, code and game memory are additional.
+Keeping the compressed bank resident and expanding all variants at startup
+would cost still more memory, so this experiment ships already-decoded data.
+
+A single large load hunk failed with AmigaDOS error 103 on 512 KiB Chip +
+512 KiB Slow RAM. The packer therefore splits at a slice boundary into:
+
+| Component | Bytes | Placement in this trial |
+| --- | ---: | --- |
+| Header, sequence and first PCM chunk | 345,842 | Ordinary CPU memory; load hunk fits expansion RAM |
+| Second PCM chunk | 342,424 | Separate Chip RAM load hunk |
+| Four DMA buffers | 2,048 | Chip RAM |
+
+Thus this particular split uses **344,472 Chip bytes for music data and DMA
+buffers**, plus state/code if allocated there. It does not require a contiguous
+688 KB allocation. A future external asset loader could place more slices in
+non-Chip memory when available; Paula only reads the DMA buffers.
+
+Every PCM slice starts at an even address. Physical padding is excluded from
+logical sample counts, including both raw edges and loop boundaries. The copy
+routine uses longword/word transfers when both pointers have matching parity,
+peeling an initial odd byte when necessary. Opposite pointer parity uses byte
+copies: an odd-length slice can leave the DMA destination misaligned relative
+to the next source even though every stored slice is aligned. A 68000 cannot
+safely use an unaligned word access in that case.
+
+The compressed packer now writes **FBS2**. Each encoded block and raw edge is
+word-padded too; 512-sample encoded blocks occupy 258 physical bytes instead of
+257. The aligned complete asset is **195,308 bytes**, 806 more than FBS1.
+The decoder still accepts FBS1, and standalone FIB1 files are unchanged.
+The same aligned copy routine accelerates the compressed backend's raw and
+non-interpolated spans. Alignment does not remove its per-sample interpolation.
+
+Validation so far:
+
+* Both host backends reproduce all 2,320,000 accepted samples exactly, plus the
+  loop boundary, with mixed read sizes and output canaries. PCM also passes
+  with two noncontiguous load chunks. Invalid layouts and split boundaries are
+  rejected. Small rational-reference vectors cover FBS1/FBS2 interpolation,
+  odd lengths, padding and codec block boundaries.
+* The lookup table passes every predictor/encoded-byte combination (65,536),
+  every block length 1–512 at both output parities, and all 804 music blocks.
+* PAL A500 with 512 KiB Chip + 512 KiB Slow: predecoded playback loaded, rendered
+  the attract scene at R=730/V=732 (approximately 49.9 fps), and reached 45.53
+  seconds of assisted Hexagonest with zero audio underruns. Return to AmigaDOS
+  was clean. This is a bounded trial, not a full-song target PCM comparison.
+* PAL Chip-only compressed lookup/aligned-copy trial: R=942/V=1,670 in
+  attract mode (about 28.2 fps, versus the earlier 22.4). During the 45-second
+  assisted trial its game clock reached 44.20 seconds with zero underruns.
+  These are serviced-VBlank-based counters, not proof that no VBlanks were lost.
+* The earlier compressed 22.4 fps attract measurement used Chip-only RAM, so
+  the PCM comparison also changes memory placement; it is not an isolated
+  decoder CPU benchmark. No target audio capture or NTSC PCM trial yet.
+
+Reproduce the predecoded trial (requires 1 MB split-memory A500 configuration):
+
+```sh
+venv/bin/python tools/audio/pack_pcm_song.py
+venv/bin/python tools/audio/check_fib_song.py --pcm
+tools/build.sh -B MUSIC_FIB_STREAM=1 FIB_TRIAL_SONG=1 FIB_TRIAL_PCM=1 \
+  EXTRA_CFLAGS=-DBUILD_DEBUG=0 OUT=out/fib_pcm out/fib_pcm.adf
+FSUAE_ADF="$PWD/out/fib_pcm.adf" tools/run_fsuae.sh pal
+```
+
+`out/fib_pcm.adf` is the cheat-free listening build. The optional assisted stress
+image is `out/fib_pcm_game.adf`. `FIB_TRIAL_PCM=0` retains compressed playback;
+regenerate `out/courtesy.fbs` with `pack_fib_song.py` before rebuilding it.
+For the 512 KiB target, the next substantial saving needs removal of runtime
+interpolation within a smaller memory budget (for example offline compressed
+length variants, with a separately measured size/quality tradeoff).
+
+Detailed artifact hashes, counters and screenshot paths:
+`fib_playback_optimization_trials.json`. The normal release rebuilt and passed
+its cheat audit; its map contains no experimental soundtrack backend.

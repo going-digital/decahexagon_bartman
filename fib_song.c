@@ -1,12 +1,14 @@
 #include "fib_song.h"
 #include "fib_decode.h"
+#include "fib_copy.h"
 static unsigned be16(const unsigned char *p) {return ((unsigned)p[0]<<8)|p[1];}
 static unsigned be32(const unsigned char *p) {return (be16(p)<<16)|be16(p+2);}
 static unsigned le32(const unsigned char *p) {return (unsigned)p[0]|((unsigned)p[1]<<8)|((unsigned)p[2]<<16)|((unsigned)p[3]<<24);}
 static void refill(FibSong *s) {
     unsigned n=s->left>512?512:s->left;
     fib_decode_block(s->packed,s->cache,n);
-    s->packed+=1+n/2;s->left-=n;
+    unsigned bytes=1+n/2;
+    s->packed+=s->aligned?((bytes+1)&~1u):bytes;s->left-=n;
     s->cache_count=n;s->cache_pos=0;
 }
 static int next_sample(FibSong *s) {
@@ -34,7 +36,10 @@ static void begin_segment(FibSong *s) {
     unsigned id=be16(entry);
     s->target_length=s->output_left=be16(entry+2);
     s->raw_mode=id>=65534;
-    if(s->raw_mode) return;
+    if(s->raw_mode) {
+        if(s->aligned && id==65534) s->raw=s->edges+((be16(s->sequence+2)+1)&~1u);
+        return;
+    }
     const unsigned char *f=s->bank+be32(s->offsets+4*id);
     s->source_length=s->left=le32(f+4);
     s->packed=f+12;s->cache_pos=s->cache_count=0;
@@ -42,7 +47,8 @@ static void begin_segment(FibSong *s) {
     if(s->source_length!=s->target_length) {s->a=next_sample(s);s->b=next_sample(s);}
 }
 int fib_song_init(FibSong *s,const unsigned char *p,unsigned bytes) {
-    if(bytes<32 || p[0]!='F'||p[1]!='B'||p[2]!='S'||p[3]!='1') return 0;
+    if(bytes<32 || p[0]!='F'||p[1]!='B'||p[2]!='S'||(p[3]!='1' && p[3]!='2')) return 0;
+    unsigned aligned=p[3]=='2';
     unsigned count=be32(p+8),banks=be32(p+12),off=be32(p+16),seq=be32(p+20),data=be32(p+24),edges=be32(p+28);
     if(!banks || banks>=65534 || count<2 || count>65535 || off!=32 || seq!=off+4*(banks+1) || data!=seq+4*count || data>edges || edges>bytes) return 0;
     if(be32(p+off)!=0 || be32(p+off+4*banks)!=edges-data) return 0;
@@ -53,7 +59,9 @@ int fib_song_init(FibSong *s,const unsigned char *p,unsigned bytes) {
         unsigned n=le32(f+4);
         if(f[0]!='F'||f[1]!='I'||f[2]!='B'||f[3]!='1'||le32(f+8)!=512||n<2||n>32767) return 0;
         unsigned full=n/512,tail=n%512;
-        if(b-a!=12+257*full+(tail?1+tail/2:0)) return 0;
+        unsigned tailbytes=tail?1+tail/2:0;
+        unsigned size=12+(aligned?258:257)*full+(aligned?((tailbytes+1)&~1u):tailbytes);
+        if(b-a!=size || (aligned && (a&1))) return 0;
     }
     unsigned total=0,raw=0;
     for(unsigned i=0;i<count;++i) {
@@ -61,7 +69,7 @@ int fib_song_init(FibSong *s,const unsigned char *p,unsigned bytes) {
         if(!n || n>32767) return 0;
         if(i==0 || i==count-1) {
             if(id!=(i?65534:65535)) return 0;
-            raw+=n;
+            raw+=aligned?((n+1)&~1u):n;
         } else {
             if(id>=banks || n<2) return 0;
             unsigned source=le32(p+data+be32(p+off+4*id)+4);
@@ -70,7 +78,7 @@ int fib_song_init(FibSong *s,const unsigned char *p,unsigned bytes) {
         total+=n;
     }
     if(total!=be32(p+4) || raw!=bytes-edges) return 0;
-    s->blob=p;s->sequence=p+seq;s->offsets=p+off;s->bank=p+data;s->edges=p+edges;
+    s->aligned=aligned;s->blob=p;s->sequence=p+seq;s->offsets=p+off;s->bank=p+data;s->edges=p+edges;
     s->seq_count=count;s->bank_count=banks;s->seq_index=0;s->raw=s->edges;s->output_left=0;
     return 1;
 }
@@ -84,12 +92,12 @@ void fib_song_read(FibSong *s,unsigned char *out,unsigned samples) {
         if(!s->output_left) begin_segment(s);
         unsigned n=samples<s->output_left?samples:s->output_left;
         if(s->raw_mode) {
-            __builtin_memcpy(out,s->raw,n);s->raw+=n;
+            fib_copy_samples(out,s->raw,n);s->raw+=n;
         } else if(s->source_length==s->target_length) {
             if(s->cache_pos==s->cache_count) refill(s);
             unsigned available=s->cache_count-s->cache_pos;
             if(n>available) n=available;
-            __builtin_memcpy(out,s->cache+s->cache_pos,n);s->cache_pos+=n;
+            fib_copy_samples(out,s->cache+s->cache_pos,n);s->cache_pos+=n;
         } else {
             unsigned phase=s->phase,index=s->source_index;
             unsigned den=s->target_length-1,step=s->source_length-1;

@@ -20,12 +20,23 @@ $(error CHEAT_MODE must be 0 or 1)
 endif
 c_sources += cheat.c
 endif
+FIB_TRIAL_PCM ?= 0
+ifeq ($(FIB_TRIAL_PCM),1)
+ifneq ($(FIB_TRIAL_SONG),1)
+$(error FIB_TRIAL_PCM requires FIB_TRIAL_SONG=1)
+endif
+endif
 FIB_TRIAL_SONG ?= 0
 ifeq ($(FIB_TRIAL_SONG),1)
 ifneq ($(MUSIC_FIB_STREAM),1)
 $(error FIB_TRIAL_SONG requires MUSIC_FIB_STREAM=1)
 endif
+ifeq ($(FIB_TRIAL_PCM),1)
+c_sources += fib_pcm.c
+SELFTEST_CFLAGS += -DFIB_TRIAL_PCM=1
+else
 c_sources += fib_song.c
+endif
 SELFTEST_CFLAGS += -DFIB_TRIAL_SONG=1
 endif
 MUSIC_FIB_STREAM ?= 0
@@ -236,7 +247,11 @@ test-death:
 
 ifeq ($(MUSIC_FIB_STREAM),1)
 ifeq ($(FIB_TRIAL_SONG),1)
+ifeq ($(FIB_TRIAL_PCM),1)
+obj/fib_stream.o: out/courtesy.pcm0 out/courtesy.pcm1
+else
 obj/fib_stream.o: out/courtesy.fbs
+endif
 else
 obj/fib_stream.o: out/fib_trial.payload
 endif

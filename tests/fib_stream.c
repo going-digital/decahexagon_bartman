@@ -3,9 +3,17 @@
 #include "../config.h"
 #include "../fib_decode.h"
 #include "fib_stream.h"
+#ifndef FIB_TRIAL_PCM
+#define FIB_TRIAL_PCM 0
+#endif
 #if FIB_TRIAL_SONG
 #include "../fib_song.h"
+#if FIB_TRIAL_PCM
+INCBIN(FibSongData, "out/courtesy.pcm0");
+INCBIN_CHIP(FibSongTail, "out/courtesy.pcm1");
+#else
 INCBIN(FibSongData, "out/courtesy.fbs");
+#endif
 static FibSong song;
 #else
 INCBIN(FibTrial, "out/fib_trial.payload");
@@ -66,7 +74,14 @@ static void fill_one(unsigned samples) {
 }
 void fib_stream_start(void) {
 #if FIB_TRIAL_SONG
-    if(!fib_song_init(&song,FibSongData,(ULONG)&incbin_FibSongData_end-(ULONG)FibSongData)) {
+    unsigned bytes=(ULONG)&incbin_FibSongData_end-(ULONG)FibSongData;
+#if FIB_TRIAL_PCM
+    int valid=fib_pcm_init_split(&song,FibSongData,bytes,FibSongTail,
+        (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail);
+#else
+    int valid=fib_song_init(&song,FibSongData,bytes);
+#endif
+    if(!valid) {
         underruns=999; return;
     }
 #else
@@ -113,8 +128,8 @@ void fib_stream_fill(void) {
         /* Cheap spans can safely refill a whole block in one tick. Never
          * let this fast path cross into a potentially interpolated segment. */
         unsigned remaining=512-fill_position;
-        unsigned quota=(song.output_left>=remaining &&
-            (song.raw_mode || song.source_length==song.target_length))?remaining:256;
+        unsigned quota=(FIB_TRIAL_PCM || (song.output_left>=remaining &&
+            (song.raw_mode || song.source_length==song.target_length)))?remaining:256;
         fill_one(quota);
 #else
         fill_one(512);
