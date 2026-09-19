@@ -1,0 +1,13 @@
+{
+  "source_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "literal_address": "0x100176f92",
+  "track_id": 1,
+  "entries": 11441,
+  "entries_per_second": 60,
+  "bytes": 11441,
+  "sha256": "2f943408b38dd8a335a6e75c3da8c24768d8339c03065e440b5d064722c0fcf4",
+  "soundtrack": "Courtesy",
+  "source_to_pc_offset_samples_12000": -612,
+  "alignment": "MP3 at 10/30/90/170 seconds matches PC music1.dat at 9.949/29.949/89.949/169.949 seconds; 2 kHz waveform cross-correlation 0.9084..0.9639",
+  "after_table": "zero (PC musicinit zeroes unused cue entries)"
+}

@@ -40,7 +40,7 @@ static void poly(const WORD* xs, const WORD* ys, WORD n, void* buf) {
 
 static void draw_hub(void* buf) {
     WORD xs[MAX_NUM_SIDES], ys[MAX_NUM_SIDES]; // capacity; gamestate.num_sides (runtime) says how many are used
-    WORD rr = zscale(HUB_RADIUS);
+    WORD rr = zscale(HUB_RADIUS + gamestate.pulse);
     UWORD a = gamestate.field_angle;
     UBYTE n = gamestate.num_sides;
     for (WORD i = 0; i < n; i++) {
@@ -58,6 +58,11 @@ static void draw_player(void* buf) {
     pt(a, rt, &xs[0], &ys[0]);
     pt(a - PLAYER_HALF_ANG, rb, &xs[1], &ys[1]);
     pt(a + PLAYER_HALF_ANG, rb, &xs[2], &ys[2]);
+    /* PC moves the player's centre with the pulse; its triangle does not
+     * widen as the orbit expands. Translate every vertex by one vector. */
+    WORD dx,dy;
+    polar_to_cartesian(a,(UWORD)zscale(gamestate.pulse),&dx,&dy);
+    for(unsigned i=0;i<3;++i) {xs[i]+=dx;ys[i]+=dy;}
     poly(xs, ys, 3, buf);
 }
 
@@ -82,8 +87,8 @@ static UBYTE wall_at(WORD inner,WORD outer,UWORD slot) {
 static void draw_wall(const PcSpan* w, void* buf) {
     UWORD a0 = gamestate.field_angle - (UWORD)w->slot * gamestate.segment_angle;
     UWORD a1 = w->slot+1==gamestate.num_sides ? gamestate.field_angle : a0-gamestate.segment_angle;
-    WORD r0 = zscale(w->inner);
-    WORD r1 = zscale(w->outer);
+    WORD r0 = zscale(w->inner + gamestate.pulse);
+    WORD r1 = zscale(w->outer + gamestate.pulse);
     WORD x00, y00, x10, y10, x11, y11, x01, y01;
     pt(a0, r0, &x00, &y00);
     pt(a1, r0, &x10, &y10);
@@ -110,7 +115,7 @@ static void draw_wall(const PcSpan* w, void* buf) {
 void render_spokes(void* buf) {
     blit_line_mode(); // re-arm line-mode registers after the fill
 
-    WORD inner = zscale(HUB_RADIUS);
+    WORD inner = zscale(HUB_RADIUS + gamestate.pulse);
     WORD outer = zscale(SPOKE_OUTER);
     // Raw blit_line requires on-screen endpoints, including title zoom.
     if (outer > SPOKE_OUTER_MAX) outer = SPOKE_OUTER_MAX;

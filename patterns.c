@@ -26,3 +26,5 @@ UBYTE patterns_stage(void) { return progress.schedule.stage; }
 UBYTE patterns_transitioned(void) { return progress.transitioned; }
 UBYTE patterns_turn_rate(void) { return progress.schedule.stage==2 ? 9:7; }
 uint32_t patterns_effective_score(uint32_t elapsed) { return pc_progress_score(&progress,elapsed); }
+
+UBYTE patterns_rotation_cue(void) { return progress.schedule.rotation_cue; }

@@ -13,7 +13,10 @@ static PcSfx sound_events;
 
 #define STARTING_ZOOM_TARGET 128
 #define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 50 / HUB_RADIUS)
-#define FALLBACK_BEAT_BPM 132
+#include "pc_pulse.h"
+#if MUSIC_FIB_STREAM
+#include "tests/fib_stream.h"
+#endif
 GameState gamestate;
 PcWorld game_world;
 PcPalette game_palette;
@@ -37,9 +40,7 @@ UWORD game_live_failure(void) { return live_failure; }
 static GameMode mode;
 static UWORD mode_timer;
 static WORD shake_x,shake_y;
-static UBYTE new_record,on_beat;
-static UWORD beat_ctr,beat_env,beat_bpm=FALLBACK_BEAT_BPM;
-static UWORD beat_period=FRAME_RATE*60/FALLBACK_BEAT_BPM;
+static UBYTE new_record;
 static UWORD zoom_base=STARTING_ZOOM_TARGET;
 static UWORD rng_state=0x2545;
 static UWORD rng(void) {
@@ -53,25 +54,18 @@ GameMode game_mode(void) { return mode; }
 UWORD game_mode_timer(void) { return mode_timer; }
 WORD game_shake_x(void) { return shake_x; }
 WORD game_shake_y(void) { return shake_y; }
-UBYTE game_on_beat(void) { return on_beat; }
 UWORD game_rng(void) { return rng(); }
 UBYTE game_new_record(void) { return new_record; }
 
-/* Existing presentation/audio placeholders, not PC cue or camera emulation. */
-// Beat-driven camera zoom breathing. Runs in every mode.
+/* Camera easing is separate from the PC's additive radial music pulse. */
 static void update_ambient(void) {
-    if (++beat_ctr >= beat_period) {
-        beat_ctr = 0;
-        on_beat = 1;
-        beat_env = 220;
-    } else {
-        on_beat = 0;
-    }
-    beat_env -= beat_env >> 3; // exp decay, ~half-life 5 ticks
-    if (beat_env < 8) beat_env = 0;
-
     zoom_base += ((WORD)gamestate.draw_distance_target - (WORD)zoom_base) >> 3;
-    gamestate.draw_distance = zoom_base + (beat_env >> 2); // beat pops the view toward the camera
+    gamestate.draw_distance = zoom_base;
+    int cue=0;
+#if MUSIC_FIB_STREAM
+    cue=fib_stream_cue();
+#endif
+    gamestate.pulse=pc_pulse_tick(gamestate.pulse,cue,patterns_stage());
 }
 
 static void project_state(void) {
@@ -90,7 +84,7 @@ static void reset_run(void) {
     gamestate.field_angle=0;gamestate.field_rotation=182;
     gamestate.draw_distance_target=STARTING_ZOOM_TARGET;
     gamestate.time_seconds=gamestate.time_subsecond_frames=0;
-    shake_x=shake_y=0;new_record=0;beat_ctr=beat_env=0;
+    shake_x=shake_y=0;new_record=0;gamestate.pulse=0;
 }
 void game_init(void) {
     pc_lifecycle_init(&lifecycle);
@@ -131,6 +125,7 @@ static void update_playing(const InputState *in) {
     }
     pc_world_move(&game_world);
     patterns_tick();
+    if(patterns_rotation_cue()) gamestate.pulse=12;
     if (patterns_transitioned()) {
         sfx_emit(SFX_BIT(SFX_AWESOME)|SFX_BIT(SFX_START));
         pc_morph_reset(&morph);project_state();

@@ -5,3 +5,5 @@ void fib_stream_draw(unsigned char *plane);
 void fib_stream_stop(void);
 void fib_stream_frame(unsigned elapsed);
 void fib_stream_tick(unsigned playing,unsigned menu);
+
+unsigned fib_stream_cue(void);

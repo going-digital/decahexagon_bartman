@@ -6,6 +6,8 @@
 #include "../pcm_lifecycle.h"
 #include "../paula_irq.h"
 #include "../sfx.h"
+#include "../pc_pulse.h"
+INCBIN(CourtesyCues, "assets/music1.cues");
 static PcmLifecycle lifecycle;
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
@@ -18,6 +20,43 @@ static UWORD playing, pending, next_queue, first_irq;
 static unsigned fill_slot;
 static volatile UWORD running;
 static UWORD started, rendered, display_frames;
+static ULONG sample_length, fill_position, positions[FIB_BUFFERS];
+static volatile ULONG audible_position;
+static volatile UWORD audio_frame, audio_line, audio_epoch;
+#ifdef TARGET_NTSC
+#define AUDIO_PERIOD 298
+#define VIDEO_LINES 262
+#else
+#define AUDIO_PERIOD 296
+#define VIDEO_LINES 312
+#endif
+/* VBlank can be pending when the higher-priority audio IRQ runs. Include it
+ * in the timestamp without changing the system's frame counter. */
+static void beam_stamp(UWORD *frame,UWORD *line) {
+    UWORD before,after,pending;
+    do {
+        before=(UWORD)frameCounter;
+        pending=custom->intreqr&INTF_VERTB;
+        *line=(*(volatile ULONG*)&custom->vposr>>8)&511;
+        after=(UWORD)frameCounter;
+    } while(before!=after || pending!=(custom->intreqr&INTF_VERTB));
+    *frame=after+(pending?1:0);
+}
+unsigned fib_stream_cue(void) {
+    if(!running) return 0;
+    UWORD epoch,frame,line,af,al;
+    ULONG position;
+    do {
+        epoch=audio_epoch;
+        position=audible_position;af=audio_frame;al=audio_line;
+        beam_stamp(&frame,&line);
+    } while(epoch!=audio_epoch);
+    int lines=(UWORD)(frame-af)*VIDEO_LINES+(int)line-al;
+    if(lines<0) lines=0;
+    position=pc_pcm_position(position,sample_length,(unsigned)lines,AUDIO_PERIOD);
+    unsigned index=pc_pulse_cue_index(position);
+    return index<11441?((const UBYTE*)CourtesyCues)[index]:0;
+}
 void fib_stream_frame(unsigned elapsed) {++rendered;display_frames+=elapsed;}
 
 static void queue(unsigned slot) {
@@ -34,6 +73,9 @@ static void audio_irq(unsigned channel) {
         playing=pending;
         ++blocks;
     }
+    UWORD frame,line;beam_stamp(&frame,&line);
+    audible_position=positions[playing];audio_frame=frame;audio_line=line;
+    ++audio_epoch;
     if(state[next_queue]==1) {
         pending=next_queue;
         state[pending]=2;
@@ -46,7 +88,10 @@ static void audio_irq(unsigned channel) {
     queue(pending); /* registers describe the following hardware reload */
 }
 static void fill_one(void) {
+    positions[fill_slot]=fill_position;
     fib_song_read(&song,buffers+fill_slot*512,512);
+    fill_position+=512;
+    if(fill_position>=sample_length) fill_position-=sample_length;
     __asm volatile ("" ::: "memory");
     state[fill_slot]=1;
     fill_slot=(fill_slot+1)%FIB_BUFFERS;
@@ -60,7 +105,9 @@ void fib_stream_start(void) {
     }
     buffers=AllocMem(512*FIB_BUFFERS,MEMF_CHIP);
     if(!buffers) { underruns=999; return; }
-    fill_slot=0;
+    const UBYTE *header=(const UBYTE*)FibSongData;
+    sample_length=((ULONG)header[4]<<24)|((ULONG)header[5]<<16)|((ULONG)header[6]<<8)|header[7];
+    fill_position=fill_slot=0;
     for(unsigned i=0;i<FIB_BUFFERS;++i) fill_one();
     playing=pending=0;next_queue=1;first_irq=1;state[0]=2;
     custom->intena=INTF_AUD0;
@@ -77,6 +124,8 @@ void fib_stream_start(void) {
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;
     started=(UWORD)frameCounter;
+    UWORD frame,line;beam_stamp(&frame,&line);
+    audible_position=0;audio_frame=frame;audio_line=line;++audio_epoch;
     running=1;
     __asm volatile ("" ::: "memory");
     custom->intena=INTF_SETCLR|INTF_INTEN|INTF_AUD0;

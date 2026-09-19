@@ -749,3 +749,20 @@ underruns while rank clips played, and returned cleanly to AmigaDOS. The default
 effects-only build also booted and ran with 512 KiB Chip and no expansion.
 See `soundtrack/SOUND_EFFECTS.md` for evidence, the corrected one-shot DMA issue,
 and the remaining NTSC/listening/ending-scene limitations.
+
+## Soundtrack-synchronized radial pulse
+
+Replaced the 132-BPM camera zoom with the PC cue-driven additive displacement
+for hub, player and both wall edges. Extracted the original 11,441 Courtesy
+cues; verified the source MP3 timing offset at four positions (51 ms).
+The playback clock follows the DMA-owned buffer, with raster interpolation,
+retry reset and real PCM loop length. No audio decoding or analysis runs live.
+PC per-stage envelope arithmetic and the scheduler rotation pulse of 12 are
+implemented. Exhaustive pulse and existing lifecycle/menu/SFX host tests pass.
+See `soundtrack/VISUAL_SYNC.md`; stage-2 camera-freeze/ending integration,
+other soundtracks and full perspective remain outstanding.
+
+FS-UAE trials on 512 KiB Chip + 512 KiB Slow: PAL reached 45.51 seconds,
+NTSC 45.56 seconds, both with zero music underruns. Final NTSC geometry keeps
+player size constant while moving its centre. Release build/audit passed;
+`out/pcm_pulse.adf` contains music, speech/effects and synchronized pulsing.

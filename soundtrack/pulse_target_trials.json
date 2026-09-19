@@ -1,0 +1,31 @@
+{
+  "configuration": "A500, 512 KiB Chip + 512 KiB Slow, predecoded Courtesy 12 kHz / 96 slices, original SFX",
+  "pal": {
+    "binary_sha256": "71c930bc47a440bc943cf8e4c89f05dcd2e33cd2b38163531b877d8c798da935",
+    "assisted": true,
+    "elapsed_score": "45.51",
+    "music_underruns": 0,
+    "music_blocks": 1065,
+    "screenshot": "scratchpad/fsuae/pal/fs-uae-crop-2609192038-03.png",
+    "note": "Clock/pulse trial before subsequent player-shape-preserving translation correction"
+  },
+  "release": {
+    "binary": "out/pcm_pulse.exe",
+    "sha256": "7167891f11b2b9eeed4dcedcda252a4045dd806c89f9b74aa4ec0fdfebf1dee6",
+    "cheat_audit": "passed"
+  },
+  "limitations": [
+    "No captured audio/video phase comparison to a running PC game",
+    "Full-song looping checked in host position arithmetic, not yet in this target trial",
+    "Scripted PC camera/ending states remain unimplemented"
+  ],
+  "ntsc": {
+    "binary_sha256": "0417551b9ccd447840e452c65ac852b6c9936886aa776470edabdc6c33f541bd",
+    "assisted": true,
+    "elapsed_score": "45.56",
+    "music_underruns": 0,
+    "music_blocks": 1071,
+    "screenshot": "scratchpad/fsuae/ntsc/fs-uae-crop-2609192044-02.png",
+    "note": "Final player-shape-preserving translation included"
+  }
+}

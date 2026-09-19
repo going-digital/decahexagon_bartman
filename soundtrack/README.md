@@ -1195,3 +1195,9 @@ B=72 unchanged across two post-death captures, retry reset to B=12, return to
 menu and clean AmigaDOS exit. No underruns were observed. These are DMA-counter
 checks, not recorded-audio verification. See `pcm_lifecycle_trials.json`.
 The cheat-free lifecycle trial is `out/pcm_lifecycle.adf`.
+
+## Cue-driven visual pulse
+
+The fixed-BPM zoom placeholder is replaced by the PC radial envelope, read from
+the original Courtesy cue table and synchronized to the audible PCM buffer.
+See [VISUAL_SYNC.md](VISUAL_SYNC.md) for timing evidence, tests and limitations.

@@ -18,6 +18,7 @@ typedef struct {
     UBYTE num_sides;
     UWORD player_angle;
     UWORD draw_distance,draw_distance_target;
+    UWORD pulse; /* PC radial displacement, before camera scaling. */
     UWORD time_seconds,time_subsecond_frames;
     UWORD record_seconds,record_subsecond_frames;
 } GameState;
@@ -33,7 +34,6 @@ GameMode game_mode(void);
 UWORD game_mode_timer(void);
 WORD game_shake_x(void);
 WORD game_shake_y(void);
-UBYTE game_on_beat(void);
 UBYTE game_new_record(void);
 
 #if PC_CORE_SELFTEST

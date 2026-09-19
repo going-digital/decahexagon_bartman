@@ -11,3 +11,5 @@ UBYTE patterns_stage(void);
 UBYTE patterns_transitioned(void);
 UBYTE patterns_turn_rate(void);
 uint32_t patterns_effective_score(uint32_t elapsed);
+
+UBYTE patterns_rotation_cue(void);

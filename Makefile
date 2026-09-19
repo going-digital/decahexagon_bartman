@@ -11,7 +11,7 @@ endif
 VPATH = support
 cpp_sources :=
 cpp_objects :=
-c_sources := main.c system.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
+c_sources := main.c system.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
 # Default release behavior: omit the entire steering-assist translation unit.
 CHEAT_MODE ?= 0
 ifneq ($(CHEAT_MODE),0)
@@ -159,9 +159,9 @@ $(vasm_objects): obj/%.o : %.asm
 
 .PHONY: test
 HOST_CC ?= cc
-test: test-palette test-progression test-menu test-lifecycle test-death test-sfx
+test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse
 	@mkdir -p out
-	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
 	./out/core_test
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c tests/wave_probe.c -o out/wave_probe
 	python3 tests/compare_waves.py
@@ -259,3 +259,11 @@ test-sfx:
 	mkdir -p out
 	$(HOST_CC) -Wall -Wextra -Werror pc_sfx.c tests/pc_sfx_test.c -o out/pc_sfx_test
 	out/pc_sfx_test
+
+obj/fib_stream.o: assets/music1.cues
+
+.PHONY: test-pulse
+test-pulse:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_pulse.c tests/pc_pulse_test.c -o out/pc_pulse_test
+	out/pc_pulse_test
