@@ -30,7 +30,7 @@ Keep the 1 MB A500 configuration and the existing aspiration to support 512 KB c
 | Input cancels opposing directions | Preserve both held directions and apply the reference priority in the simulation |
 | `MAX_WALLS=32`, silent failure when full | Preserve enough records for overlapping PC waves and command markers; no silent drops |
 | Whole-scene zoom and BPM-triggered pulse | Reference camera transform plus cue-driven radial displacement |
-| Single playfield colour and approximate transitions | Add the color layers/effects needed for the verified presentation |
+| Two-colour playfield (user constraint) | Map verified PC background/wall colours to one bitplane; preserve their RGB fades in OCS precision |
 
 Retain the platform takeover, input hardware handling, trig support, clipping/blitter primitives, buffering, sprite HUD and audio backend where they remain suitable. Their interfaces will change; their output still needs regression checks.
 
@@ -131,7 +131,7 @@ Start renderer feasibility tests during phases 2–4; finish visual integration 
 - Cache per-frame transformed sector boundaries and shared geometry. Cull offscreen render work while retaining every simulation record.
 - Replace or reorganize `wall_at`'s repeated full scans before dense content makes rendering quadratic. Build render-only adjacency/interval data without reordering authoritative wall processing.
 - Verify filled-polygon overlap behavior. A single XOR outline/fill pass can create holes where polygons overlap; test real overlapping PC records and use a correct union/layer strategy where needed. Exact matching-edge cancellation alone is not a proof of correct coverage.
-- Add sufficient colour layers for alternating sectors, wall/hub/player relationships and effects. Benchmark two- and three-bitplane implementations before fixing the design. At 320×200 with three buffers, these cost48,000 and72,000 bytes of bitplane storage respectively, excluding sprites/copper/scratch.
+- Retain the two-colour, one-bitplane playfield as requested. Map PC palette slot0 to the background and slot2 to shared wall/hub/player geometry; quantize after RGB interpolation. Independent sector shades and highlights are a documented presentation compromise. Palette cycling and supported-stage scheme changes are implemented and checked against native PC traces; see tests/PALETTE_REFERENCE.md.
 - Retain the sprite HUD where useful. Adapt it to per-level score, ranks and menu/ending states. Reduce drawing cost before reducing the update cadence or wall content.
 
 **Exit:** captured reference states show matching visible gaps, morph boundaries and player position; no overlap holes or clipping corruption; camera/pulse remain presentation-only. Worst-case rendering fits the measured hardware frame budget with audio and input active, or an explicitly documented presentation-rate compromise is evaluated without changing simulation speed.

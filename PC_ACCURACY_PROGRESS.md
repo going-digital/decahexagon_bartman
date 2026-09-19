@@ -432,3 +432,53 @@ FS-UAE PAL A500, 512 KB Chip: [wall crossing behind the complete timer at
 2.13 seconds](scratchpad/fsuae/pal512/fs-uae-crop-2609191244-08.png)
 confirms the priority fix during gameplay. Title and game-over banners also
 render correctly. The verification emulator was closed.
+
+
+## PC palette adaptation to the two-colour playfield
+
+Replaced the fixed purple/orange playfield and one-frame beat recolouring
+with the PC's palette slots0 (background) and2 (primary wall), keeping the
+one-bitplane renderer. Player and hub share the wall colour; independent
+sector shades/highlights are the explicit two-colour compromise. HUD sprites
+retain their black/white colours and priority above walls.
+
+The new portable pc_palette module implements the original integer RGB
+interpolation, endpoint holds, pending scheme-change state machine and
+normal-stage palette milestones. Hexagon starts red/yellow; Hexagoner uses
+orange/green against black; Hexagonest cycles six colour schemes. The 60/120
+second scheme changes are implemented for all three supported stages. RGB is
+quantized only at output, to the nearest 4-bit OCS channel. Palette updates
+run at the simulation's60 Hz cadence independently of display rate and music
+BPM. Each new run resets palette phase; title/ready animation does not advance
+stage milestone score. The existing brief death flash now sets both colours
+white, matching the PC flashlight operation.
+
+Verification executes the original owned PC x86-64 palette routines in private
+memory, with no game startup. It exports14 scheme endpoints and21,900 ticks
+of original gamelogic palette state/RGB. The target implementation matches
+all of these ticks, including Hexagonest's two-second changes and both long
+milestones, before independently checking OCS rounding. The fixture reproduces
+byte-for-byte with the checked-in, executable-hash-guarded capture tools.
+See [palette reference and limitations](tests/PALETTE_REFERENCE.md).
+
+`make test` passes: palette reference, core/geometry,9,159 native wave cases,
+184,320 native selector cases and768 long stress runs. Normal/packed releases
+for all three supported start stages build and pass the no-cheat audits.
+Default `out/hexagon` artifacts have been rebuilt as the normal stage0 release.
+FS-UAE PAL A500,512 KB Chip-only: Hexagon and Hexagoner boot and play with the
+new palettes; captured walls pass behind the readable timer:
+[Hexagon](scratchpad/fsuae/pal512/fs-uae-crop-2609191254-01.png),
+[Hexagoner](scratchpad/fsuae/pal512/fs-uae-crop-2609191255-02.png).
+
+This does not add hyper/stage-to-stage gameplay progression, independent
+sector colours, the render-time death-glow override, or exact PC flash timing.
+Those remaining presentation differences are documented rather than counted
+as verified PC parity. The accuracy plan now records the user's two-colour
+constraint instead of proposing additional playfield bitplanes.
+
+Hexagonest also boots and plays on the same512 KB configuration:
+[green walls and readable HUD](scratchpad/fsuae/pal512/fs-uae-crop-2609191258-06.png),
+[start of the two-second colour transition](scratchpad/fsuae/pal512/fs-uae-crop-2609191258-08.png),
+[full-white death flash](scratchpad/fsuae/pal512/fs-uae-crop-2609191258-09.png),
+[purple palette after the pending fade completes](scratchpad/fsuae/pal512/fs-uae-crop-2609191258-11.png).
+All verification emulator instances were closed.

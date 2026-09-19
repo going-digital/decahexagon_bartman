@@ -174,7 +174,7 @@ int main() {
     // first iteration recomputes and rewrites them before this is ever
     // visible on screen, same as it always has.
     void* copListSetBpl = copPtr;
-    copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x102, 0xf83);
+    copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x000, 0x000);
 
     custom->cop1lc = (ULONG)copper1;
     custom->cop2lc = (ULONG)copper2;
@@ -293,20 +293,13 @@ int main() {
         // effectively free. (cpu_cls was ~2.5ms of blocking CPU time.)
         blit_cls(bitplane_fg3);
 
-        // Fixed 2-colour palette (Phase 2 will grow this to per-level palettes
-        // once there's a 2nd bitplane). Foreground brightens on the beat;
-        // full white/black flash for the first few DEAD ticks, and a brief
-        // white flash as the title screen cuts away to the timer HUD.
-        UWORD col0, col1;
-        if (game_mode() == MODE_DEAD && game_mode_timer() < 6) {
-            col0 = 0xfff;
-            col1 = 0x000;
-        } else if (hud_flash_now()) {
-            col0 = 0xfff;
-            col1 = 0xfff;
-        } else {
-            col0 = 0x102;                          // background: near-black blue
-            col1 = game_on_beat() ? 0xfec : 0xf83; // foreground: warm orange, beat pop
+        // PC background / main-wall palette, quantized to the OCS DAC.
+        // All solid geometry shares the foreground in this one-bitplane port.
+        UWORD col0=pc_palette_colour(&game_palette,0);
+        UWORD col1=pc_palette_colour(&game_palette,1);
+        if ((game_mode()==MODE_DEAD && game_mode_timer()<6) || hud_flash_now()) {
+            // PC flashlight sets every live scene colour to white.
+            col0=col1=0xfff;
         }
 
         // Flip render buffers on next frame; same helper (and so the same

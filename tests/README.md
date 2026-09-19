@@ -207,3 +207,5 @@ It starts play, holds 8 for20 seconds, captures during the hold, releases 8,
 and captures again. macOS event-posting permission is required. The helper
 is never linked into the game. `System Events`' text `key down` did not sustain
 the ordinary 8 key in our test; this helper posts explicit hardware key events.
+
+Palette reference: `make test-palette` checks 21,900 native PC palette ticks and OCS quantization. See [PALETTE_REFERENCE.md](PALETTE_REFERENCE.md) for mapping, provenance and reproduction. Also included in `make test`.

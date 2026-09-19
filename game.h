@@ -3,6 +3,7 @@
 #include "input.h"
 #include "config.h"
 #include "pc_world.h"
+#include "pc_palette.h"
 
 /* Temporary 2D renderer coordinates. PC walls project at hub+distance/5;
  * screen scaling is independent of their simulation speed/spawn distance. */
@@ -22,6 +23,7 @@ typedef struct {
 } GameState;
 extern GameState gamestate;
 extern PcWorld game_world;
+extern PcPalette game_palette;
 
 typedef enum { MODE_ATTRACT,MODE_READY,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER } GameMode;
 void game_init(void);

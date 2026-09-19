@@ -16,6 +16,7 @@
 #define FALLBACK_BEAT_BPM 132
 GameState gamestate;
 PcWorld game_world;
+PcPalette game_palette;
 static PcPlayer player;
 static PcMorph morph;
 #if PC_CORE_SELFTEST
@@ -81,6 +82,7 @@ static void reset_run(void) {
 #if CHEAT_MODE
     cheat_reset();
 #endif
+    pc_palette_reset(&game_palette,PC_START_STAGE);
     pc_world_reset(&game_world);pc_morph_reset(&morph);patterns_reset();
     player.angle=player.previous_angle=30;player.hit=player.blocked=0;
     project_state();
@@ -138,6 +140,8 @@ static void update_playing(const InputState *in) {
 void game_update(const InputState* in) {
     mode_timer++;
     update_ambient();
+    pc_palette_tick(&game_palette,mode==MODE_PLAYING ?
+        (uint32_t)gamestate.time_seconds*FRAME_RATE+gamestate.time_subsecond_frames+1 : 0);
 
     // Escape abandons a run / backs out to the title. From the title itself
     // main.c turns Escape into a quit.
@@ -162,7 +166,10 @@ void game_update(const InputState* in) {
         break;
 
     case MODE_READY:
-        if (mode_timer >= READY_TICKS) set_mode(MODE_PLAYING);
+        if (mode_timer >= READY_TICKS) {
+            pc_palette_reset(&game_palette,PC_START_STAGE);
+            set_mode(MODE_PLAYING);
+        }
         break;
 
     case MODE_PLAYING:

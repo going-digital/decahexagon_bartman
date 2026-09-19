@@ -11,7 +11,7 @@ endif
 VPATH = support
 cpp_sources :=
 cpp_objects :=
-c_sources := main.c system.c coplist.c blitter.c trig.c audio.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c support/gcc8_c_support.c
+c_sources := main.c system.c coplist.c blitter.c trig.c audio.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
 # Default release behavior: omit the entire steering-assist translation unit.
 CHEAT_MODE ?= 0
 ifneq ($(CHEAT_MODE),0)
@@ -133,7 +133,7 @@ $(vasm_objects): obj/%.o : %.asm
 
 .PHONY: test
 HOST_CC ?= cc
-test:
+test: test-palette
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
 	./out/core_test
@@ -176,3 +176,9 @@ check-no-cheats: $(OUT).elf
 .PHONY: release
 release:
 	$(MAKE) CHEAT_MODE=0 EXTRA_CFLAGS="$(EXTRA_CFLAGS) -DBUILD_DEBUG=0" all check-no-cheats
+
+.PHONY: test-palette
+test-palette:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_palette.c tests/palette_probe.c -o out/palette_probe
+	python3 tests/compare_palette.py
