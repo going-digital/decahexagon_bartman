@@ -233,6 +233,9 @@ int main() {
         UWORD now = (UWORD)frameCounter;
         UWORD elapsed_frames = (UWORD)(now - last_frame);
         UWORD missed = elapsed_frames - 1;
+#if MUSIC_FIB_STREAM
+        fib_stream_frame(elapsed_frames);
+#endif
         last_frame = now;
 #if BUILD_DEBUG
         custom->color[0] = missed > 0 ? 0x300 : 0x333;

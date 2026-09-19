@@ -1,0 +1,59 @@
+{
+  "status": "complete-bank host-exact implementation; PAL trial verified, performance still experimental",
+  "packed_bytes": 194502,
+  "dma_bytes": 2048,
+  "decode_cache_bytes": 512,
+  "data_and_buffer_subtotal": 197062,
+  "reference_samples": 2320000,
+  "host_sample_differences": 0,
+  "host_loop_extra_samples": 4096,
+  "pal_configuration": {
+    "chip_kib": 512,
+    "slow_kib": 0,
+    "fast_kib": 0
+  },
+  "first_successful_full_bank_trial": {
+    "game_seconds": 45.3,
+    "underruns": 0,
+    "audio_blocks_at_least": 4600,
+    "render_count_15s": 2219,
+    "render_count_45s": 2311,
+    "approx_render_fps_with_original_overlay": 3.05,
+    "screenshots": [
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191856-01.png",
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191857-02.png"
+    ],
+    "exe_sha256": "dd09a83d5fdeac87f55655b4af98240ff2a26401b22050f21fcfe09ebb8e2ed3"
+  },
+  "packet_sha256": "c4998fb0e8b9fd887bc99e58125eec450051c6d899e023ce9fde08650bfe4ff5",
+  "low_overhead_overlay_trial": {
+    "underruns": 0,
+    "observed_run_end_game_seconds": 23.21,
+    "note": "45-second assisted attempt ended in death at 23.21 s; not a completed 45-second active run",
+    "menu_rendered": 654,
+    "menu_vblank_ticks": 1462,
+    "menu_approx_render_fps_including_startup": 22.366621067031463,
+    "screenshots": [
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191903-01.png",
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191903-02.png",
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191904-01.png"
+    ]
+  },
+  "clean_exit_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191901-02.png",
+  "executables_sha256": {
+    "fib_song": "81fb8a1c391c34cb1c9bd891aa934fe715af113c4495213158f7cb2213ee1f93",
+    "fib_song_game": "c418f6e42295614f00d4f9043462a7fe10cb05a5f1f7fc389b72b617f7140c0d",
+    "fib_render_baseline": "0a8d828a1f923843e7a8490887de1ea382cd192be39a13af1fe033a42351016a"
+  },
+  "emulator_audio_capture_verified": false,
+  "release_excludes_trial": true,
+  "baseline_menu": {
+    "rendered": 3087,
+    "vblank_ticks": 3087,
+    "approx_render_fps_including_startup": 50.0,
+    "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191908-01.png",
+    "workload": "same Hexagonest attract scene and byte-aligned overlay, short codec fixture"
+  },
+  "performance_caveat": "Startup-inclusive menu ratios are indicative, not an isolated gameplay FPS benchmark. Assisted runs vary and can die.",
+  "next_priority": "Offline duration-matched bank variants to reduce runtime interpolation cost"
+}

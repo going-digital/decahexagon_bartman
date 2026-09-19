@@ -893,3 +893,96 @@ NTSC follow-up: period 298, 512 KiB Chip + 512 KiB Slow, assisted Hexagonest
 reached **45.56 s with zero underruns**. This validates the tested NTSC timing
 configuration, not an NTSC Chip-only memory configuration. Trial details, image
 paths and executable hashes are recorded in fib_stream_trials.json.
+
+## Complete-bank sequencing trial
+
+`FIB_TRIAL_SONG=1 MUSIC_FIB_STREAM=1` selects the complete accepted Courtesy
+reconstruction. `tools/audio/pack_fib_song.py` serializes the existing bank,
+raw intro/outro, offsets and exact segment durations into `out/courtesy.fbs`.
+The 32-byte FBS1 header and tables are big-endian; embedded FIB1 headers retain
+their existing little-endian format. The target validates table bounds, bank
+headers, payload sizes, sequence IDs, durations and total sample count before
+starting DMA. Malformed files are rejected before playback allocation.
+
+The host build of `fib_song.c` reproduces **all 2,320,000 samples exactly** against
+`192k_fibonacci.wav`. Checks also cover mixed read sizes, destination canaries,
+truncated/corrupt layouts and an additional 4,096 samples across the song loop.
+The raw edges and slice boundaries retain their original positions. Matching
+slice lengths take a bulk-copy path; lengths differing by one sample use exact
+rational linear interpolation with nearest-even rounding. The target uses
+68000 word multiply/divide instructions for this arithmetic. The proof currently
+compares host C output; recorded emulator output still needs verification.
+
+The initial per-sample decoder was too slow on the A500. The current sequencer
+uses the previously verified block decoder with a 512-byte CPU decode cache,
+and copies equal-length spans in bulk. It still needs more scheduling headroom
+than the short fixture, so full-song builds use **four 512-byte Chip DMA buffers**.
+The short-fixture mode retains three. Packed data is 194,502 bytes; data, decode
+cache and DMA buffers total **197,062 bytes (192.44 KiB)**, excluding code, metadata
+state and allocator overhead. Only the 2,048 DMA bytes require Chip memory on
+an expanded Amiga; on the Chip-only test machine everything resides in Chip RAM.
+This is slightly above the earlier 192 KiB accounting budget, rather than a
+claim that the extra buffering is free.
+
+Reproduce packing and host checks:
+
+```sh
+venv/bin/python tools/audio/pack_fib_song.py
+venv/bin/python tools/audio/check_fib_song.py
+tools/build.sh -B MUSIC_FIB_STREAM=1 FIB_TRIAL_SONG=1 \
+  EXTRA_CFLAGS=-DBUILD_DEBUG=0 OUT=out/fib_song out/fib_song.adf
+```
+
+The transport overlay now also shows `R` (render iterations) and `V` (serviced
+VBlank ticks accumulated by the main loop). Compare differences between captures,
+not totals that include startup/menu time. A severely overloaded VBlank handler
+can coalesce hardware interrupts; V is therefore not an independent wall clock.
+The B counter provides a separate audio-block cadence check when audio IRQs are
+serviced reliably. Diagnostic drawing itself adds render overhead.
+
+The source timeline is unchanged in samples. Playback still follows Paula's
+integer period, so PAL/NTSC duration drift remains; this does not establish
+exact PC music synchronisation. Normal releases exclude the sequencer and bank.
+
+Full-song interpolation is split into 256-output-sample batches, completing a
+DMA buffer over two VBlanks. Known raw/equal-length spans can finish the remaining
+buffer in one tick, provided the read does not cross a segment boundary. A
+buffer is published only after all 512 samples are ready.
+This limits work per interrupt; the extra queued buffer covers refill latency.
+The first 512-output-sample batches still caused underruns and delayed VBlank
+service despite sufficient average throughput, so that schedule was rejected.
+
+The hot interpolation path exploits the validated one-sample length difference:
+phase changes by exactly +1 or -1 and source advances once per output. The first
+and last samples use a separate endpoint path. Small random vectors of lengths
+2, 3, 4, 17, 511, 512, 513 and 520, each resampled by +/- one sample, match an
+independent rational-arithmetic reference over repeated loops. This avoids the
+general phase-normalization loop without approximating the accepted waveform.
+
+PAL outcome: the optimized exact sequencer completed the entire song and crossed
+the loop boundary with zero underruns (more than 4,600 audio blocks), and the
+same run survived 45.30 seconds of assisted Hexagonest. Clean return to AmigaDOS
+was verified. A later run with cheaper diagnostic drawing also had zero
+underruns, but the assisted player died at 23.21 seconds during the 45-second
+attempt. These are bounded trials, not a guarantee of survival or all-load safety.
+
+The original per-pixel diagnostic drawing materially distorted render timing;
+it now uses byte-aligned glyph writes. With that same lower-overhead overlay,
+startup-inclusive menu counts were R=654/V=1,462 for the full bank (about
+22.4 rendered iterations per second at nominal PAL cadence), versus
+R=3,087/V=3,087 for the short-fixture baseline (about 50). Both use the
+Hexagonest attract scene on the 512 KiB Chip-only A500. This is an indicative
+menu comparison, not a controlled gameplay FPS benchmark. The original
+three-frames/s assisted reading with the expensive overlay must not be quoted
+as normal game performance.
+
+The full-bank backend remains optional: exact slice interpolation is still too
+costly to promote into the normal game. Next priority is preparing the needed
+slice lengths offline and measuring the resulting memory/quality tradeoff.
+Full-bank NTSC testing, emulator audio-capture comparison and exact PC music
+synchronisation remain outstanding. The normal release rebuilt, passed its
+cheat audit and excludes all experimental music objects and assets.
+
+Artifacts: `out/fib_song.adf` is the cheat-free experimental full-song image;
+`out/courtesy_target_sequence.wav` is the exact host reconstruction. Results,
+screenshots and executable hashes are in fib_song_trials.json.

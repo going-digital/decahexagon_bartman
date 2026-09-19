@@ -20,6 +20,14 @@ $(error CHEAT_MODE must be 0 or 1)
 endif
 c_sources += cheat.c
 endif
+FIB_TRIAL_SONG ?= 0
+ifeq ($(FIB_TRIAL_SONG),1)
+ifneq ($(MUSIC_FIB_STREAM),1)
+$(error FIB_TRIAL_SONG requires MUSIC_FIB_STREAM=1)
+endif
+c_sources += fib_song.c
+SELFTEST_CFLAGS += -DFIB_TRIAL_SONG=1
+endif
 MUSIC_FIB_STREAM ?= 0
 ifeq ($(MUSIC_FIB_STREAM),1)
 c_sources += fib_decode.c tests/fib_stream.c
@@ -227,5 +235,9 @@ test-death:
 	python3 tests/compare_death.py
 
 ifeq ($(MUSIC_FIB_STREAM),1)
+ifeq ($(FIB_TRIAL_SONG),1)
+obj/fib_stream.o: out/courtesy.fbs
+else
 obj/fib_stream.o: out/fib_trial.payload
+endif
 endif
