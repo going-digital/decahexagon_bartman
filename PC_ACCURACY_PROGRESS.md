@@ -720,3 +720,13 @@ NTSC A500 (512 KB Chip + 512 KB Slow) reports target self-test PASS, with
 Verification instances were closed. Default normal/packed PAL releases remain
 `out/hexagon.adf` and `out/hexagon_packed.adf`; the NTSC diagnostic build is
 `out/hexagon_menu_ntsc.adf`.
+
+### Locked names stay hidden
+
+Locked selections now show `LOCKED` continuously, revealing their profile name
+only when `game_selection_locked()` becomes false. This replaces the alternating
+name/lock presentation described above; the high score remains visible.
+PAL A500 512 KB Chip-only FS-UAE captures show `LOCKED` both
+[immediately after selection](scratchpad/fsuae/pal512/fs-uae-crop-2609191458-01.png)
+and [two seconds later](scratchpad/fsuae/pal512/fs-uae-crop-2609191458-02.png).
+Normal and packed releases were rebuilt and pass the no-cheat audit.

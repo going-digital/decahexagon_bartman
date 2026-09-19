@@ -324,14 +324,13 @@ void hud_init(void) {
 
 typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED } Banner;
 
-// Selection keeps its best visible; locked entries alternate name and lock.
+// Selection keeps its best visible; names are revealed only after unlocking.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
 static Banner banner_active(void) {
     GameMode m = game_mode();
     UWORD t = game_mode_timer();
     if (m == MODE_ATTRACT) {
-        if (t%180<120) return BANNER_HEXAGON;
         return game_selection_locked() ? BANNER_LOCKED:BANNER_HEXAGON;
     }
     if (m == MODE_GAMEOVER && t < GAMEOVER_HOLD_TICKS) return BANNER_GAMEOVER;

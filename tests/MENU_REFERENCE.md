@@ -55,8 +55,8 @@ leaderboards, unlock announcements, fractional dt or persistence.
 Left/right arrows or the joystick select a profile; Space/fire starts an
 unlocked selection. Escape returns from play/results to selection; Escape
 again exits. The menu continuously shows the selected profile's session best above its name.
-Locked entries alternate their name for two seconds with `LOCKED` for one second,
-while keeping the best visible. The copper reloads all eight sprite pointers and position/control registers
+Locked entries display `LOCKED` continuously until unlocked, then reveal their
+profile name. The best remains visible in either state. The copper reloads all eight sprite pointers and position/control registers
 between the score and banner rows, without allocating extra sprite data.
 After the upper terminators have been fetched, the lower pointers address pixel
 data directly and the copper supplies POS/CTL. This follows the register/DMA
