@@ -45,8 +45,9 @@ drives the blend and scheme transitions. Normal stage entry is confirmed in
 
 The standalone palette resets at the start of each playable run; menu/ready
 frames animate the selected palette without advancing milestone score.
-Existing stage-to-stage/hyper gameplay progression remains outside this port;
-this change does not claim to implement that progression after 180 seconds.
+Normal/hyper entry and two automatic stage handoffs are now implemented; see
+[PROGRESSION_REFERENCE.md](PROGRESSION_REFERENCE.md) for their verified scope.
+The scripted ending remains pending.
 The PC render-time death-glow override and exact flash timing remain part of
 the pending presentation work. The existing six-tick death flash now correctly
 sets both scene colours to white, matching the PC flashlight colour operation.

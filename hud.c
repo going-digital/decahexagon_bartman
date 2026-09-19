@@ -74,7 +74,7 @@ static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
 // font. Only the letters actually needed by title_str_*[] below are
 // authored (not a full alphabet) - add more here as more banners want them.
 enum {
-    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T,
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P,
     TITLE_GLYPH_COUNT
 };
 static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
@@ -91,9 +91,15 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     /* (space, all blank) */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 },
     /* S */ { 0x7, 0x8, 0x6, 0x1, 0x1, 0xE },
     /* T */ { 0xF, 0x2, 0x2, 0x2, 0x2, 0x2 },
+    /* Y */ { 0x9, 0x9, 0x6, 0x2, 0x2, 0x2 },
+    /* P */ { 0xE, 0x9, 0x9, 0xE, 0x8, 0x8 },
 };
 
-static const UBYTE title_str_hexagon[] = { TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N
+static const UBYTE title_str_hexagon[] = {
+#if PC_START_HYPER
+    TF_H, TF_Y, TF_P, TF_E, TF_R, TF_SPACE,
+#endif
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N
 #if PC_START_STAGE == 1
     , TF_E, TF_R
 #elif PC_START_STAGE == 2
@@ -224,12 +230,17 @@ static void canvas_set_into(UWORD* const* slots, WORD row, WORD nx, UBYTE black)
 // message (title, results) - see title_str_hexagon/title_str_gameover.
 static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
     WORD gap = TITLE_GAP_NATIVE;
+    /* HYPER HEXAGONEST fits all 128 sprite dots with a half-width space. */
+    WORD space_width=len>15 ? TITLE_GLYPH_NATIVE_W/2:TITLE_GLYPH_NATIVE_W;
+    WORD text_width=len*TITLE_GLYPH_NATIVE_W;
+    for (WORD i=0;i<len;++i)
+        if (str[i]==TF_SPACE) text_width-=TITLE_GLYPH_NATIVE_W-space_width;
     if (len > 1) {
         WORD available = (TITLE_CANVAS_BITS - 2 * TITLE_MARGIN_NATIVE
-                          - len * TITLE_GLYPH_NATIVE_W) / (len - 1);
+                          - text_width) / (len - 1);
         if (gap > available) gap = available;
     }
-    WORD banner_w = TITLE_MARGIN_NATIVE * 2 + len * TITLE_GLYPH_NATIVE_W
+    WORD banner_w = TITLE_MARGIN_NATIVE * 2 + text_width
                      + (len - 1) * gap;
     WORD banner_x = (TITLE_CANVAS_BITS - banner_w) / 2;
 
@@ -241,8 +252,8 @@ static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
             continue; // pure border row - background only, no glyph pixels
 
         UBYTE frow = row - HUD_BORDER;
+        WORD cell_x=banner_x+TITLE_MARGIN_NATIVE;
         for (WORD letter = 0; letter < len; letter++) {
-            WORD cell_x = banner_x + TITLE_MARGIN_NATIVE + letter * (TITLE_GLYPH_NATIVE_W + gap);
             UBYTE bits = title_font[str[letter]][frow];
             for (WORD c = 0; c < HUD_GLYPH_W; c++) {
                 if (!(bits & (1 << (HUD_GLYPH_W - 1 - c))))
@@ -250,6 +261,7 @@ static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
                 canvas_set_into(slots, row, cell_x + c * 2,     1); // doubled, matches the HUD font's sizing
                 canvas_set_into(slots, row, cell_x + c * 2 + 1, 1);
             }
+            cell_x+=(str[letter]==TF_SPACE ? space_width:TITLE_GLYPH_NATIVE_W)+gap;
         }
     }
 }

@@ -25,6 +25,14 @@
 #error "PC_START_STAGE currently supports 0 (Hexagon), 1 (Hexagoner), or 2 (Hexagonest)"
 #endif
 
+// Temporary profile choice until the six-level menu lands: 0=normal, 1=hyper.
+#ifndef PC_START_HYPER
+#define PC_START_HYPER 0
+#endif
+#if PC_START_HYPER != 0 && PC_START_HYPER != 1
+#error "PC_START_HYPER must be 0 or 1"
+#endif
+
 // Display cadence is independent of the 60 Hz reference simulation.
 #ifdef TARGET_NTSC
 #define DISPLAY_RATE 60

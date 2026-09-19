@@ -41,6 +41,14 @@ void pc_palette_reset(PcPalette *p, uint8_t stage) {
     set_scheme(p,stage==2 ? 10 : stage==1 ? 5 : 0);
     interpolate(p);
 }
+void pc_palette_enter(PcPalette *p,uint8_t stage,uint8_t hyper) {
+    p->stage=stage;
+    set_scheme(p,hyper ? (stage==2 ? 9:stage==1 ? 6:3):
+                         (stage==2 ? 10:stage==1 ? 5:0));
+}
+void pc_palette_start(PcPalette *p,uint8_t stage,uint8_t hyper) {
+    pc_palette_reset(p,stage);pc_palette_enter(p,stage,hyper);interpolate(p);
+}
 static void request(PcPalette *p,uint16_t id) {
     p->target=id;p->change=1;
 }

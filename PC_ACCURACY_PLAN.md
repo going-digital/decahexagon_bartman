@@ -1,6 +1,6 @@
 # Plan: PC-accurate Super Hexagon mechanics on the Amiga A500
 
-Status: live normal-Hexagon integration in progress, 2026-09-19. See [progress and verification](PC_ACCURACY_PROGRESS.md). The phases below remain the acceptance plan; an initial implementation batch is not completion of the full specification.
+Status: all six launch profiles and two automatic stage handoffs implemented, 2026-09-19. The six-level menu, unlocks, records and scripted ending remain pending. See [progress and verification](PC_ACCURACY_PROGRESS.md). The phases below remain the acceptance plan; an initial implementation batch is not completion of the full specification.
 
 ## Target and definition of accuracy
 

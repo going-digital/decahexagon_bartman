@@ -2,10 +2,11 @@
 
 Updated 2026-09-19. See [the implementation plan](PC_ACCURACY_PLAN.md).
 
-Current milestone: PC-unit walls, collision, exact waves and all three normal
-base-level selectors are connected to playable builds. All 193,479 saved
-wave-generator and selector reference cases pass. Presentation and stage
-progression remain incomplete; see the fifth batch below.
+Current milestone: PC-unit walls, collision, exact waves, all six normal/hyper
+launch profiles and both automatic stage handoffs are connected to playable
+builds. The 193,479 saved wave/selector cases, 21,900 palette ticks and 2,048
+opening/handoff ticks pass. The six-level menu, unlocks, per-mode records,
+scripted ending and remaining presentation fidelity are still unfinished.
 
 ## First batch completed (historical)
 
@@ -482,3 +483,61 @@ Hexagonest also boots and plays on the same512 KB configuration:
 [full-white death flash](scratchpad/fsuae/pal512/fs-uae-crop-2609191258-09.png),
 [purple palette after the pending fade completes](scratchpad/fsuae/pal512/fs-uae-crop-2609191258-11.png).
 All verification emulator instances were closed.
+
+
+## Sixth batch: hyper entry and automatic stage handoffs
+
+Added a portable pc_progress wrapper around the shared stage selectors. All
+three hyper profiles now have their verified wave counter, one-shot opening
+wave93/94/95, speed33/33/40, turn rate7/7/9 and palette3/6/9. A60-second
+*effective* score offset drives difficulty and palette changes while the HUD
+continues to show survival time from zero. Initial cosmetic rotation selection
+preserves its source draw range and reject-the-prior-mode behavior.
+
+Normal and hyper stage0/1 runs automatically continue into the next stage when
+effective score is strictly greater than10800. The original program emits the
+*outgoing* stage's hyper opener on the boundary tick:93 into stage1,94 into
+stage2. The new wrapper preserves this ordering, RNG consumption, shape count,
+player angle and displayed score, while clearing old walls/waits/morphs. The
+following tick uses the next selector and its remapped score. Stage2 turning
+changes to9 degrees/tick. Palette changes preserve interpolation phase, and
+PAL multi-tick frames consume each transition immediately rather than losing it.
+
+`PC_START_HYPER=1` selects a hyper launch alongside `PC_START_STAGE=0/1/2` until
+the runtime selection menu lands. Full hyper titles fit the existing sprite
+canvas; the longest title uses a half-width space. Normal launches remain the
+default. See [progression specification and build instructions](tests/PROGRESSION_REFERENCE.md).
+
+Verification:
+
+- 2,048 executed-PC opening/boundary ticks match, including wall-record hashes,
+  wave/shape counters, delays, speed, turning, profile/score restoration and RNG
+  consumption. Cases cover immediate and pending-delay handoffs, and the second
+  handoff in a Hexagon run. The hash-guarded capture tool reproduces the fixture
+  byte-for-byte. These are bounded synthetic traces, not complete PC replays.
+- Twelve native cases are included in the shared host/68000 self-test.
+- 384 forced-survival runs exercise 384 handoffs with no overflow. Peak wall
+  counts for normal/hyper stages0,1,2 are 50/49, 61/51, 44/44. Stress runs stop at
+  stage2 effective score7200, before unimplemented ending behavior.
+- The existing normal selector, generator, collision/projection and palette
+  suites pass. Six palette launch states now also match native RGB endpoints.
+- FS-UAE PAL512 KB Chip-only passes target checks and runs Hyper Hexagonest:
+  [full title and PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191333-01.png),
+  [gameplay PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191334-01.png).
+- FS-UAE NTSC512 KB Chip+512 KB Slow passes target checks and the new hyper
+  first-wall live invariant (first 80 ticks at speed 40 from distance 4375):
+  [NTSC gameplay PASS](scratchpad/fsuae/ntsc/fs-uae-crop-2609191337-01.png).
+- All six normal/packed PAL profile builds pass, including no-cheat audits.
+  `out/hexagon`, `out/hexagoner`, `out/hexagonest`, `out/hyper_hexagon`,
+  `out/hyper_hexagoner`, `out/hyper_hexagonest` artifacts are uninstrumented
+  releases. The final default objects/executable were rebuilt for normal Hexagon.
+
+Next: six-level selection, unlocks and per-mode session records, then the exact
+menu/restart/death paths and scripted ending. This batch does not implement
+original track changes, camera tilt/cue effects or full ending behavior; it does
+not claim complete PC parity merely because the hyper starts are playable.
+
+Final release smoke check: uninstrumented Hyper Hexagon boots and plays on
+PAL A500 with 512 KB Chip RAM: [title](scratchpad/fsuae/pal512/fs-uae-crop-2609191343-01.png),
+[gameplay at 1.93 seconds](scratchpad/fsuae/pal512/fs-uae-crop-2609191344-01.png).
+All verification emulator instances were closed. The final `make test` passes.

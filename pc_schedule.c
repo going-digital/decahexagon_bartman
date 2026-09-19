@@ -1,7 +1,7 @@
 #include "pc_schedule.h"
 
 void pc_schedule_reset(PcSchedule *s) {
-    s->stage=0;s->wave=0;s->shape_counter=0;s->chosen=-1;
+    s->stage=0;s->hyper_entry=0;s->wave=0;s->shape_counter=0;s->chosen=-1;
     s->late_phase=0;s->flip_request=0;s->rotation_mode=0;s->rotation_cue=0;s->tilt_request=0;
 }
 
@@ -52,7 +52,7 @@ static int16_t hexagoner_wave(PcSchedule *s,PcWorld *w,uint32_t score,
     return split(random,context,201,202);
 }
 
-/* Normal stage 2 only; the wave95 hyper-entry override belongs to progression. */
+/* Stage 2 pool; the shared scheduler handles the hyper-entry override. */
 static int16_t hexagonest_wave(PcSchedule *s,PcWorld *w,uint32_t score,
                               PcRandom random,void *context) {
     static const int16_t early[]={101,102,104,108};
@@ -127,7 +127,11 @@ void pc_schedule_tick(PcSchedule *s,PcWorld *w,uint8_t sides,
         s->rotation_cue=12;
     }
     int16_t chosen=-1;
-    if (s->stage==2) {
+    if (s->hyper_entry) {
+        chosen=(int16_t)(93+s->stage);
+        s->hyper_entry=0;
+    }
+    else if (s->stage==2) {
         if (wave==12 || wave==24 || wave==48 || (score>8000 && wave%5==0)) s->flip_request=1;
         chosen=hexagonest_wave(s,w,score,random,context);
     }

@@ -209,3 +209,9 @@ is never linked into the game. `System Events`' text `key down` did not sustain
 the ordinary 8 key in our test; this helper posts explicit hardware key events.
 
 Palette reference: `make test-palette` checks 21,900 native PC palette ticks and OCS quantization. See [PALETTE_REFERENCE.md](PALETTE_REFERENCE.md) for mapping, provenance and reproduction. Also included in `make test`.
+
+Progression: `make test-progression` compares 2,048 native opening/handoff ticks,
+then runs 384 forced-survival stress runs across all six launch profiles.
+Twelve compact native cases also run under `PC_CORE_SELFTEST=1` on the 68000.
+See [PROGRESSION_REFERENCE.md](PROGRESSION_REFERENCE.md) for provenance, exact
+handoff ordering, build flags and remaining menu/ending work.

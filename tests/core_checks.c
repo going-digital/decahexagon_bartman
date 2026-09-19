@@ -5,6 +5,7 @@
 #endif
 #define CHECK(expr) do { if (!(expr)) return __LINE__; } while (0)
 
+unsigned pc_progress_checks(void);
 unsigned pc_wave_checks(void);
 unsigned pc_schedule_checks(void);
 unsigned render_clip_checks(void);
@@ -57,5 +58,6 @@ unsigned pc_core_checks(void) {
     CHECK(!wall.active && wall.width == 0);
     unsigned failure=pc_wave_checks();
     if (!failure) failure=pc_schedule_checks();
+    if (!failure) failure=pc_progress_checks();
     return failure ? failure:render_clip_checks();
 }

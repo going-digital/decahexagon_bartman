@@ -82,7 +82,7 @@ static void reset_run(void) {
 #if CHEAT_MODE
     cheat_reset();
 #endif
-    pc_palette_reset(&game_palette,PC_START_STAGE);
+    pc_palette_start(&game_palette,PC_START_STAGE,PC_START_HYPER);
     pc_world_reset(&game_world);pc_morph_reset(&morph);patterns_reset();
     player.angle=player.previous_angle=30;player.hit=player.blocked=0;
     project_state();
@@ -109,10 +109,10 @@ static void update_playing(const InputState *in) {
     }
     UBYTE held=in->held;
 #if CHEAT_MODE
-    if (in->cheat_held) held=cheat_steer(&player,&game_world,morph.sides,PC_START_STAGE==2 ? 9:7);
+    if (in->cheat_held) held=cheat_steer(&player,&game_world,morph.sides,patterns_turn_rate());
     else cheat_reset();
 #endif
-    player.angle=pc_turn(player.angle,held,PC_START_STAGE==2 ? 9:7);
+    player.angle=pc_turn(player.angle,held,patterns_turn_rate());
     pc_morph_tick(&morph,&game_world);
     project_state();
     /* Collision sees pre-motion distances and can restore the prior angle.
@@ -124,15 +124,23 @@ static void update_playing(const InputState *in) {
     }
     pc_world_move(&game_world);
     patterns_tick();
+    if (patterns_transitioned()) {
+        pc_morph_reset(&morph);project_state();
+        pc_palette_enter(&game_palette,patterns_stage(),1);
+    }
 #if PC_CORE_SELFTEST
     /* First-wave travel invariant independently checks the live clock/store
      * connection on 68000, not just isolated portable functions. */
     uint32_t tick=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
-    if (tick<=80 && (game_world.speed!=(PC_START_STAGE==2 ? 35:PC_START_STAGE==1 ? 24:22) || game_world.count==0 ||
-        game_world.walls[0].distance!=(PC_START_STAGE==2 ? 4050:PC_START_STAGE==1 ? 3435:3300)-(PC_START_STAGE==2 ? 35:PC_START_STAGE==1 ? 24:22)*(int32_t)(tick-1))) live_failure=1;
+    const int32_t opening_speed=PC_START_HYPER ? (PC_START_STAGE==2 ? 40:33):
+        (PC_START_STAGE==2 ? 35:PC_START_STAGE==1 ? 24:22);
+    const int32_t opening_distance=PC_START_HYPER ? (PC_START_STAGE==2 ? 4375:3950):
+        (PC_START_STAGE==2 ? 4050:PC_START_STAGE==1 ? 3435:3300);
+    if (tick<=80 && (game_world.speed!=opening_speed || game_world.count==0 ||
+        game_world.walls[0].distance!=opening_distance-opening_speed*(int32_t)(tick-1))) live_failure=1;
 #endif
     /* Temporary planar rotation response. The scheduler consumes the exact
-     * source RNG draws; 3D tilt/cue and stage progression remain outstanding. */
+     * source RNG draws; 3D tilt/cue effects remain outstanding. */
     static const WORD rotations[]={182,-182,364,-364,546,-546,728,-728,910,-910};
     gamestate.field_rotation=rotations[patterns_rotation_mode()];
 }
@@ -141,7 +149,7 @@ void game_update(const InputState* in) {
     mode_timer++;
     update_ambient();
     pc_palette_tick(&game_palette,mode==MODE_PLAYING ?
-        (uint32_t)gamestate.time_seconds*FRAME_RATE+gamestate.time_subsecond_frames+1 : 0);
+        patterns_effective_score((uint32_t)gamestate.time_seconds*FRAME_RATE+gamestate.time_subsecond_frames+1) : 0);
 
     // Escape abandons a run / backs out to the title. From the title itself
     // main.c turns Escape into a quit.
@@ -167,7 +175,7 @@ void game_update(const InputState* in) {
 
     case MODE_READY:
         if (mode_timer >= READY_TICKS) {
-            pc_palette_reset(&game_palette,PC_START_STAGE);
+            pc_palette_start(&game_palette,PC_START_STAGE,PC_START_HYPER);
             set_mode(MODE_PLAYING);
         }
         break;
