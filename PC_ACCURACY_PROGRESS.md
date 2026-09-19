@@ -352,3 +352,28 @@ Final FS-UAE 512 KB Chip-only evidence:
 The verification instance was closed. `out/hexagon_cheat.adf` is the separate
 development disk; `out/hexagon.adf` and `out/hexagon_packed.adf` are audited
 cheat-free release builds. Unit checks also pass under UBSan.
+
+## Floppy motor shutdown during takeover
+
+System takeover now sends synchronous `TD_MOTOR` requests with length0 to all
+available `trackdisk.device` units before `Forbid()`. The OS driver turns off
+its latched motor state while task switching and interrupts still work, and
+retains consistent bookkeeping for disk access after exit. The reply port is
+built using Kickstart1.3-compatible Exec calls; absent drives are skipped and
+opened devices/signals are released before takeover. No disk data is written.
+
+Normal and packed release builds pass, including the no-cheat audit. FS-UAE
+PAL A500 512 KB Chip-only boots and runs the game, then returns to the AmigaDOS
+prompt via Escape. [Game with drive-status display](scratchpad/fsuae/pal512/fs-uae-full-2609191216-01.png),
+[restored AmigaDOS](scratchpad/fsuae/pal512/fs-uae-full-2609191217-01.png).
+
+A subsequent reload from AmigaDOS exposed an existing exit/restart failure:
+the updated binary raised Guru8000000B; a separate baseline using the exact
+pre-change `system.c` from `edc7079` also raised a Guru (80000004) when reloaded.
+[Updated reload failure](scratchpad/fsuae/pal512/fs-uae-full-2609191219-01.png),
+[baseline reload failure](scratchpad/fsuae/pal512/fs-uae-full-2609191225-01.png).
+This is not counted as a passing restart test and remains a separate cleanup
+issue. The LSP CIA player has no OS restoration in its driver and the current
+LSP `p61End` is empty; that is a candidate for the follow-up investigation,
+not a proven diagnosis. Normal/packed `out/hexagon` artifacts contain the
+motor fix; the baseline disk is an ignored verification artifact only.
