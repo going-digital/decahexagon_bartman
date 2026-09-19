@@ -1,0 +1,69 @@
+{
+  "source": "assets/Chipzel - Courtesy [3353237090].mp3",
+  "sha256": "5e53eae2aeb8d2972e53cf604e219f47aab93f6516314684500d9581c640009b",
+  "container_duration_seconds": 193.333333,
+  "decoded_sample_rate": 44100,
+  "decoded_samples": 8526000,
+  "decoded_duration_seconds": 193.33333333333334,
+  "time_origin": "first decoded PCM sample; ffmpeg applies available decoder skip metadata; no manual trimming",
+  "stereo_correlation": 0.9124913990449323,
+  "peak_amplitude": 0.9496366381645203,
+  "tempo_candidates": [
+    {
+      "bpm": 130.731,
+      "periodicity": 0.82981276512146
+    },
+    {
+      "bpm": 87.154,
+      "periodicity": 0.6876265406608582
+    },
+    {
+      "bpm": 171.818,
+      "periodicity": 0.23792777955532074
+    },
+    {
+      "bpm": 74.242,
+      "periodicity": 0.2376204878091812
+    },
+    {
+      "bpm": 103.683,
+      "periodicity": 0.23525109887123108
+    }
+  ],
+  "constant_grid_hypothesis": {
+    "bpm": 130.03100000000066,
+    "phase_seconds": 0.07209819196960689,
+    "reviewed": false,
+    "downbeat_known": false,
+    "variable_tempo_checked": false
+  },
+  "excerpts": [
+    {
+      "start_seconds": 0,
+      "end_seconds": 20,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 30,
+      "end_seconds": 50,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 60,
+      "end_seconds": 80,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 90,
+      "end_seconds": 110,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 120,
+      "end_seconds": 140,
+      "reviewed": false
+    }
+  ],
+  "generated_directory": "scratchpad/audio/courtesy",
+  "status": "automatic analysis only; no verified beat map or transcription"
+}

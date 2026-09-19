@@ -1,0 +1,73 @@
+{
+  "source": "assets/Chipzel - Otis [1413220136].mp3",
+  "sha256": "4a6f8814b42ed93442931aa722fba037acdd74a5a12cc96c4d56e8e3823acb31",
+  "container_duration_seconds": 156.444444,
+  "decoded_sample_rate": 44100,
+  "decoded_samples": 6899200,
+  "decoded_duration_seconds": 156.44444444444446,
+  "time_origin": "first decoded PCM sample; ffmpeg applies available decoder skip metadata; no manual trimming",
+  "stereo_correlation": 0.9185163638986296,
+  "peak_amplitude": 0.951534628868103,
+  "tempo_candidates": [
+    {
+      "bpm": 67.569,
+      "periodicity": 0.944805383682251
+    },
+    {
+      "bpm": 133.636,
+      "periodicity": 0.6986994743347168
+    },
+    {
+      "bpm": 89.756,
+      "periodicity": 0.670421838760376
+    },
+    {
+      "bpm": 77.098,
+      "periodicity": 0.5501136183738708
+    },
+    {
+      "bpm": 107.386,
+      "periodicity": 0.5464560985565186
+    },
+    {
+      "bpm": 182.231,
+      "periodicity": 0.5420729517936707
+    }
+  ],
+  "constant_grid_hypothesis": {
+    "bpm": 67.50899999999962,
+    "phase_seconds": 0.44438519308536895,
+    "reviewed": false,
+    "downbeat_known": false,
+    "variable_tempo_checked": false
+  },
+  "excerpts": [
+    {
+      "start_seconds": 0,
+      "end_seconds": 20,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 30,
+      "end_seconds": 50,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 60,
+      "end_seconds": 80,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 90,
+      "end_seconds": 110,
+      "reviewed": false
+    },
+    {
+      "start_seconds": 120,
+      "end_seconds": 140,
+      "reviewed": false
+    }
+  ],
+  "generated_directory": "scratchpad/audio/otis",
+  "status": "automatic analysis only; no verified beat map or transcription"
+}

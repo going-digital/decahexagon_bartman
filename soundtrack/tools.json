@@ -1,0 +1,7 @@
+{
+  "ffmpeg": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "numpy": "2.4.2",
+  "analysis_rate": 22050,
+  "hop": 220,
+  "scipy": "1.17.1"
+}
