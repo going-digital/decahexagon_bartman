@@ -156,3 +156,54 @@ wave delay is still running, plus wave-based flip requests. The planar display
 supports rotation modes0..9 but does not yet implement the PC camera, flips,
 palette/music transitions or their gating. Hyper-entry wave95 and full level
 progression are not enabled by this build option.
+
+## Optional held-key steering assist
+
+The assist is **off by default**, independently of `BUILD_DEBUG`. Enable it
+only in a development build:
+
+```
+tools/build.sh CHEAT_MODE=1 program=out/hexagon_cheat EXTRA_CFLAGS="-DBUILD_DEBUG=0"
+FSUAE_ADF="$PWD/out/hexagon_cheat.adf" tools/run_fsuae.sh pal512
+```
+
+Hold the top-row **8** key during play. A small 8 at the upper right indicates
+that the key is held. The assist overrides left/right while
+held and immediately returns to ordinary input on release. It looks ahead
+48 simulation ticks over existing walls, chooses a route toward a safe sector,
+and uses the normal turn rate and collision handling. Route planning runs at
+10 Hz to bound its 68000 cost; steering follows that route at 60 Hz. It is an aid, not
+invulnerability: an already trapped player, future spawns or morph changes can
+still defeat it. No timing, wall geometry, collision or RNG rules are bypassed.
+
+For a release, use the dedicated target, which forces cheats off even if the
+outer command or environment requests `CHEAT_MODE=1`:
+
+```
+tools/build.sh release
+```
+
+`cheat.c` is excluded from the disabled link. Preprocessor guards remove its
+call, the input field, key state and raw-key handler. The generated
+`obj/cheat_config.h` changes when the switch changes and invalidates all target
+objects; **switching off needs no clean or `-B`**. Other build flag changes still
+require `-B`. Do not reuse the development disk as a release artifact.
+
+Every disabled target link runs `tools/check_no_cheats.py`, which fails if the
+link map contains `cheat.o` or the ELF symbol table contains cheat symbols.
+This supplements compile-time exclusion; it does not depend on runtime flags
+or dead-code elimination. `make test-cheat` exercises obstacle avoidance in
+both directions, non-mutating prediction, command exclusion, and preserved
+lethal collision. For a macOS emulator smoke test, compile the host-only Swift helper, focus
+FS-UAE at its title/game-over screen, and run it:
+
+```
+swiftc tools/fsuae_assist.swift -o out/fsuae_assist
+osascript tools/fsuae_keys.applescript focus
+out/fsuae_assist
+```
+
+It starts play, holds 8 for20 seconds, captures during the hold, releases 8,
+and captures again. macOS event-posting permission is required. The helper
+is never linked into the game. `System Events`' text `key down` did not sustain
+the ordinary 8 key in our test; this helper posts explicit hardware key events.

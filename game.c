@@ -2,6 +2,9 @@
 #include "pc_morph.h"
 #include "system.h"
 #include "patterns.h"
+#if CHEAT_MODE
+#include "cheat.h"
+#endif
 #ifdef MUSIC_LSP
 #include "audio.h"
 #endif
@@ -75,6 +78,9 @@ static void project_state(void) {
     gamestate.player_angle=pc_render_angle(player.angle ? 360-player.angle:0);
 }
 static void reset_run(void) {
+#if CHEAT_MODE
+    cheat_reset();
+#endif
     pc_world_reset(&game_world);pc_morph_reset(&morph);patterns_reset();
     player.angle=player.previous_angle=30;player.hit=player.blocked=0;
     project_state();
@@ -99,7 +105,12 @@ static void update_playing(const InputState *in) {
     if (++gamestate.time_subsecond_frames>=FRAME_RATE) {
         gamestate.time_subsecond_frames=0;++gamestate.time_seconds;
     }
-    player.angle=pc_turn(player.angle,in->held,PC_START_STAGE==2 ? 9:7);
+    UBYTE held=in->held;
+#if CHEAT_MODE
+    if (in->cheat_held) held=cheat_steer(&player,&game_world,morph.sides,PC_START_STAGE==2 ? 9:7);
+    else cheat_reset();
+#endif
+    player.angle=pc_turn(player.angle,held,PC_START_STAGE==2 ? 9:7);
     pc_morph_tick(&morph,&game_world);
     project_state();
     /* Collision sees pre-motion distances and can restore the prior angle.

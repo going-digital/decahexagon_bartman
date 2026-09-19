@@ -1,6 +1,7 @@
 on run argv
     tell application "System Events"
         tell process "fs-uae" to set frontmost to true
+        if item 1 of argv is "focus" then return
         if item 1 of argv is "screenshot" then
             keystroke "s" using command down
         else if item 1 of argv is "start" then

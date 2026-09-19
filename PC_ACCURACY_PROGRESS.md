@@ -301,3 +301,54 @@ through the death flash and game over:
 Verification instances were closed. The default PAL Hexagon normal/packed
 releases were rebuilt (250,868/151,684 executable bytes), with packing
 self-check passing; `out/hexagon.adf` remains the default Hexagon release.
+
+## Optional development steering assist
+
+`CHEAT_MODE=1` adds a held-top-row-8 steering aid. It chooses ordinary left/right
+input using a 48-tick look-ahead over existing records. Collisions, turn rates,
+RNG and wall geometry are unchanged. Releasing 8 restores normal input. This is
+not invulnerability or a guarantee against future spawns/morph changes.
+
+`CHEAT_MODE=0` is the default, including debug builds. The disabled source list
+omits `cheat.c`; preprocessor guards remove the call, input field, raw-key
+handler and held-key state. A generated configuration header invalidates target
+objects whenever the option changes, preventing stale cheat-enabled objects
+without requiring a clean build. Every disabled link audits its ELF symbols
+and map for cheat functions/data/object inclusion. The audit was also tested
+against the enabled binary and correctly rejected its `k_cheat` symbol.
+
+Host assist tests pass for left/right escape routes, look-ahead without mutation,
+command exclusion and an unavoidable lethal ring (normal collision remains).
+The full PC reference suite and stress tests pass. The route search caches sector indices and skips searching when remaining
+still is safe. Initial long captures were misread as a performance/display
+problem; a disabled-build control showed the normal post-death score blink.
+
+The final planner computes wall danger intervals and future blocked-sector
+lookups instead of repeatedly simulating every wall. It replans at10 Hz while
+steering at60 Hz, and invalidates its cached route on release, restart, side
+count or speed changes. `tools/build.sh release` explicitly forces
+`CHEAT_MODE=0` and runs the binary audit, even when the parent make command
+requests `CHEAT_MODE=1`.
+
+The original AppleScript `key down "8"` automation did not sustain the input.
+A direct macOS key-event test reached19.35 seconds on the 512 KB A500 and died
+shortly after releasing8, matching the intended ordinary-collision behavior.
+[Post-release result](scratchpad/fsuae/pal512/fs-uae-crop-2609191204-01.png).
+`tools/fsuae_assist.swift` now provides a reproducible host-only hold/release
+smoke test. Cheat builds show a small8 while the key is held; that indicator is
+also completely excluded from release builds.
+
+The final host assist suite includes96 seeded normal-game simulations with
+real collision (32 per base level), each capped at60 seconds. Hexagon minimum
+survival was22.67 seconds and mean48.76; Hexagoner/Hexagonest all reached the
+60-second cap. This is regression coverage, not a guarantee of perfect play.
+Release builds were switched directly from enabled to disabled without `-B`,
+and `CHEAT_MODE=1 release` correctly forced the option off. Normal/packed
+release artifacts were rebuilt and the no-cheat audit passed.
+
+Final FS-UAE 512 KB Chip-only evidence:
+[assisted play at10.41 seconds with held8 indicator](scratchpad/fsuae/pal512/fs-uae-crop-2609191206-01.png),
+[death at21.10 after release, indicator absent](scratchpad/fsuae/pal512/fs-uae-crop-2609191207-01.png).
+The verification instance was closed. `out/hexagon_cheat.adf` is the separate
+development disk; `out/hexagon.adf` and `out/hexagon_packed.adf` are audited
+cheat-free release builds. Unit checks also pass under UBSan.

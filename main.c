@@ -277,6 +277,16 @@ int main() {
                 }
 #endif
 
+#if CHEAT_MODE
+        // Small 8 at the upper right confirms that held-key assist is active.
+        if (input.cheat_held) {
+            static const UBYTE cheat_indicator[5]={0x3c,0x66,0x3c,0x66,0x3c};
+            blit_wait();
+            for (WORD y=0;y<10;++y)
+                ((UBYTE*)bitplane_fg2)[(26+y)*SCREEN_WIDTH_BYTES+SCREEN_WIDTH_BYTES-2]=cheat_indicator[y/2];
+        }
+#endif
+
         // Clear next frame's draw buffer with the blitter (async): it overlaps
         // the copper writes + Wait10 + next frame's input/update, so it's
         // effectively free. (cpu_cls was ~2.5ms of blocking CPU time.)

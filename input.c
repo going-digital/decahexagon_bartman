@@ -11,6 +11,10 @@
 #define KEY_RIGHT  0x4e
 #define KEY_SPACE  0x40
 #define KEY_ESC    0x45
+#if CHEAT_MODE
+#define KEY_CHEAT  0x08
+static UBYTE k_cheat;
+#endif
 
 // Held key state, maintained across polls from press/release events.
 static UBYTE k_left, k_right, k_space, k_esc;
@@ -55,6 +59,9 @@ static void kbd_scan(void) {
         UBYTE up = code & 0x80;
 
         switch (code & 0x7f) {
+#if CHEAT_MODE
+        case KEY_CHEAT: k_cheat = !up; break;
+#endif
         case KEY_LEFT:  k_left  = !up; break;
         case KEY_RIGHT: k_right = !up; break;
         case KEY_SPACE: k_space = !up; if (!up) k_space_edge = 1; break;
@@ -70,6 +77,9 @@ void input_init(void) {
     // Make sure the keyboard serial port is in input mode.
     ciaa->ciacra &= (UBYTE)~CIACRAF_SPMODE;
     prev_fire = 0;
+#if CHEAT_MODE
+    k_cheat = 0;
+#endif
     k_left = k_right = k_space = k_esc = 0;
     k_space_edge = k_esc_edge = 0;
     kbd_scan(); // drain anything already pending
@@ -78,6 +88,9 @@ void input_init(void) {
 
 void input_poll(InputState* in) {
     kbd_scan();
+#if CHEAT_MODE
+    in->cheat_held = k_cheat;
+#endif
 
     UWORD joy = custom->joy1dat;
     WORD lmb = MouseLeft();

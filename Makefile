@@ -12,6 +12,14 @@ VPATH = support
 cpp_sources :=
 cpp_objects :=
 c_sources := main.c system.c coplist.c blitter.c trig.c audio.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c support/gcc8_c_support.c
+# Default release behavior: omit the entire steering-assist translation unit.
+CHEAT_MODE ?= 0
+ifneq ($(CHEAT_MODE),0)
+ifneq ($(CHEAT_MODE),1)
+$(error CHEAT_MODE must be 0 or 1)
+endif
+c_sources += cheat.c
+endif
 PC_CORE_SELFTEST ?= 0
 ifeq ($(PC_CORE_SELFTEST),1)
 c_sources += tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/clip_checks.c
@@ -54,7 +62,7 @@ endif
 #   make EXTRA_CFLAGS="-DTARGET_NTSC"          60Hz NTSC timing
 EXTRA_CFLAGS ?=
 
-CCFLAGS   = -g -MP -MMD -m68000 -Ofast -nostdlib -Wextra -Wno-unused-function -Wno-volatile-register-var -Wno-missing-field-initializers -fomit-frame-pointer -fno-tree-loop-distribution -flto -fwhole-program -fno-exceptions -ffunction-sections -fdata-sections $(EXTRA_CFLAGS) $(SELFTEST_CFLAGS)
+CCFLAGS   = -g -MP -MMD -m68000 -Ofast -nostdlib -Wextra -Wno-unused-function -Wno-volatile-register-var -Wno-missing-field-initializers -fomit-frame-pointer -fno-tree-loop-distribution -flto -fwhole-program -fno-exceptions -ffunction-sections -fdata-sections $(EXTRA_CFLAGS) $(SELFTEST_CFLAGS) -include obj/cheat_config.h
 CPPFLAGS  = $(CCFLAGS) -fno-rtti -fcoroutines -fno-use-cxa-atexit
 ASFLAGS   = -mcpu=68000 -g --register-prefix-optional -I$(SDKDIR)
 LDFLAGS   = -Wl,--emit-relocs,--gc-sections,-Ttext=0,-Map=$(OUT).map
@@ -93,6 +101,9 @@ $(OUT).elf: $(objects)
 	$(info Linking $(program).elf)
 	@$(CC) $(CCFLAGS) $(LDFLAGS) $(objects) -o $@
 	@m68k-amiga-elf-objdump --disassemble --no-show-raw-ins --visualize-jumps -S $@ >$(OUT).s
+ifeq ($(CHEAT_MODE),0)
+	@python3 tools/check_no_cheats.py $@ $(OUT).map
+endif
 
 clean:
 	$(info Cleaning...)
@@ -141,3 +152,27 @@ ifdef WINDOWS
 else
 	@mkdir -p $@
 endif
+
+# A changed switch invalidates every object, including keyboard/input layout.
+# The script preserves mtime when unchanged. No -B/clean is needed to turn off.
+.PHONY: FORCE_CHEAT_CONFIG
+obj/cheat_config.h: FORCE_CHEAT_CONFIG | obj
+	@python3 tools/write_cheat_config.py $(CHEAT_MODE) $@
+$(objects): obj/cheat_config.h
+
+.PHONY: test-cheat
+test-cheat:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -DCHEAT_MODE=1 pc_core.c pc_world.c cheat.c tests/cheat_test.c -o out/cheat_test
+	./out/cheat_test
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -DCHEAT_MODE=1 pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c cheat.c tests/cheat_run_test.c -o out/cheat_run_test
+	./out/cheat_run_test
+
+.PHONY: check-no-cheats
+check-no-cheats: $(OUT).elf
+	@python3 tools/check_no_cheats.py $(OUT).elf $(OUT).map
+
+# Deliberately override even an inherited/command-line CHEAT_MODE=1.
+.PHONY: release
+release:
+	$(MAKE) CHEAT_MODE=0 EXTRA_CFLAGS="$(EXTRA_CFLAGS) -DBUILD_DEBUG=0" all check-no-cheats

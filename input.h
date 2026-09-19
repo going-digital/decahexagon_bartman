@@ -10,8 +10,12 @@
 // to one frame. Upgrade to a level-2 handler if that latency ever matters.
 
 #include <exec/types.h>
+#include "config.h"
 
 typedef struct sInputState {
+#if CHEAT_MODE
+    UBYTE cheat_held;  // top-row 8, held only; absent from release layout
+#endif
     UBYTE held;        // PC_INPUT_POSITIVE / PC_INPUT_NEGATIVE, both preserved
     WORD  turn;        // -1 = anticlockwise (left), +1 = clockwise (right), 0
     UBYTE fire;        // 1 while select/confirm (space or joy fire) is held
