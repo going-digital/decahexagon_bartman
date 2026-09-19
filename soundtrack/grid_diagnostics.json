@@ -1,0 +1,452 @@
+{
+  "courtesy": {
+    "status": "unreviewed; phase offsets include attack/window bias and metrical ambiguity",
+    "half_base_double_grids": [
+      {
+        "bpm": 65.01550000000033,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.0,
+            "peak_to_average_grid_score": 5.74728687963261
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 7.2222753866266345
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 7.188572852116493
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 11.541255367395122
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": -0.22350439510578135,
+            "peak_to_average_grid_score": 8.159946891070554
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": -0.22350439510578135,
+            "peak_to_average_grid_score": 6.427485797463166
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 7.303253580391656
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 8.898707136123841
+          },
+          {
+            "start_seconds": 160,
+            "best_offset_seconds": 0.23071421430274197,
+            "peak_to_average_grid_score": 8.392046318576462
+          },
+          {
+            "start_seconds": 180,
+            "best_offset_seconds": -0.22350439510578135,
+            "peak_to_average_grid_score": 8.03454746716688
+          }
+        ]
+      },
+      {
+        "bpm": 130.03100000000066,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.0,
+            "peak_to_average_grid_score": 3.742373951962072
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 7.136350634453997
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 6.146654633933482
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": -0.23071421430274203,
+            "peak_to_average_grid_score": 9.50009327964463
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 6.857051664448598
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 5.656011744225789
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 6.535658739303309
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 8.160468077386543
+          },
+          {
+            "start_seconds": 160,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 8.772396556924123
+          },
+          {
+            "start_seconds": 180,
+            "best_offset_seconds": -0.2271093047042617,
+            "peak_to_average_grid_score": 8.345736469188894
+          }
+        ]
+      },
+      {
+        "bpm": 260.0620000000013,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.001802454799240169,
+            "peak_to_average_grid_score": 3.6025743324621637
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": 0.005407364397720521,
+            "peak_to_average_grid_score": 5.686193862847044
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": 0.001802454799240169,
+            "peak_to_average_grid_score": 3.9410776673077925
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": 0.001802454799240169,
+            "peak_to_average_grid_score": 5.334838761884361
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": 0.003604909598480338,
+            "peak_to_average_grid_score": 4.5349200129484455
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": 0.003604909598480338,
+            "peak_to_average_grid_score": 4.847978196287489
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": 0.003604909598480338,
+            "peak_to_average_grid_score": 6.37804626166624
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": 0.003604909598480338,
+            "peak_to_average_grid_score": 7.702512467056234
+          },
+          {
+            "start_seconds": 160,
+            "best_offset_seconds": 0.003604909598480338,
+            "peak_to_average_grid_score": 7.756179481305647
+          },
+          {
+            "start_seconds": 180,
+            "best_offset_seconds": 0.005407364397720521,
+            "peak_to_average_grid_score": 7.03275935207655
+          }
+        ]
+      }
+    ]
+  },
+  "focus": {
+    "status": "unreviewed; phase offsets include attack/window bias and metrical ambiguity",
+    "half_base_double_grids": [
+      {
+        "bpm": 43.496999999999815,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.34485136905993663,
+            "peak_to_average_grid_score": 8.272182583214853
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": -0.3340747637768136,
+            "peak_to_average_grid_score": 8.61967740909108
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": 0.3556279743430597,
+            "peak_to_average_grid_score": 8.114126176952336
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": -0.6789261328367502,
+            "peak_to_average_grid_score": 8.554367275835
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": -0.6789261328367502,
+            "peak_to_average_grid_score": 10.298053524260876
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": -0.6789261328367502,
+            "peak_to_average_grid_score": 12.625555350231144
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": -0.6789261328367502,
+            "peak_to_average_grid_score": 10.205771673641923
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": 0.0,
+            "peak_to_average_grid_score": 5.0240361094105355
+          }
+        ]
+      },
+      {
+        "bpm": 86.99399999999963,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": -0.3394630664183751,
+            "peak_to_average_grid_score": 9.049785605783295
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": -0.3394630664183751,
+            "peak_to_average_grid_score": 9.625721392493858
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": -0.3394630664183751,
+            "peak_to_average_grid_score": 8.726186778576809
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": 0.005388302641561538,
+            "peak_to_average_grid_score": 8.862908574904123
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": 0.005388302641561538,
+            "peak_to_average_grid_score": 10.497129782985947
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": 0.01077660528312302,
+            "peak_to_average_grid_score": 10.000096417360309
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": 0.01077660528312302,
+            "peak_to_average_grid_score": 8.379669385871301
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": 0.005388302641561538,
+            "peak_to_average_grid_score": 5.168500702613015
+          }
+        ]
+      },
+      {
+        "bpm": 173.98799999999926,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.00538830264156151,
+            "peak_to_average_grid_score": 7.17027268882628
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": 0.00538830264156151,
+            "peak_to_average_grid_score": 7.75336873468651
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": 0.00538830264156151,
+            "peak_to_average_grid_score": 7.589120969509941
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": 0.00538830264156151,
+            "peak_to_average_grid_score": 7.666260494197885
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": 0.008082453962342251,
+            "peak_to_average_grid_score": 7.417853473448739
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": 0.01077660528312302,
+            "peak_to_average_grid_score": 7.093705330367252
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": 0.01077660528312302,
+            "peak_to_average_grid_score": 6.84331044738619
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": -0.1670373818884068,
+            "peak_to_average_grid_score": 4.664051220242879
+          }
+        ]
+      }
+    ]
+  },
+  "otis": {
+    "status": "unreviewed; phase offsets include attack/window bias and metrical ambiguity",
+    "half_base_double_grids": [
+      {
+        "bpm": 33.75449999999981,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.6665777896280534,
+            "peak_to_average_grid_score": 6.125653231310113
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": -0.22219259654268453,
+            "peak_to_average_grid_score": 7.147191968845868
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": 0.0,
+            "peak_to_average_grid_score": 7.263585385334494
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": -0.31940185753010897,
+            "peak_to_average_grid_score": 6.933665865683481
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": -0.2083055592587667,
+            "peak_to_average_grid_score": 6.319685241675952
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": 0.23607963382660224,
+            "peak_to_average_grid_score": 7.488766871964084
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": 0.013887037283917825,
+            "peak_to_average_grid_score": 6.0649685633294075
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": 0.013887037283917825,
+            "peak_to_average_grid_score": 5.226242387248256
+          }
+        ]
+      },
+      {
+        "bpm": 67.50899999999962,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": -0.22219259654268447,
+            "peak_to_average_grid_score": 5.905715660062407
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": -0.22219259654268447,
+            "peak_to_average_grid_score": 6.8804128626715615
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": 0.0,
+            "peak_to_average_grid_score": 7.13853726767629
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": 0.006943518641958912,
+            "peak_to_average_grid_score": 8.899046325211202
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": -0.2083055592587667,
+            "peak_to_average_grid_score": 6.035755707144373
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": 0.23607963382660224,
+            "peak_to_average_grid_score": 7.271094602853919
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": 0.01388703728391777,
+            "peak_to_average_grid_score": 6.088092493694136
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": 0.01388703728391777,
+            "peak_to_average_grid_score": 4.838311021665655
+          }
+        ]
+      },
+      {
+        "bpm": 135.01799999999923,
+        "windows": [
+          {
+            "start_seconds": 0,
+            "best_offset_seconds": 0.22219259654268447,
+            "peak_to_average_grid_score": 5.713713659527642
+          },
+          {
+            "start_seconds": 20,
+            "best_offset_seconds": 0.22219259654268447,
+            "peak_to_average_grid_score": 6.305327810041936
+          },
+          {
+            "start_seconds": 40,
+            "best_offset_seconds": 0.0,
+            "peak_to_average_grid_score": 5.715214651878419
+          },
+          {
+            "start_seconds": 60,
+            "best_offset_seconds": -0.2152490779007256,
+            "peak_to_average_grid_score": 5.78940515166957
+          },
+          {
+            "start_seconds": 80,
+            "best_offset_seconds": -0.21177731857974613,
+            "peak_to_average_grid_score": 5.6445399617620104
+          },
+          {
+            "start_seconds": 100,
+            "best_offset_seconds": -0.2083055592587667,
+            "peak_to_average_grid_score": 6.431971638735984
+          },
+          {
+            "start_seconds": 120,
+            "best_offset_seconds": 0.01041527796293834,
+            "peak_to_average_grid_score": 5.126100117219197
+          },
+          {
+            "start_seconds": 140,
+            "best_offset_seconds": 0.01388703728391777,
+            "peak_to_average_grid_score": 4.101456626559846
+          }
+        ]
+      }
+    ]
+  }
+}

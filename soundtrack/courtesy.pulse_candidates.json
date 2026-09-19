@@ -1,0 +1,1136 @@
+{
+  "interval_seconds": [
+    0,
+    20
+  ],
+  "method": "two-term greedy pulse spectral fit",
+  "limitations": [
+    "equal-tempered fixed pitches only",
+    "no detune, sweeps, wave or noise model",
+    "duty and octave ambiguous in a mixed recording",
+    "events are not a transcription; no hardware channel identities"
+  ],
+  "synthesis_gain": 1.0,
+  "events": [
+    {
+      "start_seconds": 0.039909297052154194,
+      "end_seconds": 0.4390022675736961,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 0.19954648526077096,
+      "end_seconds": 0.3990929705215419,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 0.3990929705215419,
+      "end_seconds": 0.5487528344671202,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 0.4390022675736961,
+      "end_seconds": 0.5287981859410431,
+      "midi_candidate": 39,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 0.5287981859410431,
+      "end_seconds": 1.6761904761904762,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 0.5487528344671202,
+      "end_seconds": 0.8680272108843538,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 0.8680272108843538,
+      "end_seconds": 0.9678004535147392,
+      "midi_candidate": 77,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.017687074829932,
+      "end_seconds": 1.0975056689342404,
+      "midi_candidate": 58,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.1174603174603175,
+      "end_seconds": 1.3269841269841272,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.3269841269841272,
+      "end_seconds": 1.4566893424036282,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.4566893424036282,
+      "end_seconds": 1.6761904761904762,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.6761904761904762,
+      "end_seconds": 1.7560090702947846,
+      "midi_candidate": 39,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.6761904761904762,
+      "end_seconds": 1.7560090702947846,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.7560090702947846,
+      "end_seconds": 2.1650793650793654,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.8158730158730159,
+      "end_seconds": 1.8956916099773244,
+      "midi_candidate": 77,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 1.9156462585034013,
+      "end_seconds": 2.1650793650793654,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 2.214965986394558,
+      "end_seconds": 2.5841269841269843,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 2.254875283446712,
+      "end_seconds": 2.454421768707483,
+      "midi_candidate": 39,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 2.454421768707483,
+      "end_seconds": 2.743764172335601,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 2.8036281179138323,
+      "end_seconds": 2.983219954648526,
+      "midi_candidate": 51,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 2.943310657596372,
+      "end_seconds": 3.0630385487528344,
+      "midi_candidate": 82,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 2.983219954648526,
+      "end_seconds": 3.0829931972789115,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.09297052154195,
+      "end_seconds": 3.1727891156462587,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.172789115646258,
+      "end_seconds": 3.3124716553287983,
+      "midi_candidate": 47,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.2426303854875282,
+      "end_seconds": 3.3124716553287983,
+      "midi_candidate": 83,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.3523809523809525,
+      "end_seconds": 3.541950113378685,
+      "midi_candidate": 47,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.3523809523809525,
+      "end_seconds": 3.521995464852608,
+      "midi_candidate": 83,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.5219954648526075,
+      "end_seconds": 3.7913832199546484,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.5619047619047617,
+      "end_seconds": 3.6317460317460317,
+      "midi_candidate": 70,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.651700680272109,
+      "end_seconds": 3.741496598639456,
+      "midi_candidate": 82,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.7714285714285714,
+      "end_seconds": 4.449886621315192,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 3.881179138321995,
+      "end_seconds": 4.090702947845805,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.090702947845805,
+      "end_seconds": 4.220408163265306,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.220408163265306,
+      "end_seconds": 4.33015873015873,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.370068027210884,
+      "end_seconds": 4.449886621315192,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.449886621315192,
+      "end_seconds": 4.5396825396825395,
+      "midi_candidate": 39,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.449886621315192,
+      "end_seconds": 4.5396825396825395,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.5396825396825395,
+      "end_seconds": 5.956462585034013,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 4.819047619047619,
+      "end_seconds": 5.008616780045352,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 5.008616780045351,
+      "end_seconds": 5.1682539682539685,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 5.1682539682539685,
+      "end_seconds": 5.238095238095238,
+      "midi_candidate": 70,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 5.238095238095238,
+      "end_seconds": 5.477551020408163,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 5.597278911564626,
+      "end_seconds": 5.956462585034013,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 5.956462585034013,
+      "end_seconds": 6.156009070294784,
+      "midi_candidate": 39,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 5.986394557823129,
+      "end_seconds": 6.265759637188209,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.156009070294784,
+      "end_seconds": 6.435374149659864,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.495238095238095,
+      "end_seconds": 6.684807256235827,
+      "midi_candidate": 51,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.545124716553288,
+      "end_seconds": 6.614965986394558,
+      "midi_candidate": 70,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.644897959183673,
+      "end_seconds": 6.764625850340136,
+      "midi_candidate": 82,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.684807256235827,
+      "end_seconds": 6.764625850340136,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.764625850340136,
+      "end_seconds": 6.834467120181406,
+      "midi_candidate": 51,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.7746031746031745,
+      "end_seconds": 6.864399092970522,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.864399092970522,
+      "end_seconds": 7.243537414965987,
+      "midi_candidate": 47,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 6.904308390022676,
+      "end_seconds": 7.203628117913833,
+      "midi_candidate": 83,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.2136054421768705,
+      "end_seconds": 7.453061224489796,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.243537414965986,
+      "end_seconds": 7.313378684807256,
+      "midi_candidate": 70,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.383219954648526,
+      "end_seconds": 7.5029478458049885,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.453061224489796,
+      "end_seconds": 7.532879818594105,
+      "midi_candidate": 51,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.5029478458049885,
+      "end_seconds": 7.612698412698413,
+      "midi_candidate": 50,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.532879818594104,
+      "end_seconds": 9.658049886621315,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.612698412698412,
+      "end_seconds": 7.782312925170068,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.782312925170068,
+      "end_seconds": 7.8920634920634924,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 7.90204081632653,
+      "end_seconds": 8.25124716553288,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 8.25124716553288,
+      "end_seconds": 8.351020408163265,
+      "midi_candidate": 77,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 8.351020408163265,
+      "end_seconds": 8.480725623582767,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 8.480725623582765,
+      "end_seconds": 8.710204081632654,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 8.710204081632654,
+      "end_seconds": 8.829931972789115,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 8.829931972789115,
+      "end_seconds": 8.969614512471656,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 8.969614512471654,
+      "end_seconds": 9.049433106575965,
+      "midi_candidate": 77,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.049433106575963,
+      "end_seconds": 9.179138321995465,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.189115646258504,
+      "end_seconds": 9.268934240362812,
+      "midi_candidate": 77,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.41859410430839,
+      "end_seconds": 9.498412698412698,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.528344671201815,
+      "end_seconds": 9.83764172335601,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.658049886621315,
+      "end_seconds": 9.847619047619048,
+      "midi_candidate": 39,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.847619047619048,
+      "end_seconds": 10.136961451247165,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 9.877551020408163,
+      "end_seconds": 9.947392290249434,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.186848072562357,
+      "end_seconds": 10.366439909297052,
+      "midi_candidate": 51,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.336507936507937,
+      "end_seconds": 10.436281179138321,
+      "midi_candidate": 82,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.366439909297052,
+      "end_seconds": 10.456235827664399,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.466213151927438,
+      "end_seconds": 10.556009070294785,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.556009070294785,
+      "end_seconds": 10.815419501133787,
+      "midi_candidate": 47,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.695691609977324,
+      "end_seconds": 10.815419501133787,
+      "midi_candidate": 83,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.815419501133787,
+      "end_seconds": 10.895238095238096,
+      "midi_candidate": 47,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.815419501133787,
+      "end_seconds": 10.935147392290249,
+      "midi_candidate": 59,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.895238095238096,
+      "end_seconds": 11.154648526077098,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 10.945124716553288,
+      "end_seconds": 11.024943310657596,
+      "midi_candidate": 70,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 11.124716553287982,
+      "end_seconds": 12.45170068027211,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 11.184580498866213,
+      "end_seconds": 11.27437641723356,
+      "midi_candidate": 58,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 11.27437641723356,
+      "end_seconds": 11.463945578231293,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 11.493877551020407,
+      "end_seconds": 11.603628117913832,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 11.603628117913832,
+      "end_seconds": 11.96281179138322,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.03265306122449,
+      "end_seconds": 12.10249433106576,
+      "midi_candidate": 38,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.132426303854874,
+      "end_seconds": 12.202267573696146,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.202267573696146,
+      "end_seconds": 12.272108843537415,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.312018140589569,
+      "end_seconds": 12.401814058956916,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.401814058956916,
+      "end_seconds": 12.541496598639457,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.51156462585034,
+      "end_seconds": 13.309750566893424,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.541496598639455,
+      "end_seconds": 12.850793650793651,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.880725623582766,
+      "end_seconds": 12.960544217687074,
+      "midi_candidate": 77,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 12.960544217687074,
+      "end_seconds": 13.110204081632654,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.160090702947846,
+      "end_seconds": 13.299773242630385,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.299773242630385,
+      "end_seconds": 13.379591836734694,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.359637188208616,
+      "end_seconds": 13.778684807256235,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.658956916099774,
+      "end_seconds": 13.808616780045352,
+      "midi_candidate": 38,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.81859410430839,
+      "end_seconds": 13.88843537414966,
+      "midi_candidate": 66,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.868480725623582,
+      "end_seconds": 13.95827664399093,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.898412698412699,
+      "end_seconds": 14.038095238095238,
+      "midi_candidate": 51,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 13.968253968253968,
+      "end_seconds": 14.127891156462585,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.048072562358277,
+      "end_seconds": 14.127891156462585,
+      "midi_candidate": 82,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.157823129251701,
+      "end_seconds": 14.247619047619049,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.257596371882086,
+      "end_seconds": 14.576870748299319,
+      "midi_candidate": 47,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.327437641723355,
+      "end_seconds": 14.43718820861678,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.606802721088435,
+      "end_seconds": 14.816326530612246,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.726530612244899,
+      "end_seconds": 14.806349206349207,
+      "midi_candidate": 38,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 14.936054421768707,
+      "end_seconds": 15.005895691609977,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.075736961451247,
+      "end_seconds": 15.275283446712018,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.095691609977324,
+      "end_seconds": 15.205442176870749,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.33514739229025,
+      "end_seconds": 15.444897959183674,
+      "midi_candidate": 40,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.39501133786848,
+      "end_seconds": 15.494784580498866,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.444897959183674,
+      "end_seconds": 15.514739229024944,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.504761904761905,
+      "end_seconds": 15.74421768707483,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.564625850340136,
+      "end_seconds": 15.644444444444444,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.644444444444444,
+      "end_seconds": 15.724263038548752,
+      "midi_candidate": 75,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.853968253968254,
+      "end_seconds": 15.943764172335602,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.903854875283447,
+      "end_seconds": 15.973696145124716,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 15.9437641723356,
+      "end_seconds": 16.023582766439908,
+      "midi_candidate": 38,
+      "duty_candidate": 0.25,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.003628117913834,
+      "end_seconds": 16.093424036281178,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.02358276643991,
+      "end_seconds": 16.203174603174602,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.30294784580499,
+      "end_seconds": 16.392743764172337,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.362811791383223,
+      "end_seconds": 16.44263038548753,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.432653061224492,
+      "end_seconds": 16.532426303854876,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.45260770975057,
+      "end_seconds": 16.662131519274375,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.771882086167803,
+      "end_seconds": 16.881632653061224,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.831746031746032,
+      "end_seconds": 16.901587301587302,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.93151927437642,
+      "end_seconds": 17.12108843537415,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 16.941496598639457,
+      "end_seconds": 17.06122448979592,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.230839002267576,
+      "end_seconds": 17.33061224489796,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.360544217687078,
+      "end_seconds": 17.59002267573696,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.430385487528348,
+      "end_seconds": 17.52018140589569,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.729705215419504,
+      "end_seconds": 17.819501133786847,
+      "midi_candidate": 82,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.76961451247166,
+      "end_seconds": 17.839455782312925,
+      "midi_candidate": 63,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.829478458049888,
+      "end_seconds": 17.939229024943312,
+      "midi_candidate": 41,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.87936507936508,
+      "end_seconds": 17.94920634920635,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 17.939229024943312,
+      "end_seconds": 18.07891156462585,
+      "midi_candidate": 47,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.1687074829932,
+      "end_seconds": 18.248526077097505,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.21859410430839,
+      "end_seconds": 18.298412698412697,
+      "midi_candidate": 45,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.278458049886623,
+      "end_seconds": 18.527891156462584,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.328344671201815,
+      "end_seconds": 18.398185941043085,
+      "midi_candidate": 65,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.62766439909297,
+      "end_seconds": 18.727437641723355,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.677551020408163,
+      "end_seconds": 18.75736961451247,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.787301587301588,
+      "end_seconds": 18.897052154195013,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.787301587301588,
+      "end_seconds": 18.97687074829932,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 18.946938775510205,
+      "end_seconds": 19.05668934240363,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.086621315192744,
+      "end_seconds": 19.17641723356009,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.19637188208617,
+      "end_seconds": 19.435827664399092,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.286167800453516,
+      "end_seconds": 19.365986394557822,
+      "midi_candidate": 37,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.425850340136055,
+      "end_seconds": 19.50566893424036,
+      "midi_candidate": 36,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.555555555555557,
+      "end_seconds": 19.65532879818594,
+      "midi_candidate": 36,
+      "duty_candidate": 0.5,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.595464852607712,
+      "end_seconds": 19.705215419501133,
+      "midi_candidate": 46,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    },
+    {
+      "start_seconds": 19.705215419501137,
+      "end_seconds": 19.894784580498865,
+      "midi_candidate": 39,
+      "duty_candidate": 0.125,
+      "status": "unreviewed spectral hypothesis; channel unknown"
+    }
+  ]
+}
