@@ -9,7 +9,7 @@ static uint16_t draw(void *unused,uint16_t bound) {
     return (uint16_t)(rng_state%bound);
 }
 int main(void) {
-    for (unsigned stage=0;stage<2;++stage) {
+    for (unsigned stage=0;stage<3;++stage) {
     unsigned peak=0,morphs=0,side_mask=0;
     /* Force survival to exercise scheduling/storage, not an input replay or
      * a claim of reference-equivalent complete runs. Stop at stage boundary. */

@@ -12,12 +12,12 @@
 //#define TARGET_NTSC
 
 // Temporary playable-stage build selection while the six-level menu and
-// hyper transitions are being implemented. 0=Hexagon, 1=Hexagoner.
+// hyper transitions are being implemented. 0=Hexagon, 1=Hexagoner, 2=Hexagonest.
 #ifndef PC_START_STAGE
 #define PC_START_STAGE 0
 #endif
-#if PC_START_STAGE < 0 || PC_START_STAGE > 1
-#error "PC_START_STAGE currently supports 0 (Hexagon) or 1 (Hexagoner)"
+#if PC_START_STAGE < 0 || PC_START_STAGE > 2
+#error "PC_START_STAGE currently supports 0 (Hexagon), 1 (Hexagoner), or 2 (Hexagonest)"
 #endif
 
 // Display cadence is independent of the 60 Hz reference simulation.

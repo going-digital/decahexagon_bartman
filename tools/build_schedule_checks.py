@@ -5,7 +5,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent.parent
 seen=set();out=[]
 rows=[]
-for name in ('pc_selection_normal.csv.gz','pc_selection_hexagoner.csv.gz'):
+for name in ('pc_selection_normal.csv.gz','pc_selection_hexagoner.csv.gz','pc_selection_hexagonest.csv.gz'):
  with gzip.open(root/'tests/fixtures'/name,'rt') as f:
   rows.extend(csv.DictReader(f))
 for r in rows:

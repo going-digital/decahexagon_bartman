@@ -261,6 +261,8 @@ int main() {
 #if PC_CORE_SELFTEST
         // Visible target-executed test result: PASS or FAIL at top left.
         // This overlay is excluded from normal builds.
+        // Finish DMA before the CPU modifies the same draw buffer.
+        blit_wait();
         static const UBYTE pass[4][5] = {{14,9,14,8,8},{6,9,15,9,9},{7,8,6,1,14},{7,8,6,1,14}};
         static const UBYTE fail[4][5] = {{15,8,14,8,8},{6,9,15,9,9},{14,4,4,4,14},{8,8,8,8,15}};
         const UBYTE (*letters)[5] = (core_failure || game_live_failure()) ? fail : pass;

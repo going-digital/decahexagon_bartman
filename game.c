@@ -99,7 +99,7 @@ static void update_playing(const InputState *in) {
     if (++gamestate.time_subsecond_frames>=FRAME_RATE) {
         gamestate.time_subsecond_frames=0;++gamestate.time_seconds;
     }
-    player.angle=pc_turn(player.angle,in->held,7);
+    player.angle=pc_turn(player.angle,in->held,PC_START_STAGE==2 ? 9:7);
     pc_morph_tick(&morph,&game_world);
     project_state();
     /* Collision sees pre-motion distances and can restore the prior angle.
@@ -115,12 +115,12 @@ static void update_playing(const InputState *in) {
     /* First-wave travel invariant independently checks the live clock/store
      * connection on 68000, not just isolated portable functions. */
     uint32_t tick=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
-    if (tick<=80 && (game_world.speed!=(PC_START_STAGE==1 ? 24:22) || game_world.count==0 ||
-        game_world.walls[0].distance!=(PC_START_STAGE==1 ? 3435:3300)-(PC_START_STAGE==1 ? 24:22)*(int32_t)(tick-1))) live_failure=1;
+    if (tick<=80 && (game_world.speed!=(PC_START_STAGE==2 ? 35:PC_START_STAGE==1 ? 24:22) || game_world.count==0 ||
+        game_world.walls[0].distance!=(PC_START_STAGE==2 ? 4050:PC_START_STAGE==1 ? 3435:3300)-(PC_START_STAGE==2 ? 35:PC_START_STAGE==1 ? 24:22)*(int32_t)(tick-1))) live_failure=1;
 #endif
     /* Temporary planar rotation response. The scheduler consumes the exact
      * source RNG draws; 3D tilt/cue and stage progression remain outstanding. */
-    static const WORD rotations[]={182,-182,364,-364,546,-546};
+    static const WORD rotations[]={182,-182,364,-364,546,-546,728,-728,910,-910};
     gamestate.field_rotation=rotations[patterns_rotation_mode()];
 }
 

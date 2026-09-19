@@ -2,10 +2,10 @@
 
 Updated 2026-09-19. See [the implementation plan](PC_ACCURACY_PLAN.md).
 
-Current milestone: PC-unit walls, collision, exact waves and the normal-Hexagon
-selector/morphs are connected to live gameplay. All 132,039 saved generator and
-Hexagon/Hexagoner selector reference cases pass. Presentation and stage progression are
-still incomplete; see the third batch below.
+Current milestone: PC-unit walls, collision, exact waves and all three normal
+base-level selectors are connected to playable builds. All 193,479 saved
+wave-generator and selector reference cases pass. Presentation and stage
+progression remain incomplete; see the fifth batch below.
 
 ## First batch completed (historical)
 
@@ -244,3 +244,60 @@ The uninstrumented Hexagoner PAL release booted and reached gameplay on the
 [release gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191112-04.png),
 [later gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191112-05.png).
 Verification emulator instances were closed after the captures.
+
+## Fifth batch: Hexagonest selector and playable build
+
+- Added the normal Hexagonest selector, including wave92 opener, forced waves,
+  nested split pools and the score-dependent 3/4/7-entry deep pool. The owned
+  Mach-O constants at `0x1001bbac8` independently confirm bounds3/4.
+- Added 61,440 native stage2 traces: all 184,320 selector cases and 9,159 wave
+  cases pass. Shared host/68000 coverage now contains 402 native selector cases.
+- Stage2 wall speed is 35 below wave12 and becomes 40 at scheduling points
+  after score3600. Player input uses 9 degrees per tick rather than 7.
+- Preserved stage2 rotation-mode RNG order (modes2/3 at wave5, then4/5,
+  6/7 or8/9). Extended the temporary planar adapter to cover every mode safely.
+- Added the one-time post-7200 clear/rotation event before delay countdown:
+  it consumes its RNG draw even when no wave is due and preserves speed/delay.
+  Native `clearenemies` disassembly at `0x100029d40` confirms record clearing
+  without resetting the scheduler. The selector traces exposed this extra draw.
+- Preserved flip requests at waves12/24/48 and every fifth wave after score8000.
+  Their visual effect is still pending, as are palette transitions, music/cue
+  changes and the remaining camera state of the post-7200 event. The event
+  currently assumes a settled palette; full graphics transition gating is absent.
+- Added `PC_START_STAGE=2` and a HEXAGONEST title. The first80-tick live assertion
+  checks speed35 and first-wall travel from4050. Hexagon remains the default.
+- All 768 forced-survival runs through tick10800 pass: peak records48/61/61
+  for stages0/1/2, with no stage1/2 morph requests or store overflow. These are
+  stress tests, not full desktop replays. Shared checks also pass under UBSan.
+
+Hyper-entry wave95, stage handoffs, unlocks, rank announcements, ending behavior
+and the six-level menu remain unfinished. This milestone implements the normal
+selector, not complete Hexagonest progression or presentation.
+
+PAL A500 512 KB Chip-only target checks passed during gameplay and game over:
+[PAL live PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191129-02.png),
+[PAL game-over PASS](scratchpad/fsuae/pal512/fs-uae-crop-2609191129-03.png).
+The initial title capture exposed clipping of the longer HEXAGONEST banner;
+letter spacing now contracts to fit the existing 128-dot sprite canvas.
+
+The corrected full title and target PASS were observed on NTSC A500 (512 KB
+Chip + 512 KB Slow): [NTSC title PASS](scratchpad/fsuae/ntsc/fs-uae-crop-2609191130-01.png).
+The initial NTSC gameplay captures lost the diagnostic overlay. Added an
+explicit blitter wait before CPU overlay writes to avoid concurrent access;
+this is self-test-only and does not affect release gameplay.
+
+The uninstrumented Hexagonest PAL release reached gameplay and game over on
+the 512 KB Chip-only A500:
+[release gameplay](scratchpad/fsuae/pal512/fs-uae-crop-2609191132-01.png),
+[release game over](scratchpad/fsuae/pal512/fs-uae-crop-2609191132-02.png).
+Separate artifacts: `out/hexagonest.adf` and `out/hexagonest_packed.adf`, with
+250,928-byte normal and 151,600-byte packed executables. Both disks built and
+the packing self-check passed; the packed disk has not been boot-tested.
+
+After synchronizing overlay writes, NTSC live timing checks remained PASS
+through the death flash and game over:
+[NTSC live PASS](scratchpad/fsuae/ntsc/fs-uae-crop-2609191134-01.png),
+[NTSC game-over PASS](scratchpad/fsuae/ntsc/fs-uae-crop-2609191134-02.png).
+Verification instances were closed. The default PAL Hexagon normal/packed
+releases were rebuilt (250,868/151,684 executable bytes), with packing
+self-check passing; `out/hexagon.adf` remains the default Hexagon release.

@@ -1,6 +1,6 @@
 #pragma once
 #include <exec/types.h>
-/* Normal Hexagon / Hexagoner scheduler. Generator, delay and walls use PC units. */
+/* Normal Hexagon / Hexagoner / Hexagonest scheduler. Generator, delay and walls use PC units. */
 void patterns_reset(void);
 void patterns_tick(void);
 UWORD patterns_wave_count(void);

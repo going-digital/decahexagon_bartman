@@ -74,7 +74,7 @@ static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
 // font. Only the letters actually needed by title_str_*[] below are
 // authored (not a full alphabet) - add more here as more banners want them.
 enum {
-    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE,
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T,
     TITLE_GLYPH_COUNT
 };
 static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
@@ -89,11 +89,15 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     /* V */ { 0x9, 0x9, 0x9, 0x9, 0x6, 0x6 },
     /* R */ { 0xE, 0x9, 0xE, 0xA, 0x9, 0x9 },
     /* (space, all blank) */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 },
+    /* S */ { 0x7, 0x8, 0x6, 0x1, 0x1, 0xE },
+    /* T */ { 0xF, 0x2, 0x2, 0x2, 0x2, 0x2 },
 };
 
 static const UBYTE title_str_hexagon[] = { TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N
 #if PC_START_STAGE == 1
     , TF_E, TF_R
+#elif PC_START_STAGE == 2
+    , TF_E, TF_S, TF_T
 #endif
 };
 static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF_O, TF_V, TF_E, TF_R };
@@ -219,8 +223,14 @@ static void canvas_set_into(UWORD* const* slots, WORD row, WORD nx, UBYTE black)
 // 128-dot canvas at that string's own natural width. Shared by every banner
 // message (title, results) - see title_str_hexagon/title_str_gameover.
 static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
+    WORD gap = TITLE_GAP_NATIVE;
+    if (len > 1) {
+        WORD available = (TITLE_CANVAS_BITS - 2 * TITLE_MARGIN_NATIVE
+                          - len * TITLE_GLYPH_NATIVE_W) / (len - 1);
+        if (gap > available) gap = available;
+    }
     WORD banner_w = TITLE_MARGIN_NATIVE * 2 + len * TITLE_GLYPH_NATIVE_W
-                     + (len - 1) * TITLE_GAP_NATIVE;
+                     + (len - 1) * gap;
     WORD banner_x = (TITLE_CANVAS_BITS - banner_w) / 2;
 
     for (WORD row = 0; row < HUD_CELL_H; row++) {
@@ -232,7 +242,7 @@ static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
 
         UBYTE frow = row - HUD_BORDER;
         for (WORD letter = 0; letter < len; letter++) {
-            WORD cell_x = banner_x + TITLE_MARGIN_NATIVE + letter * TITLE_CELL_NATIVE;
+            WORD cell_x = banner_x + TITLE_MARGIN_NATIVE + letter * (TITLE_GLYPH_NATIVE_W + gap);
             UBYTE bits = title_font[str[letter]][frow];
             for (WORD c = 0; c < HUD_GLYPH_W; c++) {
                 if (!(bits & (1 << (HUD_GLYPH_W - 1 - c))))

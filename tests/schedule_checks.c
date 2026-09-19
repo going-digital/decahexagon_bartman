@@ -29,6 +29,30 @@ unsigned pc_schedule_checks(void) {
         CHECK(s.shape_counter==cases[i].next_shape && world.speed==cases[i].speed);
         CHECK(world.delay_ticks==cases[i].delay && world.marker_wait==cases[i].wait);
     }
+    /* Stage2 late-phase entry precedes even a non-expired wave delay. It
+     * consumes one draw, clears records once, and preserves delay/speed. */
+    pc_world_reset(&world);pc_schedule_reset(&s);s.stage=2;s.wave=51;
+    world.speed=35;world.delay_ticks=4;world.delay_numerator=140;
+    pc_world_add(&world,0,500,200);seed=draws=0;
+    pc_schedule_tick(&s,&world,6,7200,draw,0);
+    CHECK(!s.late_phase && world.count==1 && draws==0 && world.delay_ticks==3);
+    pc_schedule_tick(&s,&world,6,7201,draw,0);
+    CHECK(s.late_phase && world.count==0 && !world.walls[0].active);
+    CHECK(draws==1 && world.speed==35 && world.delay_ticks==2 && world.delay_numerator==140);
+    CHECK(s.rotation_mode>=8 && s.rotation_mode<=9 && world.camera_trigger);
+    pc_world_add(&world,1,500,200);
+    pc_schedule_tick(&s,&world,6,7202,draw,0);
+    CHECK(draws==1 && world.count==1 && world.delay_ticks==1);
+    pc_schedule_tick(&s,&world,6,7203,draw,0);
+    CHECK(world.speed==40 && s.wave==52);
+    /* Wave-dependent visual requests are retained independently of selection. */
+    for (unsigned wave=1;wave<=55;++wave) {
+        pc_world_reset(&world);pc_schedule_reset(&s);s.stage=2;s.wave=wave;
+        seed=draws=0;pc_schedule_tick(&s,&world,6,1,draw,0);
+        CHECK(s.flip_request==(wave==12 || wave==24 || wave==48));
+        if (wave==5) CHECK(s.rotation_mode>=2 && s.rotation_mode<=3);
+        if (wave>5 && wave%4==0) CHECK(s.rotation_mode>=4 && s.rotation_mode<=5);
+    }
     /* Native visual routine: shrink completes on tick11; growth on tick12.
      * A directly entered decay state at zero clears immediately. */
     for (uint8_t trigger=1;trigger<=5;++trigger) {
