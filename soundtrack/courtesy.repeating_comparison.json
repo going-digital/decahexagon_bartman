@@ -1,0 +1,105 @@
+{
+  "status": "experimental single-component hypotheses, not recovered instruments",
+  "training_seconds": [
+    0.2,
+    1.6
+  ],
+  "validation_seconds": [
+    1.7,
+    2.6
+  ],
+  "window_ms": 23.219954648526077,
+  "models": {
+    "held": {
+      "kind": "held",
+      "step_seconds": 0.0,
+      "phase_seconds": 0.0,
+      "pattern": [
+        {
+          "midi": 44,
+          "duty": 0.125
+        }
+      ],
+      "training_score": 0.24108528329439272,
+      "validation_score": 0.17314168442123215,
+      "heldout_weighted_residual_fraction": 0.6063931554140204
+    },
+    "pitch_cycle": {
+      "kind": "pitch_cycle",
+      "step_seconds": 0.07999999999999999,
+      "phase_seconds": 0.019999999999999997,
+      "pattern": [
+        {
+          "midi": 39,
+          "duty": 0.125
+        },
+        {
+          "midi": 51,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 39,
+          "duty": 0.125
+        },
+        {
+          "midi": 39,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        }
+      ],
+      "training_score": 0.2522181564626624,
+      "validation_score": 0.16554689944886847,
+      "heldout_weighted_residual_fraction": 0.6236585491190298
+    },
+    "duty_cycle": {
+      "kind": "duty_cycle",
+      "step_seconds": 0.07999999999999999,
+      "phase_seconds": 0.0,
+      "pattern": [
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.125
+        },
+        {
+          "midi": 44,
+          "duty": 0.25
+        }
+      ],
+      "training_score": 0.2412742902407624,
+      "validation_score": 0.17179499381517596,
+      "heldout_weighted_residual_fraction": 0.6094546171403241
+    }
+  },
+  "preview_gain": 1.0
+}

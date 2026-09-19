@@ -186,3 +186,53 @@ Next fitting work should explicitly search repeating interval/table sequences
 across repeated phrases, compare against time-varying waveform alternatives,
 and handle noise and shared harmonics. Do not export these fragmented candidates
 to an Amiga sample bank. No game code or target playback changed.
+
+## Fourth fitting experiment: repeating patterns with validation
+
+`tools/audio/fit_repeating.py` compares one held pulse, a repeating pitch
+sequence with fixed duty, and a repeating duty sequence with fixed pitch.
+It searches 2/3/4/6/8-step patterns, step lengths 10–80 ms in 5 ms increments,
+and four phases per step. The analysis window is 23.22 ms. Rates faster than
+this window remain blurred; a fine hop is not proof of adequate resolution.
+Duty switching is only a restricted waveform-change alternative, not a full
+LSDJ wave-channel model.
+
+Parameters and spectral weights are selected using Courtesy 0.2–1.6 seconds.
+A separate 1.7–2.6 second interval evaluates each train-selected candidate;
+validation does not choose rates or patterns. Amplitudes are fitted per frame
+on both intervals, so this measures generalization of spectral shape/pitch
+patterns, not a blind prediction of envelopes or a full audio reconstruction.
+
+| Model | Validation weighted residual fraction (lower is better) |
+| --- | ---: |
+| Held pulse | 0.6064 |
+| Repeating pitch | 0.6237 |
+| Repeating duty | 0.6095 |
+
+The pitch cycle wins slightly on training data but loses on validation. Do not
+interpret the selected 80 ms cycle as a recovered arpeggio. All three candidates
+focus on low pitches; the held candidate is MIDI 44. Low-frequency resolution,
+shared harmonics and other sources in the mix remain major limitations. These
+results do not rule out rapid arpeggios in other components or passages.
+
+A separate synthetic pulse sequence (three pitches, one step every 40 ms,
+independent phase) checks the comparison: the repeating-pitch model beats both
+alternatives by more than 10% on validation explained spectral energy. This
+control is simpler than the recording and does not establish mixture accuracy.
+
+Run after the initial decode:
+
+```sh
+OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=/private/tmp/hexagon-matplotlib venv/bin/python tools/audio/fit_repeating.py
+```
+
+Compact results are in `courtesy.repeating_comparison.json`. Diagnostic previews
+under `scratchpad/audio/courtesy/` are `repeating_held.wav`,
+`repeating_pitch_cycle.wav` and `repeating_duty_cycle.wav`, all covering the first
+three seconds with a common anti-clipping gain. These are single-component
+hypotheses, not soundtrack replacements or isolated source channels.
+
+Next: investigate the remaining harmonic components with a broader waveform
+model and separate frequency-band evidence before attempting another full
+transcription. Preserve the accepted beat grids. No new Amiga playback assets
+were produced in this experiment.
