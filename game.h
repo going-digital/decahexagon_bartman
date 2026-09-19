@@ -25,7 +25,7 @@ extern GameState gamestate;
 extern PcWorld game_world;
 extern PcPalette game_palette;
 
-typedef enum { MODE_ATTRACT,MODE_READY,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER } GameMode;
+typedef enum { MODE_ATTRACT,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER } GameMode;
 void game_init(void);
 void game_update(const InputState *in);
 UWORD game_rng(void);

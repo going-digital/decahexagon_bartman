@@ -47,8 +47,6 @@
 #define TITLE_X_ADJUST (35) // 2.5 * TITLE_CELL_NATIVE(14), measured
 #define TITLE_X       (((SCREEN_WIDTH - TITLE_CANVAS_BITS / 2) / 2) - TITLE_X_ADJUST)
 #define TITLE_Y       24 // screen px from the top - clear of the hub and the corner HUD
-#define TITLE_HOLD_TICKS  (FRAME_RATE * 3 / 10) // ~0.3s hold once READY starts
-#define TITLE_FLASH_TICKS 3                     // one-tick-ish white flash as it cuts away
 
 #define GAMEOVER_HOLD_TICKS  (FRAME_RATE * 16 / 10) // ~1.6s "GAME OVER" banner (doubled per user request)
 #define GAMEOVER_FLASH_TICKS 3                      // white flash as it cuts to the result readout
@@ -326,7 +324,7 @@ void hud_init(void) {
 
 typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED } Banner;
 
-// Selection alternates name and best/lock; the name holds briefly into READY.
+// Selection alternates name and best/lock.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
 static Banner banner_active(void) {
@@ -336,7 +334,6 @@ static Banner banner_active(void) {
         if (t%180<120) return BANNER_HEXAGON;
         return game_selection_locked() ? BANNER_LOCKED:BANNER_NONE;
     }
-    if (m == MODE_READY && t < TITLE_HOLD_TICKS) return BANNER_HEXAGON;
     if (m == MODE_GAMEOVER && t < GAMEOVER_HOLD_TICKS) return BANNER_GAMEOVER;
     return BANNER_NONE;
 }
@@ -344,8 +341,6 @@ static Banner banner_active(void) {
 UBYTE hud_flash_now(void) {
     UWORD t = game_mode_timer();
     switch (game_mode()) {
-    case MODE_READY:
-        return (UBYTE)(t >= TITLE_HOLD_TICKS && t < TITLE_HOLD_TICKS + TITLE_FLASH_TICKS);
     case MODE_GAMEOVER:
         return (UBYTE)(t >= GAMEOVER_HOLD_TICKS && t < GAMEOVER_HOLD_TICKS + GAMEOVER_FLASH_TICKS);
     default:

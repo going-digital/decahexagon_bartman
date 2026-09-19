@@ -227,3 +227,10 @@ For reliable held-arrow tests on macOS, compile
 `out/fsuae_menu right` (also `left`, `start`, `back`) from the repository root.
 It focuses FS-UAE, holds the key for 80 ms and captures the resulting screen.
 Instantaneous AppleScript arrow taps can fall entirely between input polls.
+
+## Start and retry timing
+
+`make test-lifecycle` (included in `make test`) compares 1,698 native snapshots.
+Twenty-four boundary states also run in shared host/68000 checks. See
+[start/retry rules and scope](LIFECYCLE_REFERENCE.md). The macOS menu helper's
+`retry` action holds Space across a death/retry cycle and captures both states.

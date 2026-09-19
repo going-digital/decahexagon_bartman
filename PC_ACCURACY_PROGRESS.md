@@ -8,6 +8,8 @@ builds. The 193,479 saved wave/selector cases, 21,900 palette ticks and 2,048
 opening/handoff ticks pass. Runtime six-profile selection, session unlocks and
 per-mode records now have 1,992 native reference cases. Disk persistence,
 scripted ending and remaining presentation fidelity are still unfinished.
+Immediate starts, angle-preserving retries and the death/retry gate now match
+1,698 native snapshots; full death presentation is not yet implemented.
 
 ## First batch completed (historical)
 
@@ -603,3 +605,44 @@ All verification emulator instances were closed.
 
 Next: exact ready/death/retry and unlock presentation, saved records/unlocks,
 then the remaining scripted ending and camera/cue work.
+
+## Eighth batch: start and retry mechanics
+
+Removed the added 90-tick ready wait. Accepted confirmation now resets the run
+and executes its first logic tick immediately, preserving the player's current
+and previous angles. Menu movement is not applied twice on that tick. The live
+score is maintained in the portable lifecycle state and frozen through death.
+
+Replaced the fixed 60-tick retry delay with the PC's death timer and transition
+extent gate. With extent 40 at collision, extent reaches 320 on the 72nd
+subsequent tick; held confirmation retries on tick 73 because input precedes
+logic. A tap only on tick 72 is rejected rather than queued. Removed the
+unverified random death shake that consumed gameplay RNG.
+
+Verification:
+
+- 1,698 native snapshots match: both menu entry and result-screen retry for
+  all six profiles at seven angles, plus 85-tick death sequences with no input,
+  held confirmation and an early tap. The capture reproduces byte-for-byte.
+- 24 native boundary states are part of the shared host/68000 tests. The full
+  host regression suite passes; the expanded lifecycle fixture passes too.
+- PAL A500, 512 KB Chip-only: target PASS, immediate start with score already
+  advancing in [the first capture](scratchpad/fsuae/pal512/fs-uae-crop-2609191426-01.png),
+  and held-Space retry in [the later capture](scratchpad/fsuae/pal512/fs-uae-crop-2609191426-04.png).
+  The live first-wall invariant continues to pass after retry.
+
+See [source addresses, boundaries and limits](tests/LIFECYCLE_REFERENCE.md).
+The first-run tutorial and pending unlock announcement paths are excluded from
+these fixtures. Full PC death visuals (wall retreat, morph continuation, camera,
+flash, audio fade/cues) remain pending. The existing result banner is still an
+Amiga presentation adaptation. Records/unlocks still do not persist to disk.
+
+NTSC A500 verification (512 KB Chip + 512 KB Slow) also passes, including
+runtime Hexagoner selection, [immediate gameplay](scratchpad/fsuae/ntsc/fs-uae-crop-2609191428-03.png),
+and [immediate retry gameplay](scratchpad/fsuae/ntsc/fs-uae-crop-2609191429-01.png).
+PAL and NTSC verification instances were closed. Both normal and packed PAL
+release builds pass the no-cheat audit; default artifacts are `out/hexagon.adf`
+and `out/hexagon_packed.adf`. `out/hexagon_lifecycle_ntsc.adf` is diagnostic.
+
+Next: finish the PC death presentation and unlock transitions, implement saved
+records/unlocks, then continue with scripted ending and camera/cue parity.

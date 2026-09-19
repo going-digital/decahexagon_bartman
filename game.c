@@ -3,6 +3,7 @@
 #include "system.h"
 #include "patterns.h"
 #include "pc_menu.h"
+#include "pc_lifecycle.h"
 #if CHEAT_MODE
 #include "cheat.h"
 #endif
@@ -12,8 +13,6 @@
 
 #define STARTING_ZOOM_TARGET 128
 #define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 50 / HUB_RADIUS)
-#define READY_TICKS (FRAME_RATE * 3 / 2)
-#define DEAD_TICKS FRAME_RATE
 #define FALLBACK_BEAT_BPM 132
 GameState gamestate;
 PcWorld game_world;
@@ -22,6 +21,7 @@ static PcPlayer player;
 static PcMorph morph;
 static PcMenu menu;
 static PcRecords records;
+static PcLifecycle lifecycle;
 static UBYTE selected_profile;
 UBYTE game_selected_profile(void) { return selected_profile; }
 UBYTE game_selection_locked(void) { return !pc_profile_unlocked(&records,selected_profile); }
@@ -95,7 +95,7 @@ static void reset_run(void) {
 #endif
     pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
     pc_world_reset(&game_world);pc_morph_reset(&morph);patterns_reset();
-    player.angle=player.previous_angle=30;player.hit=player.blocked=0;
+    pc_lifecycle_start(&lifecycle,&player);
     project_state();
     gamestate.field_angle=0;gamestate.field_rotation=182;
     gamestate.draw_distance_target=STARTING_ZOOM_TARGET;
@@ -103,6 +103,8 @@ static void reset_run(void) {
     shake_x=shake_y=0;new_record=0;beat_ctr=beat_env=0;
 }
 void game_init(void) {
+    pc_lifecycle_init(&lifecycle);
+    player.angle=player.previous_angle=30;
     selected_profile=PC_START_STAGE+3*PC_START_HYPER;
     pc_menu_reset(&menu,selected_profile);reset_run();set_mode(MODE_ATTRACT);
 }
@@ -114,9 +116,9 @@ static void record_time(void) {
 }
 
 static void update_playing(const InputState *in) {
-    if (++gamestate.time_subsecond_frames>=FRAME_RATE) {
-        gamestate.time_subsecond_frames=0;++gamestate.time_seconds;
-    }
+    pc_lifecycle_tick(&lifecycle);
+    gamestate.time_seconds=(UWORD)(lifecycle.elapsed/60);
+    gamestate.time_subsecond_frames=(UWORD)(lifecycle.elapsed%60);
     record_time();
     UBYTE held=in->held;
 #if CHEAT_MODE
@@ -131,7 +133,7 @@ static void update_playing(const InputState *in) {
     pc_collide(&player,game_world.walls,game_world.count,morph.sides,(int16_t)game_world.speed);
     project_state();
     if (player.hit || game_world.overflow) {
-        set_mode(MODE_DEAD);return;
+        pc_lifecycle_die(&lifecycle);set_mode(MODE_DEAD);return;
     }
     pc_world_move(&game_world);
     patterns_tick();
@@ -156,6 +158,17 @@ static void update_playing(const InputState *in) {
     gamestate.field_rotation=rotations[patterns_rotation_mode()];
 }
 
+static void start_playing(const InputState *in) {
+    InputState first=*in;
+    first.held=0; /* input already ran in selection/death before PC restart */
+#if CHEAT_MODE
+    first.cheat_held=0;
+#endif
+    reset_run();set_mode(MODE_PLAYING);
+    pc_palette_tick(&game_palette,patterns_effective_score(1));
+    update_playing(&first);
+}
+
 void game_update(const InputState* in) {
     mode_timer++;
     update_ambient();
@@ -167,6 +180,7 @@ void game_update(const InputState* in) {
     if (in->back_edge && mode != MODE_ATTRACT) {
         reset_run();
         pc_menu_reset(&menu,selected_profile);
+        pc_lifecycle_init(&lifecycle);
         set_mode(MODE_ATTRACT);
         gamestate.field_angle += gamestate.field_rotation;
         return;
@@ -186,15 +200,7 @@ void game_update(const InputState* in) {
         if (in->fire_edge && !game_selection_locked()) {
             rng_state ^= (UWORD)frameCounter | 1u;
             if (!rng_state) rng_state=0x2545;
-            reset_run();
-            set_mode(MODE_READY);
-        }
-        break;
-
-    case MODE_READY:
-        if (mode_timer >= READY_TICKS) {
-            pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
-            set_mode(MODE_PLAYING);
+            start_playing(in);
         }
         break;
 
@@ -203,19 +209,15 @@ void game_update(const InputState* in) {
         break;
 
     case MODE_DEAD:
-        if (mode_timer < 8) {
-            shake_x = (WORD)(rng() & 7) - 3;
-            shake_y = (WORD)(rng() & 7) - 3;
-        } else {
-            shake_x = shake_y = 0;
-        }
-        if (mode_timer >= DEAD_TICKS) set_mode(MODE_GAMEOVER);
-        break;
-
     case MODE_GAMEOVER:
-        if (in->fire_edge) {
-            reset_run();
-            set_mode(MODE_READY);
+        /* PC input runs before the transition tick: a held confirmation
+         * retries on the first tick whose incoming extent is already 320. */
+        if ((in->fire || in->fire_edge) && pc_lifecycle_can_start(&lifecycle)) {
+            start_playing(in);
+        } else {
+            pc_lifecycle_tick(&lifecycle);
+            if (mode==MODE_DEAD && pc_lifecycle_can_start(&lifecycle))
+                set_mode(MODE_GAMEOVER);
         }
         break;
     }
