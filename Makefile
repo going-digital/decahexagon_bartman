@@ -20,8 +20,17 @@ $(error CHEAT_MODE must be 0 or 1)
 endif
 c_sources += cheat.c
 endif
+MUSIC_FIB_STREAM ?= 0
+ifeq ($(MUSIC_FIB_STREAM),1)
+c_sources += fib_decode.c tests/fib_stream.c
+SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1
+VPATH += tests
+endif
 MUSIC_FIB_BENCH ?= 0
 ifeq ($(MUSIC_FIB_BENCH),1)
+ifeq ($(MUSIC_FIB_STREAM),1)
+$(error Select only one Fibonacci trial)
+endif
 c_sources += fib_decode.c tests/fib_bench.c
 SELFTEST_CFLAGS += -DMUSIC_FIB_BENCH=1
 VPATH += tests
@@ -216,3 +225,7 @@ test-death:
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_death.c pc_lifecycle.c pc_morph.c pc_world.c pc_core.c tests/death_probe.c -o out/death_probe
 	python3 tests/compare_death.py
+
+ifeq ($(MUSIC_FIB_STREAM),1)
+obj/fib_stream.o: out/fib_trial.payload
+endif

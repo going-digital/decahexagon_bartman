@@ -49,7 +49,9 @@
 // ---- renderer tuning ----------------------------------------------------
 #define ASM_OPT           // hand-tuned m68k asm in the hot clip/line paths
 //#define MUSIC            // ThePlayer 6.1a (VBL timed)
+#if !MUSIC_FIB_STREAM
 #define MUSIC_LSP          // LightSpeed Player (CIA timed)
+#endif
 //#define SHOW_DRAW_PLANE  // show the work buffer as a 2nd bitplane
 //#define SKIP_FILL        // skip the area fill (wireframe)
 

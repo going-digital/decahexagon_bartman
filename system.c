@@ -1,6 +1,9 @@
 #include "system.h"
 #include "config.h"
 #include "audio.h"
+#if MUSIC_FIB_STREAM
+#include "tests/fib_stream.h"
+#endif
 #include <graphics/gfxmacros.h>
 #include <devices/trackdisk.h>
 #ifdef MUSIC_LSP
@@ -223,4 +226,7 @@ __attribute__((interrupt)) void interruptHandler(void) {
 #endif
     // DEMO - increment frameCounter
     frameCounter++;
+#if MUSIC_FIB_STREAM && !FIB_TRIAL_MAINLOOP
+    fib_stream_fill();
+#endif
 }

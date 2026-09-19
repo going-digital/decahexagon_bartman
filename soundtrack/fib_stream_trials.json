@@ -1,0 +1,62 @@
+{
+  "status": "optional buffered transport trial; full-bank sequencing not implemented",
+  "fixture_samples": 95744,
+  "fixture_payload_bytes": 48059,
+  "chip_dma_buffer_bytes": 1536,
+  "fixture_sha256": "82688e58d2d55c783d9f46ee5146348ec63a2a1fbd3b78adae2718310cb90965",
+  "pal_period": 296,
+  "ntsc_period": 298,
+  "host_fixture_blocks_verified": 187,
+  "pal_configuration": {
+    "model": "A500",
+    "chip_kib": 512,
+    "slow_kib": 0,
+    "fast_kib": 0
+  },
+  "pal_render_loop": {
+    "game_seconds": 45.43,
+    "underruns": 241,
+    "cheat_mode": true,
+    "stage": "Hexagonest",
+    "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191758-01.png"
+  },
+  "pal_vblank": {
+    "game_seconds": 45.53,
+    "underruns": 0,
+    "cheat_mode": true,
+    "stage": "Hexagonest",
+    "screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191801-02.png"
+  },
+  "pal_vblank_stall": {
+    "stall_display_frames": 15,
+    "underruns": 7,
+    "first_completed_blocks": 461,
+    "later_completed_blocks": 1087,
+    "screenshots": [
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191806-01.png",
+      "scratchpad/fsuae/pal512/fs-uae-crop-2609191806-02.png"
+    ]
+  },
+  "pal_vblank_clean_exit_screenshot": "scratchpad/fsuae/pal512/fs-uae-crop-2609191802-02.png",
+  "release_excludes_trial": true,
+  "sample_exact_emulator_capture_verified": false,
+  "executables_sha256": {
+    "fib_stream": "ef4155e8ab32b7eabfa87204a6156abb79722c424f641e67c52c26ec6024b082",
+    "fib_stream_game": "b68283c34172289df1d87f7434e21e9f7cb2f4ad332244af358ca6433e323dc1",
+    "fib_stream_stall": "9923a67bd285e7f0e0f99182e41e7757caef173677bec5ef804395947100b51c",
+    "fib_stream_ntsc": "d97903e0e537a4d08625ca667dc10050a393cb5ad2f57e435362e231ade93b92"
+  },
+  "ntsc_configuration": {
+    "model": "A500",
+    "chip_kib": 512,
+    "slow_kib": 512,
+    "fast_kib": 0
+  },
+  "ntsc_vblank": {
+    "game_seconds": 45.56,
+    "underruns": 0,
+    "cheat_mode": true,
+    "stage": "Hexagonest",
+    "screenshot": "scratchpad/fsuae/ntsc/fs-uae-crop-2609191817-03.png"
+  }
+}

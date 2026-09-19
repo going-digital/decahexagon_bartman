@@ -3,6 +3,9 @@
 // SDK copy, keeping struct Custom identical across every translation unit.
 #include "config.h"
 #include "pc_core.h"
+#if MUSIC_FIB_STREAM
+#include "tests/fib_stream.h"
+#endif
 #if MUSIC_FIB_BENCH
 #include "tests/fib_bench.h"
 #endif
@@ -216,6 +219,9 @@ int main() {
 #if MUSIC_FIB_BENCH
     fib_bench_run();
 #endif
+#if MUSIC_FIB_STREAM
+    fib_stream_start();
+#endif
     for (;;) {
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
@@ -232,6 +238,9 @@ int main() {
         custom->color[0] = missed > 0 ? 0x300 : 0x333;
 #endif
 
+#if MUSIC_FIB_STREAM && FIB_TRIAL_MAINLOOP
+        fib_stream_fill();
+#endif
         // --- poll -> update -------------------------------------------------
         input_poll(&input);
         if (input.quit) break;                                  // dev: both mouse buttons
@@ -288,6 +297,10 @@ int main() {
         blit_wait();
         fib_bench_draw((UBYTE*)bitplane_fg2);
 #endif
+#if MUSIC_FIB_STREAM
+        blit_wait();
+        fib_stream_draw((UBYTE*)bitplane_fg2);
+#endif
 #if CHEAT_MODE
         // Small 8 at the upper right confirms that held-key assist is active.
         if (input.cheat_held) {
@@ -330,6 +343,9 @@ int main() {
         // before anything draws into the buffer.
     }
 
+#if MUSIC_FIB_STREAM
+    fib_stream_stop();
+#endif
 #if defined(MUSIC) || defined(MUSIC_LSP)
     p61End();
 #endif

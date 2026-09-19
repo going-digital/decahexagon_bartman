@@ -801,3 +801,95 @@ per PAL line, this is about **5.1 ms**, or **12%** of the 42.67 ms represented b
 Screenshot: `scratchpad/fsuae/pal512/fs-uae-crop-2609191746-01.png`.
 The normal release rebuilt successfully, passed its cheat audit, and its link
 map contains neither the Fibonacci decoder nor the benchmark.
+
+## Buffered Paula transport trial
+
+`MUSIC_FIB_STREAM=1` selects an experimental one-channel DMA player instead of
+LSP. It is mutually exclusive with the decoder microbenchmark and is omitted
+from normal builds. Three 512-byte buffers use **1,536 bytes of Chip RAM**;
+compressed input is CPU-only data and need not be Chip RAM on expanded machines.
+This fixture contains 48,059 compressed bytes (187 full blocks / 95,744 samples).
+Code, state and normal game allocations are additional.
+
+Prepare and build:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/prepare_fib_trial.py
+tools/build.sh -B MUSIC_FIB_STREAM=1 EXTRA_CFLAGS=-DBUILD_DEBUG=0 \
+  OUT=out/fib_stream out/fib_stream.adf
+FSUAE_ADF="$PWD/out/fib_stream.adf" tools/run_fsuae.sh pal512
+```
+
+The fixture is approximately eight seconds from the accepted Courtesy preview,
+re-encoded into independent full blocks. `out/fib_trial_reference.wav` is its
+exact decoded host reference. Re-encoding adds loss, and the loop seam is not
+musically aligned; this is a transport/scheduling trial, not a quality candidate
+or a full-track dictionary player. Channel 0 produces left-output mono.
+
+One block is decoded from the level-3 VBlank handler when its slot is free,
+at most once per display frame. Level-4 audio interrupts can preempt decoding.
+The audio interrupt only retires the old DMA buffer and schedules
+the next ready buffer. A memory barrier precedes publication. If the producer
+misses a deadline, the IRQ repeats the current immutable buffer and increments
+a saturating underrun counter; it never queues a partly decoded buffer. This
+register-reload sequence follows Commodore's [Hardware Reference Manual,
+chapter 5](https://www.amigarealm.com/computing/knowledge/hardref/ch5.htm),
+including the startup interrupt before the first buffer finishes.
+
+The overlay shows `U` + three underrun digits and `B` + five completed-block
+digits. Blocks wrap at 65,536; a nonzero advancing B value distinguishes active
+playback from a stopped channel with a misleading zero-underrun count.
+`-DFIB_TRIAL_STALL=1` deliberately suppresses decoding for frame ages 250–264
+(300 ms on PAL) as a negative control. This age uses a wrapping 16-bit counter;
+long runs repeat the injection when that counter wraps.
+
+PAL uses period 296 (approximately 11,982.75 Hz); NTSC uses period 298
+(approximately 12,011.90 Hz). The fixture follows Paula's actual sample rate,
+so its duration differs slightly from nominal 12 kHz. No claim of exact PC
+music/beat synchronisation is made. Shutdown disables audio interrupts and DMA,
+mutes the channel, clears pending requests, restores the level-4 vector and
+only then frees the buffers.
+
+The first producer ran once per render frame. It passed a short normal-game
+check but reached **241 underruns by 45.43 seconds of assisted Hexagonest**.
+That result rejects render-cadence scheduling for this load. The current trial
+services decoding from VBlank instead; `-DFIB_TRIAL_MAINLOOP=1` retains the
+original scheduling experiment for comparison. VBlank decoding adds work to
+the interrupt handler and needs gameplay performance evaluation as well as
+audio validation; zero underruns alone will not establish acceptable frame rate.
+
+PAL results (FS-UAE, real-speed cycle-exact 68000, 512 KiB Chip and no expansion):
+
+| Trial | Result |
+| --- | --- |
+| Render-loop producer, assisted Hexagonest | 241 underruns at game time 45.43 s |
+| VBlank producer, same assisted profile | 0 underruns at game time 45.53 s |
+| VBlank producer, deliberate 15-frame stall | 7 underruns; unchanged from block 461 to block 1,087 after recovery |
+| Exit from the VBlank trial | AmigaDOS prompt restored |
+
+The assisted comparison uses `CHEAT_MODE=1` and `-DPC_START_STAGE=2` only in the
+separate `out/fib_stream_game.adf` test image. `tools/fsuae_audio_trial.swift`
+starts gameplay with 8 held and captures counters at 15, 30 and 45 seconds.
+Its compile command is `swiftc -module-cache-path out/swift_module_cache
+ tools/fsuae_audio_trial.swift -o out/fsuae_audio_trial` (one shell line).
+This is a bounded stress run, not proof against every possible gameplay load.
+
+The cheat-free listening trial is `out/fib_stream.adf` (CHEAT_MODE=0).
+Its fixture is also saved as `out/fib_trial.fib`; all 187 blocks match the host C
+decoder and preserve output canaries when checked with
+`venv/bin/python tools/audio/check_fib_decoder.py out/fib_trial.fib`.
+Normal `out/hexagon.exe` rebuilt successfully and passed the cheat audit; its
+link map excludes the stream player, decoder and fixture.
+
+These checks validate target execution, buffer scheduling and observed underrun
+recovery. No emulator audio capture has yet been compared sample-for-sample
+against the host reference, and subjective sound quality has not been approved.
+The short fixture also does not test the memory footprint or seeking of the
+complete 192 KiB dictionary. Next: full-bank sequencing and boundary handling,
+PAL/NTSC duration policy, recorded-output comparison, and render-frame metrics
+for the extra VBlank workload.
+
+NTSC follow-up: period 298, 512 KiB Chip + 512 KiB Slow, assisted Hexagonest
+reached **45.56 s with zero underruns**. This validates the tested NTSC timing
+configuration, not an NTSC Chip-only memory configuration. Trial details, image
+paths and executable hashes are recorded in fib_stream_trials.json.
