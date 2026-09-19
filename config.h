@@ -73,3 +73,8 @@
 #ifndef SOUND_EFFECTS
 #define SOUND_EFFECTS 1
 #endif
+
+// Optional playback counters/overlay; omitted from release builds.
+#ifndef AUDIO_DIAGNOSTICS
+#define AUDIO_DIAGNOSTICS BUILD_DEBUG
+#endif

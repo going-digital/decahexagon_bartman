@@ -2,7 +2,8 @@
 
 The original 16 Ogg clips are in `assets/sounds/`. `prepare_sfx.py` converts them
 **offline** to 8 kHz mono signed 8-bit PCM, with even addresses/lengths. The bank
-uses 117,890 Chip bytes. `sfx_assets.json` records source hashes, IDs and offsets.
+uses 107,778 Chip bytes after removing digital-zero tails and the unused
+menuselect payload. All 16 original files are retained; 15 clips are playable. `sfx_assets.json` records source hashes, IDs and offsets.
 No codec, software mixer or file access runs during gameplay.
 
 Music reserves AUD0. Effects/speech use AUD1–AUD3, allowing the PC's concurrent
@@ -35,7 +36,7 @@ are PC executable exports, not guesses from the web prototype.
 | 8 square | Strictly greater than 1,800 | Displayed elapsed score |
 | 9 pentagon | Strictly greater than 2,700 | Displayed elapsed score |
 | 10 hexagon | Strictly greater than 3,600 | Displayed elapsed score |
-| 11 menuselect | Confirm settings/leaderboard menu actions | Clip available; those PC screens are not implemented |
+| 11 menuselect | Confirm settings/leaderboard menu actions | Payload omitted; those PC screens are not implemented |
 | 12 menuchoose | Start movement to another selection wedge | Motion starts, not wedge arrival |
 | 13 awesome | Strictly greater than 7,200; continuation handoff | Rank tick / `patterns_transitioned` |
 | 14 wonderful | New completion result: extent crosses 200, except secret ending | Death extent crossing |
@@ -111,3 +112,7 @@ These are control-flow, DMA-lifecycle and underrun checks. They do not replace
 listening tests. NTSC playback and the unimplemented PC ending scenes have not
 been verified on target in this change. Release builds pass the existing audit
 that excludes steering-assist code.
+
+The playback overlay is now optional: `-DAUDIO_DIAGNOSTICS=1` enables it.
+It defaults to BUILD_DEBUG, so release builds omit it. Historical trial sizes
+and screenshots above describe the earlier untrimmed bank.

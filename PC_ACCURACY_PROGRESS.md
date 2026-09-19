@@ -813,3 +813,23 @@ takeover. Removed the extra field-wait/measurement function. The universal
 binary still selects all display/audio timings together; the cue clock uses
 nominal 312/262-line fields. Host timing/pulse checks and release build pass.
 This supersedes the raster-detection mechanism described above.
+
+## Release memory cleanup
+
+Removed the unused menuselect payload and exact zero tails from the SFX bank,
+unreachable per-slot HUD glyph allocations, legacy codec/interpolation state
+from PCM playback, and the release audio diagnostic overlay. Accepted music
+quality and four DMA buffers remain unchanged. `AUDIO_DIAGNOSTICS=1` retains the
+overlay for trials.
+
+Compared with the previous universal release, executable size falls from
+477,228 to 465,072 bytes. Accounted runtime RAM falls by 13,436 bytes, including
+10,952 mandatory Chip bytes. See `MEMORY_USAGE.md` for allocation categories,
+OS/stack exclusions and further candidates that need separate validation.
+
+Host tests pass. The compact PCM state reproduces 2,324,096 samples exactly
+across a full-song loop with canaries intact. Every retained SFX audible sample
+is unchanged and aligned; only digital-zero suffixes were removed. PAL FS-UAE
+boot, timer/HUD and gameplay check passed (music/effects release, 1 MB):
+`scratchpad/fsuae/pal/fs-uae-crop-2609192103-03.png`. This release omits the
+counter overlay, so this screenshot does not measure underruns.

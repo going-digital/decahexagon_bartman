@@ -1208,3 +1208,9 @@ The current executable reads `GfxBase->DisplayFlags & PAL` before takeover and s
 display origin, simulation cadence, music/SFX periods and cue-clock timing.
 `out/hexagon.adf` runs on either standard; `TARGET_NTSC` is no longer used.
 The existing common pixel geometry is preserved.
+
+## Memory cleanup
+
+See [MEMORY_USAGE.md](../MEMORY_USAGE.md) for the current release breakdown.
+Unused speech payload/zero tails, unreachable HUD glyphs, legacy decoder state
+and the release audio overlay have been removed. Accepted music is unchanged.

@@ -1,7 +1,6 @@
 #pragma once
-/* FBS1/FBS2 metadata is big-endian; enclosed FIB1 headers remain little-endian.
- * FBP1 uses the same API with an offline-decoded, word-padded dictionary.
- * No allocations: shared state includes a 512-byte cache (unused by PCM). */
+/* Legacy host/archived FBS1/FBS2 decoder; not linked into the game.
+ * The predecoded target uses the compact state in fib_pcm.h instead. */
 typedef struct {
     const unsigned char *blob, *sequence, *offsets, *bank, *edges, *raw, *packed;
     unsigned short seq_count, bank_count, seq_index, left, block_left;

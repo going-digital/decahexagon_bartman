@@ -2,7 +2,7 @@
 #include "../system.h"
 #include "../config.h"
 #include "fib_stream.h"
-#include "../fib_song.h"
+#include "../fib_pcm.h"
 #include "../pcm_lifecycle.h"
 #include "../paula_irq.h"
 #include "../sfx.h"
@@ -11,7 +11,7 @@ INCBIN(CourtesyCues, "assets/music1.cues");
 static PcmLifecycle lifecycle;
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
-static FibSong song;
+static PcmSong song;
 #define FIB_BUFFERS 4
 static UBYTE *buffers;
 static volatile UWORD state[FIB_BUFFERS]; /* 0 free, 1 decoded, 2 owned by DMA */
@@ -150,6 +150,7 @@ void fib_stream_tick(unsigned playing,unsigned menu) {
     if(action&PCM_START) fib_stream_start();
     if(running) custom->aud[0].ac_vol=lifecycle.volume;
 }
+#if AUDIO_DIAGNOSTICS
 void fib_stream_draw(unsigned char *plane) {
     static const UBYTE glyphs[14][5]={
       {6,9,9,9,6},{2,6,2,2,7},{14,1,6,8,15},{14,1,6,1,14},
@@ -175,3 +176,5 @@ void fib_stream_draw(unsigned char *plane) {
         }
     }
 }
+
+#endif

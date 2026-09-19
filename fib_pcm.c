@@ -1,10 +1,10 @@
 /* Offline-decoded, duration-adjusted dictionary. CPU RAM is sufficient: only
  * the four output buffers are read by Paula. FBP1 starts every slice on a word. */
-#include "fib_song.h"
+#include "fib_pcm.h"
 #include "fib_copy.h"
 static unsigned be16(const unsigned char *p) {return ((unsigned)p[0]<<8)|p[1];}
 static unsigned be32(const unsigned char *p) {return (be16(p)<<16)|be16(p+2);}
-int fib_pcm_init_split(FibSong *s,const unsigned char *p,unsigned first_bytes,
+int fib_pcm_init_split(PcmSong *s,const unsigned char *p,unsigned first_bytes,
                        const unsigned char *second,unsigned second_bytes) {
     unsigned bytes=first_bytes+second_bytes;
     if(bytes<first_bytes || first_bytes<32 || (first_bytes&1) ||
@@ -37,13 +37,12 @@ int fib_pcm_init_split(FibSong *s,const unsigned char *p,unsigned first_bytes,
     s->edges=second;s->pcm_split=split;
     s->sequence=p+seq;s->offsets=p+off;s->bank=p+data;
     s->seq_count=count;s->seq_index=0;s->output_left=0;
-    s->raw_mode=1; /* producer can always fill a complete DMA buffer */
     return 1;
 }
-int fib_song_init(FibSong *s,const unsigned char *p,unsigned bytes) {
+int fib_song_init(PcmSong *s,const unsigned char *p,unsigned bytes) {
     return fib_pcm_init_split(s,p,bytes,0,0);
 }
-void fib_song_read(FibSong *s,unsigned char *out,unsigned samples) {
+void fib_song_read(PcmSong *s,unsigned char *out,unsigned samples) {
     while(samples) {
         if(!s->output_left) {
             if(s->seq_index==s->seq_count) s->seq_index=0;

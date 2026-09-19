@@ -293,7 +293,7 @@ int main() {
         blit_wait();
         fib_bench_draw((UBYTE*)bitplane_fg2);
 #endif
-#if MUSIC_FIB_STREAM
+#if MUSIC_FIB_STREAM && AUDIO_DIAGNOSTICS
         blit_wait();
         fib_stream_draw((UBYTE*)bitplane_fg2);
 #endif

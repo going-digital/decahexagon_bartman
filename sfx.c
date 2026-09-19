@@ -35,6 +35,7 @@ static void settle_dma(void) {
     }
 }
 static void play(unsigned id) {
+    if(!sfx_samples[id].words) return; /* omitted, currently unused clip */
     unsigned ch=0;
     /* Replaying the same effect retriggers it, as PC playef does. Otherwise
      * use a free voice, then steal the oldest of the three hardware voices. */

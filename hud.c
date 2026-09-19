@@ -298,8 +298,12 @@ void hud_init(void) {
         UWORD hstart = DISPLAY_HW_X + HUD_X + slot * 16;
         UWORD pos, ctl;
         pos_ctl(hstart, DISPLAY_HW_Y + HUD_Y, &pos, &ctl);
-        for (WORD g = 0; g < GLYPH_COUNT; g++)
-            glyph_buf[slot][g] = build_glyph(pos, ctl, font[g]);
+        /* The decimal slot never shows digits; other slots never show
+         * punctuation. Keep only sprites that hud_tick can select. */
+        if(slot==SLOT_PERIOD)
+            glyph_buf[slot][GLYPH_PERIOD]=build_glyph(pos,ctl,font[GLYPH_PERIOD]);
+        else for(WORD g=0;g<10;++g)
+            glyph_buf[slot][g]=build_glyph(pos,ctl,font[g]);
     }
 
     // Banner canvases: 8 sprites tiled edge-to-edge (16 native dots apart -
