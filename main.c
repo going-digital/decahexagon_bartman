@@ -219,9 +219,6 @@ int main() {
 #if MUSIC_FIB_BENCH
     fib_bench_run();
 #endif
-#if MUSIC_FIB_STREAM
-    fib_stream_start();
-#endif
     for (;;) {
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
@@ -251,6 +248,9 @@ int main() {
         ULONG ticks = pc_clock_advance(&simulation_clock, elapsed_frames, DISPLAY_RATE);
         while (ticks--) {
             game_update(&input);
+#if MUSIC_FIB_STREAM
+            fib_stream_tick(game_mode()==MODE_PLAYING,game_mode()==MODE_ATTRACT);
+#endif
             hud_tick();
             // Held state persists; one-shot actions belong to only the first tick.
             input.fire_edge = input.back_edge = 0;

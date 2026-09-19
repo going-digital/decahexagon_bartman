@@ -3,6 +3,8 @@
 #include "../config.h"
 #include "fib_stream.h"
 #include "../fib_song.h"
+#include "../pcm_lifecycle.h"
+static PcmLifecycle lifecycle;
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
 static FibSong song;
@@ -49,6 +51,7 @@ static void fill_one(void) {
     fill_slot=(fill_slot+1)%FIB_BUFFERS;
 }
 void fib_stream_start(void) {
+    underruns=blocks=0;
     unsigned bytes=(ULONG)&incbin_FibSongData_end-(ULONG)FibSongData;
     if(!fib_pcm_init_split(&song,FibSongData,bytes,FibSongTail,
         (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail)) {
@@ -71,7 +74,7 @@ void fib_stream_start(void) {
 #else
     custom->aud[0].ac_per=296; /* 3546895 / 296 = 11982.75 Hz */
 #endif
-    custom->aud[0].ac_vol=64;
+    custom->aud[0].ac_vol=0;
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;
     started=(UWORD)frameCounter;
@@ -102,6 +105,12 @@ void fib_stream_stop(void) {
     *vector=saved_vector;
     FreeMem(buffers,512*FIB_BUFFERS);
     buffers=0;
+}
+void fib_stream_tick(unsigned playing,unsigned menu) {
+    unsigned action=pcm_lifecycle_tick(&lifecycle,playing,menu);
+    if(action&PCM_STOP) fib_stream_stop();
+    if(action&PCM_START) fib_stream_start();
+    if(running) custom->aud[0].ac_vol=lifecycle.volume;
 }
 void fib_stream_draw(unsigned char *plane) {
     static const UBYTE glyphs[14][5]={

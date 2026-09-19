@@ -7,14 +7,18 @@ word-aligned, offline-predecoded PCM slices, with no runtime interpolation.
 benchmark build options are rejected. Earlier codec experiments below are
 historical evidence, not future work. Their host tools remain for reference.
 
-Next work is reducing the resident PCM dictionary through slice reuse and
-memory budgeting while preserving acceptable sound. The current exact variant
-bank needs 688,266 bytes plus buffers/state and requires the tested 1 MB A500
-configuration. A new 272,412-byte, 96-slice candidate now passes bounded
-512 KiB-only playback, with listening review and an attract HUD issue still
-open (see shared-duration trials below). Do not trade gameplay
-CPU for a smaller compressed bank; any decoding must finish before gameplay
-and fit alongside the game's memory requirements.
+**Accepted baseline:** the user has accepted the 12 kHz, 96-slice Courtesy
+reconstruction. Its resident PCM asset is 272,412 bytes, plus 2,048 bytes of DMA
+buffers and sequencer state/code. Keep this quality and memory target for the
+A500; further quality experiments are deferred. A higher-quality version for
+more capable machines may be considered later, but is not current work.
+
+Next work is integrating this baseline, resolving the attract-screen HUD
+clipping, and completing full-song/NTSC verification. Acceptance of the audio
+quality does not close those technical checks. The normal release has not yet
+switched soundtracks. Do not reintroduce in-game decompression or interpolation.
+The larger exact PCM banks and earlier codec results below are historical
+comparisons, not competing defaults.
 
 First analysis batch: all three recordings have been decoded without manual
 trimming, hashed, and analysed. Per-track JSON files retain provenance, tempo
@@ -1137,8 +1141,9 @@ of assisted gameplay, zero underruns, and clean return to AmigaDOS. Attract
 counters R=400/V=402 imply about 49.8 fps at nominal PAL cadence. Some score
 digits were clipped in the initial attract capture; gameplay timer digits were
 complete. That display issue remains unresolved. The full song loop and NTSC
-have not been target-tested. Evidence: `pcm_reuse_target_trials.json`. All sound changes still require
-listening judgement; none is installed as the normal soundtrack.
+have not been target-tested. Evidence: `pcm_reuse_target_trials.json`. The user
+has now accepted the 96-slice audio quality as the baseline; integration into
+the normal soundtrack remains outstanding.
 
 ```sh
 venv/bin/python tools/audio/compact_pcm_song.py
@@ -1147,3 +1152,39 @@ tools/build.sh -B MUSIC_FIB_STREAM=1 \
   EXTRA_CFLAGS=-DBUILD_DEBUG=0 OUT=out/pcm_reuse_96 out/pcm_reuse_96.adf
 FSUAE_ADF="$PWD/out/pcm_reuse_96.adf" tools/run_fsuae.sh pal512
 ```
+
+### PC music lifecycle verification
+
+Ordinary PC play starts music when a run is confirmed/restarted. In the local
+binary export, `superhex::gameinput` (`0x100052980`) calls `gameclass::restart`
+and then `musicclass::play(1/2/3)` for the selected base stage (for example,
+`decomp_gameinput_100052980.c`, lines 1577–1581 for stage 0). Merely calling
+`gameclass::start` is not the music trigger: its disassembly at `0x10000d080`
+contains no music call.
+
+Death does **not** cut the track instantly. The ordinary collision-death branch
+in `superhex::gamelogic` (`0x100056f50`, export lines 413–418) calls
+`musicclass::fadeout`, then the death sound effect. `fadeout` at `0x10005dc30`
+arms 45.0 (raw immediate `0x42380000`); `processmusicfade` at `0x10005dad0`
+reduces volume by remaining/45 and stops the player at zero. PC track starts
+also have a 30-unit linear fade-in. These are ordinary-run findings; scripted
+ending/transition paths are separate.
+
+The accepted PCM backend now follows those transitions: silent selection,
+start/fade-in on entering play, death fade then DMA/interrupt shutdown, immediate
+stop on returning to selection, and a fresh stream on retry. Fades advance on
+the existing nominal 60 Hz simulation clock (30/45 ticks, nominally 0.5/0.75 s),
+not rendered frames. Source exports are under `scratchpad/pc_verification/evidence/`
+and `scratchpad/decompile_gfx2.txt`; the evidence is local PC binary analysis.
+
+`pcm_lifecycle.c` has host checks for idle selection, exact fade lengths,
+restart during fade, post-death silence and return to selection. The PCM trial
+still uses Courtesy and restarts it at sample zero; PC song selection/random
+retry offsets and normal-release soundtrack integration remain separate work.
+The legacy placeholder LSP backend is not changed by this PCM lifecycle patch.
+
+PAL 512 KiB FS-UAE lifecycle check passed: initial B=0, playback after start,
+B=72 unchanged across two post-death captures, retry reset to B=12, return to
+menu and clean AmigaDOS exit. No underruns were observed. These are DMA-counter
+checks, not recorded-audio verification. See `pcm_lifecycle_trials.json`.
+The cheat-free lifecycle trial is `out/pcm_lifecycle.adf`.

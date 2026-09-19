@@ -1,0 +1,24 @@
+{
+  "profile": "PAL A500 512 KiB Chip only",
+  "asset": "accepted 96-slice Courtesy PCM",
+  "executable_sha256": "3374583d5612d7d662e75419f637de203543ade47c3402ff28cd3fe416292a79",
+  "host_test": "make test-pcm-lifecycle passes",
+  "fade_in_nominal_ticks": 30,
+  "fade_out_nominal_ticks": 45,
+  "underruns": 0,
+  "evidence": {
+    "idle_menu_B0": "scratchpad/fsuae/pal512/fs-uae-crop-2609191958-01.png",
+    "started": "scratchpad/fsuae/pal512/fs-uae-crop-2609191958-03.png",
+    "stopped_after_death_B72": "scratchpad/fsuae/pal512/fs-uae-crop-2609191959-01.png",
+    "still_stopped_B72": "scratchpad/fsuae/pal512/fs-uae-crop-2609191959-02.png",
+    "retry_reset_B12": "scratchpad/fsuae/pal512/fs-uae-crop-2609191959-03.png",
+    "returned_to_menu": "scratchpad/fsuae/pal512/fs-uae-crop-2609191959-06.png",
+    "clean_exit": "scratchpad/fsuae/pal512/fs-uae-crop-2609192000-02.png"
+  },
+  "limitations": [
+    "DMA counter observations, not audio capture",
+    "NTSC lifecycle not emulator-tested",
+    "Legacy placeholder LSP backend unchanged",
+    "PC retry seek offsets not implemented"
+  ]
+}

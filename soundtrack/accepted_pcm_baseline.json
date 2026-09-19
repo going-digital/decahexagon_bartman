@@ -1,0 +1,20 @@
+{
+  "status": "User-accepted audio baseline; release integration and remaining target checks outstanding",
+  "track": "Courtesy",
+  "sample_rate": 12000,
+  "dictionary_slices": 96,
+  "format": "FBP2 predecoded mono signed 8-bit PCM",
+  "asset_bytes": 272412,
+  "asset_sha256": "613b79c14a80f3fe59e9de4ba61a4d8afa2c91ab6c34728f1bbcac6d18cca78a",
+  "source_bank_sha256": "8631b1ff1e196c37db6d3acaedacd8cdbbc062478183a36da040150a5a45914c",
+  "asset_prefix": "scratchpad/audio/courtesy/pcm_reuse/96",
+  "runtime_decompression": false,
+  "runtime_interpolation": false,
+  "higher_quality_variants": "Deferred; optional future work for more capable machines",
+  "remaining": [
+    "Release integration",
+    "Attract-screen HUD clipping",
+    "Full-song target loop verification",
+    "NTSC target verification"
+  ]
+}

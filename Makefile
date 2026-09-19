@@ -33,7 +33,7 @@ ifeq ($(MUSIC_FIB_STREAM),1)
 ifneq ($(FIB_TRIAL_SONG)$(FIB_TRIAL_PCM),11)
 $(error Runtime decompression is retired; soundtrack playback requires predecoded PCM)
 endif
-c_sources += fib_pcm.c tests/fib_stream.c
+c_sources += fib_pcm.c pcm_lifecycle.c tests/fib_stream.c
 SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1 -DFIB_TRIAL_SONG=1 -DFIB_TRIAL_PCM=1
 SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).pcm1"'
 VPATH += tests
@@ -232,3 +232,9 @@ test-death:
 ifeq ($(MUSIC_FIB_STREAM),1)
 obj/fib_stream.o: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1
 endif
+
+.PHONY: test-pcm-lifecycle
+test-pcm-lifecycle:
+	mkdir -p out
+	cc -Wall -Wextra -Werror pcm_lifecycle.c tests/pcm_lifecycle_test.c -o out/pcm_lifecycle_check
+	out/pcm_lifecycle_check
