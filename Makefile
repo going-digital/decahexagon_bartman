@@ -105,9 +105,10 @@ adf-unpacked: $(OUT)_unpacked.adf
 
 # exe2adf creates an AmigaDOS disk whose S/startup-sequence runs the payload.
 # execram decrunches once at launch, before the game takes over the hardware.
-$(OUT).adf: $(OUT)_packed.exe
+$(OUT).adf: $(OUT)_packed.exe Makefile
 	$(info Building packed ADF $@)
-	@$(EXE2ADF) -i $< -l Hexagon -a $@
+	@python3 -c "from pathlib import Path; import shutil; p = Path('$(OUT).adf-stage/hexagon'); p.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile('$<', p)"
+	@$(EXE2ADF) -i $(OUT).adf-stage/hexagon -l Hexagon -a $@
 
 # Compatibility filename for existing launchers; identical to the default ADF.
 $(OUT)_packed.adf: $(OUT).adf
