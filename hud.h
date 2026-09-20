@@ -3,15 +3,16 @@
 #include <exec/types.h>
 
 // Sprite-based HUD + title screen. Composited by Denise independently of the
-// bitplane/blitter pipeline, so it costs nothing on the render frame budget.
+// bitplane/blitter pipeline; CPU glyph selection and Copper setup still cost time.
 // OCS gives 8 sprite channels of 16px each, so this is good for a short
 // fixed-width readout (a timer) and a one-line title (all 8 channels).
 // The copper reuses the channels below the timer so MODE_ATTRACT displays
 // both the selected profile's best and its menu text, see hud_emit_copper.
+// After the banner row, channels 6/7 are reloaded with this frame's player.
 //
 // SPRxPT is only ever written by the COPPER (hud_emit_copper), never the CPU,
-// even though the content it points at is fixed at hud_init() time and never
-// changes. A CPU move.l to that register lands as two separate 16-bit bus
+// HUD descriptors are fixed at hud_init(); the player uses three buffers.
+// A CPU move.l to that register lands as two separate 16-bit bus
 // writes, and Agnus reads the same register every vblank to fetch that
 // sprite's pos/ctl - hitting it mid-write yields a torn pointer and garbage
 // on screen. The copper's MOVE runs inside the same DMA arbitration Agnus

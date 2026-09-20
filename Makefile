@@ -11,7 +11,7 @@ endif
 VPATH = support
 cpp_sources :=
 cpp_objects :=
-c_sources := main.c system.c video.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
+c_sources := main.c system.c video.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c player_shape.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
 # Default release behavior: omit the entire steering-assist translation unit.
 CHEAT_MODE ?= 0
 ifneq ($(CHEAT_MODE),0)
@@ -48,7 +48,7 @@ c_sources += paula_irq.c
 endif
 PC_CORE_SELFTEST ?= 0
 ifeq ($(PC_CORE_SELFTEST),1)
-c_sources += tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c
+c_sources += tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/projection_checks.c tests/trig_checks.c
 SELFTEST_CFLAGS += -DPC_CORE_SELFTEST=1
 VPATH += tests
 endif
@@ -163,9 +163,9 @@ $(vasm_objects): obj/%.o : %.asm
 
 .PHONY: test
 HOST_CC ?= cc
-test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video
+test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video test-projection-edges test-player-shape
 	@mkdir -p out
-	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/core_test.c -o out/core_test
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/projection_checks.c tests/trig_checks.c tests/core_test.c -o out/core_test
 	./out/core_test
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c pc_projection.c render_clip.c tests/wave_probe.c -o out/wave_probe
 	python3 tests/compare_waves.py
@@ -173,6 +173,12 @@ test: test-palette test-progression test-menu test-lifecycle test-death test-sfx
 	python3 tests/compare_schedule.py
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_morph.c tests/normal_run_test.c -o out/normal_run_test
 	./out/normal_run_test
+
+.PHONY: test-player-shape
+test-player-shape: | out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror player_shape.c tests/player_shape_test.c -o out/player_shape_test
+	./out/player_shape_test
+	python3 tests/player_prerender_test.py
 
 $(objects): | obj
 $(OUT).elf: | out
@@ -263,6 +269,7 @@ test-sfx:
 	mkdir -p out
 	$(HOST_CC) -Wall -Wextra -Werror pc_sfx.c tests/pc_sfx_test.c -o out/pc_sfx_test
 	out/pc_sfx_test
+	python3 tests/sfx_startup_test.py
 
 obj/fib_stream.o: assets/music1.cues
 
@@ -277,6 +284,12 @@ test-video:
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror video.c tests/video_test.c -o out/video_test
 	out/video_test
+
+.PHONY: test-projection-edges
+test-projection-edges:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_projection.c tests/projection_edges_test.c -o out/projection_edges_test
+	./out/projection_edges_test
 
 ifeq ($(MUSIC_FIB_STREAM),1)
 obj/fib_stream.o: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1

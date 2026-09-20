@@ -10,6 +10,7 @@
 #define HUB_RADIUS 40
 #define PLAYER_RADIUS 54
 #define ZOOM_ONE 256
+#define GAMEPLAY_ZOOM 128
 
 typedef struct {
     UWORD field_angle;

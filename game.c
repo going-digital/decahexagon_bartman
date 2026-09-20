@@ -11,7 +11,7 @@ static PcSfx sound_events;
 #include "cheat.h"
 #endif
 
-#define STARTING_ZOOM_TARGET 128
+#define STARTING_ZOOM_TARGET GAMEPLAY_ZOOM
 #define ATTRACT_ZOOM_TARGET (ZOOM_ONE * 50 / HUB_RADIUS)
 #include "pc_pulse.h"
 #if MUSIC_FIB_STREAM

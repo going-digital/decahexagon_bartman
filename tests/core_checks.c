@@ -2,6 +2,7 @@
 #include "core_checks.h"
 #ifdef __m68k__
 #include "../support/gcc8_c_support.h"
+unsigned pc_trig_checks(void);
 #endif
 #define CHECK(expr) do { if (!(expr)) return __LINE__; } while (0)
 
@@ -12,6 +13,7 @@ unsigned pc_death_checks(void);
 unsigned pc_wave_checks(void);
 unsigned pc_schedule_checks(void);
 unsigned render_clip_checks(void);
+unsigned pc_projection_checks(void);
 
 unsigned pc_core_checks(void) {
 #ifdef __m68k__
@@ -65,5 +67,9 @@ unsigned pc_core_checks(void) {
     if (!failure) failure=pc_menu_checks();
     if (!failure) failure=pc_lifecycle_checks();
     if (!failure) failure=pc_death_checks();
+    if (!failure) failure=pc_projection_checks();
+#ifdef __m68k__
+    if (!failure) failure=pc_trig_checks();
+#endif
     return failure ? failure:render_clip_checks();
 }

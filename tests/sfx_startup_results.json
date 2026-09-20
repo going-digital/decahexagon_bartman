@@ -1,0 +1,27 @@
+{
+  "date": "2026-09-20",
+  "emulator": "Copperline 0.21.0, A500OCS, 512K chip + 512K slow, audio filter off",
+  "runs": [
+    {
+      "video": "PAL",
+      "begun": 14,
+      "retired": 14,
+      "active": 0,
+      "log": "scratchpad/sfx_clicks/final-pal.log",
+      "audio_directory": "scratchpad/sfx_clicks/final-pal"
+    },
+    {
+      "video": "NTSC",
+      "begun": 14,
+      "retired": 14,
+      "active": 0,
+      "log": "scratchpad/sfx_clicks/final-ntsc.log",
+      "audio_directory": "scratchpad/sfx_clicks/final-ntsc"
+    }
+  ],
+  "diagnostic_sha256": "5df69b1a3d080d6462faa75257ae3d3b80318c202cb049d56918931a47772f2d",
+  "release_adf_sha256": "6b1529af7af1ededfe1a6e94fe8a78cfec64da697c9fa70e576a78456808f2c0",
+  "exact_reported_click_reproduced": false,
+  "pcm_assets_changed": false,
+  "host_checks": "make test-sfx test-pcm-lifecycle passed"
+}

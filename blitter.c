@@ -310,12 +310,12 @@ void cpu_cls(void *bitplane) {
 }
 
 void blit_fill(void *bitplane, void *bitplane2) {
-    // Only fill the band that actually holds seeds (set by blit_fill_reset +
-    // the seed_span calls above). Full-screen is 200 rows; a typical frame is
-    // ~half that, and the fill is a fixed ~cycle/word cost.
+    // Fill only even screen rows within the seed band. Positive modulos
+    // skip one extra row in descending mode. Odd rows retain edge seeds.
     WORD lo = seed_lo, hi = seed_hi;
+    hi &= ~1; // Fixed even screen rows; never alternate parity between frames.
     if (hi < lo) return; // nothing drawn
-    UWORD rows = (UWORD)(hi - lo + 1);
+    UWORD rows = (UWORD)((hi - lo) / 2 + 1);
     APTR start  = bitplane  + hi * SCREEN_WIDTH_BYTES + SCREEN_WIDTH_BYTES - 2;
     APTR start2 = bitplane2 + hi * SCREEN_WIDTH_BYTES + SCREEN_WIDTH_BYTES - 2;
     blit_wait();
@@ -325,7 +325,7 @@ void blit_fill(void *bitplane, void *bitplane2) {
     custom->bltalwm = 0xffff;
     custom->bltapt = start;
     custom->bltdpt = start2;
-    custom->bltamod = 0;
-    custom->bltdmod = 0;
+    custom->bltamod = SCREEN_WIDTH_BYTES;
+    custom->bltdmod = SCREEN_WIDTH_BYTES;
     custom->bltsize = (rows << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }

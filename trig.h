@@ -14,3 +14,6 @@ extern WORD frame_cos[MAX_NUM_SIDES];
 
 void init_tables(void);
 void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y);
+
+// Uses cached Q14 directions with identical rounding and pixel aspect correction.
+void direction_to_cartesian(WORD sine, WORD cosine, UWORD length, WORD* x, WORD* y);

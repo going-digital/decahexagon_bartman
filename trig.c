@@ -31,9 +31,8 @@ void init_tables(void) {
     );
 }
 
-void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
-    angle >>= 6; // Sin table has 1023 entries
-    WORD result = sin_table[angle];
+void direction_to_cartesian(WORD sine, WORD cosine, UWORD length, WORD* x, WORD* y) {
+    WORD result = sine;
     //result = (result * length) >> 14;
     asm(
         "muls.w %[length],%[result]\n"
@@ -46,7 +45,7 @@ void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     result -= result >> 2;
     *y = result;
 
-    result = sin_table[(angle + 0x100) & 0x3ff];
+    result = cosine;
     //result = (result * length) >> 14;
     asm(
         "muls.w %[length],%[result]\n"
@@ -57,4 +56,9 @@ void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
         : "cc"
     );
     *x = result;
+}
+
+void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
+    UWORD index = angle >> 6;
+    direction_to_cartesian(sin_table[index], sin_table[(index + 256) & 1023], length, x, y);
 }

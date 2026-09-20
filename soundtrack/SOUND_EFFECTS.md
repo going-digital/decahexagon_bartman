@@ -116,3 +116,44 @@ that excludes steering-assist code.
 The playback overlay is now optional: `-DAUDIO_DIAGNOSTICS=1` enables it.
 It defaults to BUILD_DEBUG, so release builds omit it. Historical trial sizes
 and screenshots above describe the earlier untrimmed bank.
+
+### Pre-speech click investigation (2026-09-20)
+
+Reported symptom: a click immediately before a spoken effect. The generated
+spoken PCM clips begin with zeros (for example, `begin`: 25.5 ms;
+`superhexagon`: 4.375 ms). Their source files and generated PCM are unchanged.
+
+Startup now keeps AUDxVOL at zero until the new DMA fetch has settled, then
+queues the silent reload and restores volume. Both DMA settling waits count
+three raster transitions: the first transition can be arbitrarily close, so
+this guarantees two complete scanlines. After the stop-side wait, INTREQ is
+cleared again before the channel is armed; a late request from the previous
+DMA must not be mistaken for the new sample's first interrupt. No additional
+per-frame work, mixer or VBlank-based speech delay was introduced. Two extra
+raster waits add approximately 128 microseconds per effect request, excluding
+interrupt preemption; the first fraction of a millisecond plays muted.
+
+`make test-sfx test-pcm-lifecycle` passes. The new startup test compiles the
+actual driver against mocked registers and replaces only the beam wait. It
+checks that volume stays zero through the fresh DMA fetch, injects a stale IRQ
+after stop, and covers PAL/NTSC periods, early/delayed first callbacks, retriggers,
+oldest-voice replacement, omitted clips and final retirement. This is an
+ordering/lifecycle regression test, not a Paula hardware model.
+
+A Copperline 0.21.0 A500 OCS diagnostic played 14 requests, including overlapping
+speech, retriggers and voice stealing. PAL and NTSC both reported 14 retired
+voices and no active voices at completion. Per-channel WAV captures, before/after
+sources and logs are under `scratchpad/sfx_clicks/`; the final captures are
+`final-pal/` and `final-ntsc/`. The diagnostic also primes a muted channel with
+nonzero manual sample data before the first spoken effect. The exact reported
+pre-speech click was not reproduced in these captures, so this change removes
+startup hazards but does not establish that the user's audible symptom is
+resolved. Hard-cut preemption of an already audible effect remains unchanged.
+
+The [Commodore audio hardware reference](https://www.theflatnet.de/pub/cbm/amiga/AmigaDevDocs/hard_5.html)
+discusses matching waveform boundaries to avoid clicks. That general principle
+does not by itself identify the cause of this reported click.
+
+The combined music/effects release ADF and packed executable were rebuilt with
+the accepted music bank and passed the no-cheat audit. The diagnostic's manual
+sample priming and scripted effect sequence are absent from the release.

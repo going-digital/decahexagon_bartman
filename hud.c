@@ -3,6 +3,7 @@
 #include "system.h"  // custom, muluw, AllocMem
 #include "coplist.h" // copWritePtr
 #include "game.h"
+#include "render.h"
 
 // --- layout --------------------------------------------------------------
 #define SPRITE_CHANNELS 8 // total OCS sprite DMA channels
@@ -48,24 +49,112 @@
 #define TITLE_X       (((SCREEN_WIDTH - TITLE_CANVAS_BITS / 2) / 2) - TITLE_X_ADJUST)
 #define TITLE_Y       24 // screen px from the top - clear of the hub and the corner HUD
 
+#if PLAYER_SPRITE_RELOAD_Y < TITLE_Y + HUD_CELL_H + 2
+#error "Player sprite reload must follow the banner's DMA terminator"
+#endif
+
 #define GAMEOVER_HOLD_TICKS  (FRAME_RATE * 16 / 10) // ~1.6s "GAME OVER" banner (doubled per user request)
 #define GAMEOVER_FLASH_TICKS 3                      // white flash as it cuts to the result readout
 #define RECORD_FLASH_PERIOD  16                     // ticks per on/off half of the "new record" blink
 
 // Raw 4-bit rows, MSB = leftmost column. Blocky but legible at this size.
 static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
-    /* 0 */ { 0xF, 0x9, 0x9, 0x9, 0x9, 0xF },
-    /* 1 */ { 0x2, 0x6, 0x2, 0x2, 0x2, 0x7 },
-    /* 2 */ { 0xF, 0x1, 0x1, 0xF, 0x8, 0xF },
-    /* 3 */ { 0xF, 0x1, 0x7, 0x1, 0x1, 0xF },
-    /* 4 */ { 0x9, 0x9, 0x9, 0xF, 0x1, 0x1 },
-    /* 5 */ { 0xF, 0x8, 0xF, 0x1, 0x1, 0xF },
-    /* 6 */ { 0xF, 0x8, 0xF, 0x9, 0x9, 0xF },
-    /* 7 */ { 0xF, 0x1, 0x2, 0x4, 0x4, 0x4 },
-    /* 8 */ { 0xF, 0x9, 0xF, 0x9, 0x9, 0xF },
-    /* 9 */ { 0xF, 0x9, 0xF, 0x1, 0x1, 0xF },
-    /* : */ { 0x0, 0x2, 0x0, 0x2, 0x0, 0x0 },
-    /* . */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x2 },
+    /* 0 */ {
+        0b1111,
+        0b1001,
+        0b1001,
+        0b1001,
+        0b1001,
+        0b1111
+    },
+    /* 1 */ {
+        0b0010,
+        0b0110,
+        0b0010,
+        0b0010,
+        0b0010,
+        0b0111
+    },
+    /* 2 */ {
+        0b1111,
+        0b0001,
+        0b0001,
+        0b1111,
+        0b1000,
+        0b1111
+    },
+    /* 3 */ {
+        0b1111,
+        0b0001,
+        0b0111,
+        0b0001,
+        0b0001,
+        0b1111
+    },
+    /* 4 */ {
+        0b1001,
+        0b1001,
+        0b1001,
+        0b1111,
+        0b0001,
+        0b0001
+    },
+    /* 5 */ {
+        0b1111,
+        0b1000,
+        0b1111,
+        0b0001,
+        0b0001,
+        0b1111
+    },
+    /* 6 */ {
+        0b1111,
+        0b1000,
+        0b1111,
+        0b1001,
+        0b1001,
+        0b1111
+    },
+    /* 7 */ {
+        0b1111,
+        0b0001,
+        0b0010,
+        0b0100,
+        0b0100,
+        0b0100
+    },
+    /* 8 */ {
+        0b1111,
+        0b1001,
+        0b1111,
+        0b1001,
+        0b1001,
+        0b1111
+    },
+    /* 9 */ {
+        0b1111,
+        0b1001,
+        0b1111,
+        0b0001,
+        0b0001,
+        0b1111
+    },
+    /* : */ {
+        0b0000,
+        0b0010,
+        0b0000,
+        0b0010,
+        0b0000,
+        0b0000
+    },
+    /* . */ {
+        0b0000,
+        0b0000,
+        0b0000,
+        0b0000,
+        0b0000,
+        0b0010
+    },
 };
 
 // Letter glyphs for the banner canvas, same 4-bit/row encoding as the digit
@@ -76,38 +165,188 @@ enum {
     TITLE_GLYPH_COUNT
 };
 static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
-    /* H */ { 0x9, 0x9, 0x9, 0xF, 0x9, 0x9 },
-    /* E */ { 0xF, 0x8, 0xE, 0x8, 0x8, 0xF },
-    /* X */ { 0x9, 0x9, 0x6, 0x6, 0x9, 0x9 },
-    /* A */ { 0x6, 0x9, 0x9, 0xF, 0x9, 0x9 },
-    /* G */ { 0x7, 0x8, 0x8, 0xB, 0x9, 0x7 },
-    /* O */ { 0x6, 0x9, 0x9, 0x9, 0x9, 0x6 },
-    /* N */ { 0x9, 0xD, 0xD, 0xB, 0xB, 0x9 },
-    /* M */ { 0x9, 0xD, 0xB, 0x9, 0x9, 0x9 },
-    /* V */ { 0x9, 0x9, 0x9, 0x9, 0x6, 0x6 },
-    /* R */ { 0xE, 0x9, 0xE, 0xA, 0x9, 0x9 },
-    /* (space, all blank) */ { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 },
-    /* S */ { 0x7, 0x8, 0x6, 0x1, 0x1, 0xE },
-    /* T */ { 0xF, 0x2, 0x2, 0x2, 0x2, 0x2 },
-    /* Y */ { 0x9, 0x9, 0x6, 0x2, 0x2, 0x2 },
-    /* P */ { 0xE, 0x9, 0x9, 0xE, 0x8, 0x8 },
-    /* L */ { 0x8, 0x8, 0x8, 0x8, 0x8, 0xF },
-    /* C */ { 0x7, 0x8, 0x8, 0x8, 0x8, 0x7 },
-    /* K */ { 0x9, 0xA, 0xC, 0xA, 0x9, 0x9 },
-    /* D */ { 0xE, 0x9, 0x9, 0x9, 0x9, 0xE },
+    /* H */ {
+        0b1001,
+        0b1001,
+        0b1001,
+        0b1111,
+        0b1001,
+        0b1001
+    },
+    /* E */ {
+        0b1111,
+        0b0000,
+        0b1110,
+        0b1000,
+        0b1000,
+        0b1111
+    },
+    /* X */ {
+        0b1001,
+        0b1001,
+        0b0110,
+        0b0110,
+        0b1001,
+        0b1001
+    },
+    /* A */ {
+        0b0110,
+        0b0001,
+        0b1001,
+        0b1111,
+        0b1001,
+        0b1001
+    },
+    /* G */ {
+        0b0111,
+        0b0000,
+        0b1000,
+        0b1011,
+        0b1001,
+        0b0111
+    },
+    /* O */ {
+        0b0110,
+        0b0001,
+        0b1001,
+        0b1001,
+        0b1001,
+        0b0110
+    },
+    /* N */ {
+        0b1001,
+        0b1101,
+        0b1101,
+        0b1011,
+        0b1011,
+        0b1001
+    },
+    /* M */ {
+        0b1111,
+        0b0000,
+        0b1111,
+        0b1001,
+        0b1001,
+        0b1001
+    },
+    /* V */ {
+        0b1001,
+        0b1001,
+        0b1001,
+        0b1001,
+        0b0110,
+        0b0110
+    },
+    /* R */ {
+        0b1110,
+        0b0001,
+        0b1110,
+        0b1010,
+        0b1001,
+        0b1001
+    },
+    /* (space, all blank) */ {
+        0b0000,
+        0b0000,
+        0b0000,
+        0b0000,
+        0b0000,
+        0b0000
+    },
+    /* S */ {
+        0b0111,
+        0b0000,
+        0b0110,
+        0b0001,
+        0b0001,
+        0b1110
+    },
+    /* T */ {
+        0b1111,
+        0b0010,
+        0b0010,
+        0b0010,
+        0b0010,
+        0b0010
+    },
+    /* Y */ {
+        0b1001,
+        0b1001,
+        0b0110,
+        0b0010,
+        0b0010,
+        0b0010
+    },
+    /* P */ {
+        0b1110,
+        0b0001,
+        0b1001,
+        0b1110,
+        0b1000,
+        0b1000
+    },
+    /* L */ {
+        0b1000,
+        0b1000,
+        0b1000,
+        0b1000,
+        0b1000,
+        0b1111
+    },
+    /* C */ {
+        0b0111,
+        0b0000,
+        0b1000,
+        0b1000,
+        0b1000,
+        0b0111
+    },
+    /* K */ {
+        0b1001,
+        0b1010,
+        0b1100,
+        0b1010,
+        0b1001,
+        0b1001
+    },
+    /* D */ {
+        0b1110,
+        0b0001,
+        0b1001,
+        0b1001,
+        0b1001,
+        0b1110
+    },
 };
 
 static const UBYTE title_names[6][16] = {
- {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
- {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
- {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T},
- {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
- {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
- {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T}
+    {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
+    {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
+    {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T},
+    {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
+    {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
+    {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T}
 };
 static const UBYTE title_lengths[6]={7,9,10,13,15,16};
-static const UBYTE title_locked[]={TF_L,TF_O,TF_C,TF_K,TF_E,TF_D};
-static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF_O, TF_V, TF_E, TF_R };
+static const UBYTE title_locked[]={
+    TF_L,
+    TF_O,
+    TF_C,
+    TF_K,
+    TF_E,
+    TF_D
+};
+static const UBYTE title_str_gameover[] = {
+    TF_G,
+    TF_A,
+    TF_M,
+    TF_E,
+    TF_SPACE,
+    TF_O,
+    TF_V,
+    TF_E,
+    TF_R
+};
 
 // One pre-built, STATIC sprite descriptor (pos, ctl, data rows, terminator)
 // per (slot, glyph) and per title letter: position and content are both
@@ -116,6 +355,8 @@ static const UBYTE title_str_gameover[] = { TF_G, TF_A, TF_M, TF_E, TF_SPACE, TF
 // hud_emit_copper / hud.h) - the CPU never writes SPRxPT or any sprite data.
 static UWORD* glyph_buf[HUD_SLOTS][GLYPH_COUNT];
 static UBYTE  cur_glyph[HUD_SLOTS]; // this frame's HUD choice per slot, from hud_tick()
+static UBYTE centisecond_digits[FRAME_RATE]; // packed decimal, indexed by tick
+static UWORD glyph_seconds=0xffff;
 static UWORD* locked_buf[SPRITE_CHANNELS];
 static UWORD* title_buf[6][SPRITE_CHANNELS];    // six profile canvases, one slice per channel
 static UWORD* gameover_buf[SPRITE_CHANNELS]; // "GAME OVER" canvas, same layout
@@ -285,6 +526,11 @@ void hud_free(void) {
 }
 
 void hud_init(void) {
+    glyph_seconds=0xffff;
+    for (UWORD tick=0;tick<FRAME_RATE;++tick) {
+        UWORD cs=tick*100/FRAME_RATE;
+        centisecond_digits[tick]=(UBYTE)(((cs/10)<<4)|(cs%10));
+    }
     set_hud_colours();
     // No sprpt[] writes here: hud_emit_copper() reloads every channel, every
     // frame (see blank_sprite above for why "set once" doesn't work).
@@ -331,8 +577,7 @@ typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED } Ban
 // Selection keeps its best visible; names are revealed only after unlocking.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
-static Banner banner_active(void) {
-    GameMode m = game_mode();
+static Banner banner_active(GameMode m) {
     UWORD t = game_mode_timer();
     if (m == MODE_ATTRACT) {
         return game_selection_locked() ? BANNER_LOCKED:BANNER_HEXAGON;
@@ -366,20 +611,34 @@ void hud_tick(void) {
     }
     if (secs > 999) secs = 999;
 
-    UWORD prod = (UWORD)muluw(frames, 100); // frames < FRAME_RATE <= 60, fits UWORD
-    UWORD cs = prod / FRAME_RATE;
-    if (cs > 99) cs = 99;
-
-    cur_glyph[0] = (UBYTE)(secs / 100);
-    cur_glyph[1] = (UBYTE)((secs / 10) % 10);
-    cur_glyph[2] = (UBYTE)(secs % 10);
-    cur_glyph[SLOT_PERIOD] = GLYPH_PERIOD;
-    cur_glyph[4] = (UBYTE)(cs / 10);
-    cur_glyph[5] = (UBYTE)(cs % 10);
+    if (secs!=glyph_seconds) {
+        glyph_seconds=secs;
+        cur_glyph[0]=(UBYTE)(secs/100);
+        cur_glyph[1]=(UBYTE)((secs/10)%10);
+        cur_glyph[2]=(UBYTE)(secs%10);
+    }
+    UBYTE digits;
+    if (frames<FRAME_RATE) {
+        digits=centisecond_digits[frames];
+    } else {
+        // Preserve the old formatting for out-of-contract frame values.
+        UWORD cs=(UWORD)muluw(frames,100)/FRAME_RATE;
+        if (cs>99) cs=99;
+        digits=(UBYTE)(((cs/10)<<4)|(cs%10));
+    }
+    cur_glyph[SLOT_PERIOD]=GLYPH_PERIOD;
+    cur_glyph[4]=digits>>4;
+    cur_glyph[5]=digits&15;
 }
 
 USHORT* hud_emit_copper(USHORT* copPtr) {
-    Banner banner = banner_active();
+    GameMode mode=game_mode();
+    Banner banner = banner_active(mode);
+    UBYTE show_timer=mode==MODE_ATTRACT || banner==BANNER_NONE;
+    UWORD **banner_buf=0;
+    if (banner==BANNER_HEXAGON) banner_buf=title_buf[game_selected_profile()];
+    else if (banner==BANNER_LOCKED) banner_buf=locked_buf;
+    else if (banner==BANNER_GAMEOVER) banner_buf=gameover_buf;
     // Colours must be set before the upper row, not after the multiplex WAIT.
     // Celebratory blink on the digit HUD's 3 colour banks (0-5, the only
     // channels it ever uses) when this run just beat the record. Always
@@ -387,7 +646,7 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     // flashing - to keep this tail's total word count frame-invariant, same
     // reasoning as the sprite loops below. Banks stay solid black-on-white
     // any time this isn't true, i.e. every frame outside a fresh GAMEOVER.
-    UBYTE flash_on = (UBYTE)(banner == BANNER_NONE && game_mode() == MODE_GAMEOVER
+    UBYTE flash_on = (UBYTE)(banner == BANNER_NONE && mode == MODE_GAMEOVER
         && game_new_record()
         && (game_mode_timer() & RECORD_FLASH_PERIOD));
     UWORD fg = flash_on ? 0xfff : 0x000, bg = flash_on ? 0x000 : 0xfff;
@@ -396,7 +655,7 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
         copPtr = copWrite(copPtr, offsetof(struct Custom, color[bank_base[i] + 1]), bg);
     }
     // Two fixed-size pointer batches reuse the channels below the score.
-    // Missing allocations use inert descriptors so every mode emits 110 words.
+    // Missing allocations use inert descriptors; list length is mode-invariant.
     for (WORD row = 0; row < 2; row++) {
         if (row) {
             // Leave two lines after the upper sprites' stop/terminator fetch.
@@ -408,16 +667,11 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
         for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
             UWORD* buf = (UWORD*)blank_sprite;
             if (!row) {
-                if ((game_mode() == MODE_ATTRACT || banner == BANNER_NONE)
+                if (show_timer
                     && ch < HUD_SLOTS && glyph_buf[ch][cur_glyph[ch]])
                     buf = glyph_buf[ch][cur_glyph[ch]];
-            } else if (banner == BANNER_HEXAGON) {
-                if (title_buf[game_selected_profile()][ch])
-                    buf = title_buf[game_selected_profile()][ch];
-            } else if (banner == BANNER_LOCKED) {
-                if (locked_buf[ch]) buf = locked_buf[ch];
-            } else if (banner == BANNER_GAMEOVER) {
-                if (gameover_buf[ch]) buf = gameover_buf[ch];
+            } else if (banner_buf && banner_buf[ch]) {
+                buf=banner_buf[ch];
             }
             UWORD offset = (UWORD)(offsetof(struct Custom, sprpt) + ch * sizeof(APTR));
             if (row) {
@@ -430,6 +684,15 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
                 copPtr = copWritePtr(copPtr, offset, buf);
             }
         }
+    }
+    // Reuse the last pair below the banners. Explicit POS/CTL reload is needed
+    // after their terminators, just as for the second HUD row above.
+    copPtr=copWaitY(copPtr,DISPLAY_HW_Y+PLAYER_SPRITE_RELOAD_Y);
+    for (unsigned ch=0;ch<2;++ch) {
+        const UWORD *sprite=render_player_sprite(ch);
+        copPtr=copWritePtr(copPtr,offsetof(struct Custom,sprpt)+(ch+6)*sizeof(APTR),(void*)render_player_pixels(ch));
+        copPtr=copWrite(copPtr,offsetof(struct Custom,spr[ch+6].pos),sprite[0]);
+        copPtr=copWrite(copPtr,offsetof(struct Custom,spr[ch+6].ctl),sprite[1]);
     }
     return copPtr;
 }

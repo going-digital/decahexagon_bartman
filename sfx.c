@@ -29,7 +29,9 @@ void sfx_init(void) {
     custom->adkcon=0x00ff;
 }
 static void settle_dma(void) {
-    for(unsigned n=0;n<2;++n) {
+    /* The first transition may be only a few clocks away. Three transitions
+     * guarantee two complete scanlines regardless of the entry position. */
+    for(unsigned n=0;n<3;++n) {
         UWORD line=custom->vhposr&0xff00;
         while((custom->vhposr&0xff00)==line) {}
     }
@@ -45,10 +47,14 @@ static void play(unsigned id) {
     stop(ch);
     /* Allow a prior DMA request to settle before programming a new sample. */
     settle_dma();
+    /* A final request can arrive AFTER stop() cleared INTREQ. Do not let it
+     * masquerade as the new clip's first-fetch IRQ when INTENA is restored. */
+    custom->intreq=INTF_AUD0<<ch;
+    custom->intreq=INTF_AUD0<<ch;
     *(volatile ULONG*)&custom->aud[ch].ac_ptr=(ULONG)((const UBYTE*)SfxData+sfx_samples[id].offset);
     custom->aud[ch].ac_len=sfx_samples[id].words;
     custom->aud[ch].ac_per=video_timing.sfx_period;
-    custom->aud[ch].ac_vol=64;
+    /* Stay muted until fresh sample data has replaced the previous output. */
     ++begun;age[ch]=++serial;clip_id[ch]=id;first[ch]=busy[ch]=1;
     __asm volatile("" ::: "memory");
     custom->intena=INTF_SETCLR|INTF_INTEN|(INTF_AUD0<<ch);
@@ -59,6 +65,7 @@ static void play(unsigned id) {
     settle_dma();
     *(volatile ULONG*)&custom->aud[ch].ac_ptr=(ULONG)silence;
     custom->aud[ch].ac_len=1;
+    custom->aud[ch].ac_vol=64;
 }
 void sfx_emit(uint16_t mask) {
     for(unsigned id=0;id<SFX_COUNT;++id) if(mask&SFX_BIT(id)) play(id);

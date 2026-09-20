@@ -1,0 +1,112 @@
+{
+  "date": "2026-09-20",
+  "video": "PAL",
+  "nominal_refresh_hz": 50,
+  "lines_per_frame": 312,
+  "note": "Instrumented stage timings, inclusive of audio/other IRQs; not uninstrumented benchmark FPS. Explicit DMA waits at fill/spoke boundaries.",
+  "runs": [
+    {
+      "emulator": "FS-UAE 3.1.66",
+      "stage": 0,
+      "frames": 1918,
+      "vblanks": 3000,
+      "work_lines": 928154,
+      "raw_profile": [
+        226271,
+        160469,
+        270434,
+        69698,
+        113699,
+        39927,
+        40880,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mean_ms": {
+        "simulation_and_hud": 7.562331221090345,
+        "span_preparation": 5.363125317504879,
+        "wall_projection_and_edges": 9.038327852196467,
+        "hub_and_player": 2.3294163257666907,
+        "fill_and_wait": 3.7999986631373495,
+        "spokes_and_wait": 1.3344228763936794,
+        "frame_tail": 1.3662736290473516
+      },
+      "executable_sha256": "fb049948c1c731efa2482505a35ad4386301b7420b79f8fb159ba689fb84d609"
+    },
+    {
+      "emulator": "FS-UAE 3.1.66",
+      "stage": 2,
+      "frames": 1553,
+      "vblanks": 3001,
+      "work_lines": 932976,
+      "raw_profile": [
+        243056,
+        177052,
+        284157,
+        61221,
+        94447,
+        35158,
+        32349,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mean_ms": {
+        "simulation_and_hud": 10.032525962983142,
+        "span_preparation": 7.308105073720013,
+        "wall_projection_and_edges": 11.72903561345287,
+        "hub_and_player": 2.5269948982118975,
+        "fill_and_wait": 3.898451301864051,
+        "spokes_and_wait": 1.451202800204732,
+        "frame_tail": 1.335256823022438
+      },
+      "executable_sha256": "22d73c0cd1668be09626c4a21a9696e2936753f75308974b7514c7d1b551327b"
+    },
+    {
+      "emulator": "Copperline 0.21.0",
+      "stage": 2,
+      "frames": 1551,
+      "raw_profile": [
+        240937,
+        179059,
+        284176,
+        61580,
+        93213,
+        35237,
+        32400,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mean_ms": {
+        "simulation_and_hud": 9.957884904693415,
+        "span_preparation": 7.400477772818198,
+        "wall_projection_and_edges": 11.74494536196664,
+        "hub_and_player": 2.5450908429631833,
+        "fill_and_wait": 3.8524773099241187,
+        "spokes_and_wait": 1.4563391691051266,
+        "frame_tail": 1.339086445469424
+      },
+      "executable_sha256": "22d73c0cd1668be09626c4a21a9696e2936753f75308974b7514c7d1b551327b"
+    }
+  ]
+}

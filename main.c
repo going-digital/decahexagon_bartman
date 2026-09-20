@@ -59,6 +59,7 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
     // Set scene colours before the HUD's mid-display multiplex WAIT.
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[31]), col1);
 
     // HUD/title pointers include a WAIT between their two sprite rows.
     copPtr = hud_emit_copper(copPtr);
@@ -123,6 +124,7 @@ int main() {
 
     // Generate sin table
     init_tables();
+    render_init();
 
 #if BUILD_DEBUG
     warpmode(0);
@@ -244,10 +246,10 @@ int main() {
 #if MUSIC_FIB_STREAM
             fib_stream_tick(game_mode()==MODE_PLAYING,game_mode()==MODE_ATTRACT);
 #endif
-            hud_tick();
             // Held state persists; one-shot actions belong to only the first tick.
             input.fire_edge = input.back_edge = 0;
         }
+        hud_tick(); // Only the final simulated state is displayed.
 #if BUILD_DEBUG
         custom->color[0] = 0x303; // after input+update
 #endif
@@ -267,6 +269,7 @@ int main() {
         custom->color[0] = 0x003;
 #endif
         render_spokes(bitplane_fg2); // radial slot lines, drawn over the fill
+        render_player(bitplane_fg2); // solid sprite overlay, independently of fill
 #if BUILD_DEBUG
         custom->color[0] = 0x300;
 #endif
@@ -350,6 +353,7 @@ int main() {
     // END
     FreeSystem();
     hud_free();
+    render_free();
     FreeMem(bitplane_fg1, BITPLANE_SIZE);
     FreeMem(bitplane_fg2, BITPLANE_SIZE);
     FreeMem(bitplane_fg3, BITPLANE_SIZE);
