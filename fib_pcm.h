@@ -7,5 +7,7 @@ typedef struct {
 } PcmSong;
 int fib_song_init(PcmSong *s,const unsigned char *blob,unsigned bytes);
 void fib_song_read(PcmSong *s,unsigned char *out,unsigned samples);
+/* Seek within the logical PCM stream; physical slice padding is skipped. */
+int fib_song_seek(PcmSong *s,unsigned sample);
 int fib_pcm_init_split(PcmSong *s,const unsigned char *first,unsigned first_bytes,
                        const unsigned char *second,unsigned second_bytes);

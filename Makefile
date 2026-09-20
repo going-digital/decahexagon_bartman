@@ -163,7 +163,7 @@ $(vasm_objects): obj/%.o : %.asm
 
 .PHONY: test
 HOST_CC ?= cc
-test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video test-projection-edges test-player-shape
+test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video test-projection-edges test-player-shape test-pcm-lifecycle
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/projection_checks.c tests/trig_checks.c tests/core_test.c -o out/core_test
 	./out/core_test
@@ -256,6 +256,8 @@ test-pcm-lifecycle:
 	mkdir -p out
 	cc -Wall -Wextra -Werror pcm_lifecycle.c tests/pcm_lifecycle_test.c -o out/pcm_lifecycle_check
 	out/pcm_lifecycle_check
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror fib_pcm.c tests/pcm_seek_test.c -o out/pcm_seek_test
+	out/pcm_seek_test
 
 # Clips are converted offline; the target never decodes compressed audio.
 out/sfx.pcm: tools/audio/prepare_sfx.py $(wildcard assets/sounds/*.ogg)

@@ -1,4 +1,8 @@
 #include "pcm_lifecycle.h"
+unsigned pcm_start_offset_ms(unsigned previously_started,unsigned random_value) {
+    static const unsigned offsets[4]={0,27477,80410,110000};
+    return previously_started?offsets[random_value&3]:0;
+}
 unsigned pcm_lifecycle_tick(PcmLifecycle *s,unsigned playing,unsigned menu) {
     unsigned action=0;
     if(playing && !s->was_playing) {

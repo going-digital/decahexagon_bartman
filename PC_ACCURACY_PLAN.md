@@ -1,5 +1,8 @@
 # Plan: PC-accurate Super Hexagon mechanics on the Amiga A500
 
+Current follow-up tasks and requested features are collected in the
+[game backlog](BACKLOG.md).
+
 Status: all six launch profiles and two automatic stage handoffs implemented, 2026-09-19. Runtime selection, session unlocks and per-mode records are implemented. Immediate starts, retry gates and ordinary death geometry are verified; disk persistence, exact transition presentation and the scripted ending remain pending. See [progress and verification](PC_ACCURACY_PROGRESS.md). The phases below remain the acceptance plan; an initial implementation batch is not completion of the full specification.
 
 ## Target and definition of accuracy

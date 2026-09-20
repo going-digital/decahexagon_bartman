@@ -42,6 +42,21 @@ int fib_pcm_init_split(PcmSong *s,const unsigned char *p,unsigned first_bytes,
 int fib_song_init(PcmSong *s,const unsigned char *p,unsigned bytes) {
     return fib_pcm_init_split(s,p,bytes,0,0);
 }
+int fib_song_seek(PcmSong *s,unsigned sample) {
+    for(unsigned i=0;i<s->seq_count;++i) {
+        const unsigned char *entry=s->sequence+4*i;
+        unsigned n=be16(entry+2);
+        if(sample<n) {
+            unsigned offset=be32(s->offsets+4*be16(entry));
+            s->raw=(offset<s->pcm_split?s->bank+offset:s->edges+(offset-s->pcm_split))+sample;
+            s->seq_index=i+1;
+            s->output_left=n-sample;
+            return 1;
+        }
+        sample-=n;
+    }
+    return 0;
+}
 void fib_song_read(PcmSong *s,unsigned char *out,unsigned samples) {
     while(samples) {
         if(!s->output_left) {

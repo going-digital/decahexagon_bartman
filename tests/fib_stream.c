@@ -9,6 +9,8 @@
 #include "../pc_pulse.h"
 INCBIN(CourtesyCues, "assets/music1.cues");
 static PcmLifecycle lifecycle;
+static UWORD music_rng;
+static UBYTE music_started;
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
 static PcmSong song;
@@ -101,7 +103,18 @@ void fib_stream_start(void) {
     if(!buffers) { underruns=999; return; }
     const UBYTE *header=(const UBYTE*)FibSongData;
     sample_length=((ULONG)header[4]<<24)|((ULONG)header[5]<<16)|((ULONG)header[6]<<8)|header[7];
-    fill_position=fill_slot=0;
+    /* Keep music randomness independent of wall-pattern RNG. */
+    if(!music_started) music_rng=((UWORD)frameCounter^0xa361u)|1u;
+    else {
+        music_rng^=music_rng<<7;
+        music_rng^=music_rng>>9;
+        music_rng^=music_rng<<8;
+    }
+    /* Embedded PCM uses a 12 kHz timeline on both PAL and NTSC. */
+    ULONG start_position=(ULONG)pcm_start_offset_ms(music_started,music_rng)*12;
+    if(!fib_song_seek(&song,start_position)) start_position=0;
+    fill_position=start_position;fill_slot=0;
+    music_started=1;
     for(unsigned i=0;i<FIB_BUFFERS;++i) fill_one();
     playing=pending=0;next_queue=1;first_irq=1;state[0]=2;
     custom->intena=INTF_AUD0;
@@ -115,7 +128,7 @@ void fib_stream_start(void) {
     custom->intreq=INTF_AUD0;
     started=(UWORD)frameCounter;
     UWORD frame,line;beam_stamp(&frame,&line);
-    audible_position=0;audio_frame=frame;audio_line=line;++audio_epoch;
+    audible_position=start_position;audio_frame=frame;audio_line=line;++audio_epoch;
     running=1;
     __asm volatile ("" ::: "memory");
     custom->intena=INTF_SETCLR|INTF_INTEN|INTF_AUD0;

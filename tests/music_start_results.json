@@ -1,0 +1,126 @@
+{
+  "pc_executable_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "pc_play_address": "0x10005d6b0",
+  "pc_offset_table_address": "0x1001bbb30",
+  "pc_counter_initialisation_address": "0x10005c32c",
+  "courtesy_offsets_ms": [
+    0,
+    27477,
+    80410,
+    110000
+  ],
+  "first_start_ms": 0,
+  "asset_checks": {
+    "logical_samples": 2320000,
+    "seek_cases": 2520,
+    "start_samples": [
+      0,
+      329724,
+      964920,
+      1320000
+    ],
+    "first_buffer_hashes": {
+      "0": 0,
+      "329724": 957492225,
+      "964920": 432556585,
+      "1320000": 3518928549
+    },
+    "asset_sha256": "613b79c14a80f3fe59e9de4ba61a4d8afa2c91ab6c34728f1bbcac6d18cca78a"
+  },
+  "emulator": "Copperline 0.21.0, A500OCS, 512 KB Chip + 512 KB Slow",
+  "runs": [
+    {
+      "video": "PAL",
+      "starts": [
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        },
+        {
+          "start_sample": 964920,
+          "first_buffer_hash": 432556585
+        },
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        },
+        {
+          "start_sample": 1320000,
+          "first_buffer_hash": 3518928549
+        },
+        {
+          "start_sample": 964920,
+          "first_buffer_hash": 432556585
+        },
+        {
+          "start_sample": 964920,
+          "first_buffer_hash": 432556585
+        },
+        {
+          "start_sample": 1320000,
+          "first_buffer_hash": 3518928549
+        },
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        },
+        {
+          "start_sample": 329724,
+          "first_buffer_hash": 957492225
+        },
+        {
+          "start_sample": 329724,
+          "first_buffer_hash": 957492225
+        },
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        }
+      ],
+      "log": "scratchpad/music_seek/PAL.log"
+    },
+    {
+      "video": "NTSC",
+      "starts": [
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        },
+        {
+          "start_sample": 329724,
+          "first_buffer_hash": 957492225
+        },
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        },
+        {
+          "start_sample": 1320000,
+          "first_buffer_hash": 3518928549
+        },
+        {
+          "start_sample": 329724,
+          "first_buffer_hash": 957492225
+        },
+        {
+          "start_sample": 964920,
+          "first_buffer_hash": 432556585
+        },
+        {
+          "start_sample": 1320000,
+          "first_buffer_hash": 3518928549
+        },
+        {
+          "start_sample": 0,
+          "first_buffer_hash": 0
+        },
+        {
+          "start_sample": 964920,
+          "first_buffer_hash": 432556585
+        }
+      ],
+      "log": "scratchpad/music_seek/NTSC.log"
+    }
+  ],
+  "release_adf_sha256": "0b93198d6eaa2bbd5df91d159f812c62a0cdb879153f604f7ef40f3eb36e0477"
+}
