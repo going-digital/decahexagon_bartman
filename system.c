@@ -4,7 +4,6 @@
 #include "tests/fib_stream.h"
 #endif
 #include <graphics/gfxmacros.h>
-#include <devices/trackdisk.h>
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
@@ -71,38 +70,17 @@ void WaitLine(USHORT line) {
 }
 
 static void StopFloppyMotors(void) {
-    /* Do this while trackdisk's task/interrupts can still service DoIO.
-     * Unlike a raw CIA write, TD_MOTOR also updates the driver's state so
-     * disk access works normally when we return to AmigaOS.
-     * Build the reply port locally: CreateMsgPort requires Kickstart 2.0. */
-    BYTE signal = AllocSignal(-1);
-    if (signal == -1) return;
-    struct MsgPort port = {0};
-    port.mp_Node.ln_Type = NT_MSGPORT;
-    port.mp_Flags = PA_SIGNAL;
-    port.mp_SigBit = signal;
-    port.mp_SigTask = FindTask(0);
-    port.mp_MsgList.lh_Head = (struct Node*)&port.mp_MsgList.lh_Tail;
-    port.mp_MsgList.lh_TailPred = (struct Node*)&port.mp_MsgList.lh_Head;
-
-    for (ULONG unit = 0; unit < NUMUNITS; ++unit) {
-        struct IOExtTD request = {0};
-        struct IOStdReq *io = &request.iotd_Req;
-        io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
-        io->io_Message.mn_ReplyPort = &port;
-        io->io_Message.mn_Length = sizeof(request);
-        if (OpenDevice(TD_NAME, unit, (struct IORequest*)io, 0) == 0) {
-            io->io_Command = TD_MOTOR;
-            io->io_Length = 0; // Motor off; no disk data is modified.
-            DoIO((struct IORequest*)io);
-            CloseDevice((struct IORequest*)io);
-        }
-    }
-    FreeSignal(signal);
+    volatile UBYTE *const port = (volatile UBYTE *)0xbfd100;
+    // Motor off, select all drives to latch it, then deselect all drives.
+    *port |= 0xf8;
+    __asm__ volatile ("nop" ::: "memory");
+    *port &= 0x87;
+    __asm__ volatile ("nop" ::: "memory");
+    *port |= 0x78;
+    __asm__ volatile ("nop" ::: "memory");
 }
 
 void TakeSystem(void) {
-    StopFloppyMotors();
     Forbid();
     //Save current interrupts and DMA settings so we can restore them upon exit.
     SystemADKCON = custom->adkconr;
@@ -125,6 +103,12 @@ void TakeSystem(void) {
     custom->intreq = 0x7fff;//Clear any interrupts that were pending
 
     custom->dmacon = 0x7fff;//Clear all DMA channels
+
+    StopFloppyMotors(); // Direct CIA access with OS interrupts disabled.
+
+    // Use OCS-compatible sprite resolution and DMA fetch widths on AGA.
+    *(volatile UWORD *)0xdff106 = 0; // BPLCON3 is absent from the SDK struct.
+    custom->fmode = 0;
 
     //set all colors black, saving them (and the sprite pointers) to restore on exit
     for(int a=0; a < 32; a++) {
