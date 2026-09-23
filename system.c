@@ -21,6 +21,18 @@ static UWORD SystemDMA;
 static UWORD SystemADKCON;
 static volatile APTR VBR = 0;
 static APTR SystemIrq;
+static APTR volatile pending_display;
+
+void QueueDisplayList(APTR list) {
+    /* Publish only after all Chip RAM list/sprite writes are complete. */
+    __asm volatile ("" ::: "memory");
+    pending_display = list;
+}
+
+void WaitDisplayList(void) {
+    while (pending_display) {}
+    __asm volatile ("" ::: "memory");
+}
 
 static struct View *ActiView;
 
@@ -134,6 +146,7 @@ void FreeSystem(void) {
     custom->intena = 0x7fff; // Disable all interrupts
     custom->intreq = 0x7fff; // Clear any interrupts that were pending
     custom->dmacon = 0x7fff; // Clear all DMA channels
+    pending_display = 0;
 
     // Restore interrupts
     SetInterruptHandler(SystemIrq);
@@ -169,6 +182,17 @@ void FreeSystem(void) {
 __attribute__((interrupt)) void interruptHandler(void) {
     custom->intreq = INTF_VERTB;
     custom->intreq = INTF_VERTB; // Reset vbl req. twice for a4000 bug.
+    /* A late IRQ must repeat the old frame, never switch during display.
+     * Restart before line 16, well above the earliest (NTSC) display row. */
+    if (pending_display &&
+        ((*(volatile ULONG*)&custom->vposr >> 8) & 511) < 16) {
+        UWORD blitter_dma = custom->dmaconr & DMAF_BLITTER;
+        custom->dmacon = DMAF_BLITTER; // COPJMP/blitter hardware workaround
+        custom->cop1lc = (ULONG)pending_display;
+        custom->copjmp1 = 0x7fff;
+        custom->dmacon = DMAF_SETCLR | blitter_dma;
+        pending_display = 0; // Old list and frame buffers may now be reused.
+    }
     // DEMO - increment frameCounter
     frameCounter++;
 #if MUSIC_FIB_STREAM && !FIB_TRIAL_MAINLOOP

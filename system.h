@@ -18,6 +18,10 @@ extern volatile short frameCounter;
 void TakeSystem(void);
 void FreeSystem(void);
 APTR GetSystemVBR(void);
+// One completed list may be pending. Wait before reusing the retired list,
+// bitplanes or sprites; QueueDisplayList requires an idle blitter.
+void QueueDisplayList(APTR list);
+void WaitDisplayList(void);
 
 void WaitVbl(void);
 void WaitLine(USHORT line);

@@ -241,3 +241,10 @@ Twenty-four boundary states also run in shared host/68000 checks. See
 The shared host/68000 checks include 181 boundary cases. See
 [death ordering, continuation behavior and limits](DEATH_REFERENCE.md).
 `out/fsuae_menu death` captures a sequence after starting/retrying a run.
+# Display handoff regression
+
+`make test-display-handoff` exercises the actual `system.c` publisher and
+VBlank handler with mocked registers. It forces interrupts between every
+word of an inactive list, delays presentation past the safe top-of-frame
+window, and checks 1,000 alternating publications and buffer reuses. This
+checks ownership and publication ordering, not Copper bus timing.

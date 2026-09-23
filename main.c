@@ -139,11 +139,11 @@ int main() {
     WaitVbl();
 
     // Allocate bitplanes
-    bitplane_fg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
-    bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
-    bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
+    bitplane_fg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
+    bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
+    bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
 
-    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP | MEMF_CLEAR);
+    USHORT* copper1 = (USHORT*)AllocMem(2048, MEMF_CHIP | MEMF_CLEAR);
     if (!bitplane_fg1 || !bitplane_fg2 || !bitplane_fg3 || !copper1) {
         exit_status = 20;
         goto shutdown;
@@ -182,12 +182,12 @@ int main() {
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl1mod), 0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, bpl2mod), 0);
 
-    // Set bitplane pointers + the rest of the per-frame tail (see
-    // build_frame_tail). Initial colours are a placeholder - the main loop's
-    // first iteration recomputes and rewrites them before this is ever
-    // visible on screen, same as it always has.
-    void* copListSetBpl = copPtr;
+    // Start with a cleared display. Each list has the same static prefix.
+    unsigned tail_offset = copPtr - copper1;
     copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x000, 0x000);
+    USHORT* draw_copper = copper1 + 512;
+    for (unsigned i = 0; i < (unsigned)(copPtr-copper1); ++i)
+        draw_copper[i] = copper1[i];
 
     custom->cop1lc = (ULONG)copper1;
     custom->cop2lc = (ULONG)copper2;
@@ -221,6 +221,9 @@ int main() {
     fib_bench_run();
 #endif
     for (;;) {
+        // Do not recycle either the old copper list or its bitplanes/sprites
+        // until VBlank has actually installed the completed replacement.
+        WaitDisplayList();
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
         // frame rate instead of the whole-frame stall Wait10() caused when
@@ -315,9 +318,8 @@ int main() {
         }
 #endif
 
-        // Clear next frame's draw buffer with the blitter (async): it overlaps
-        // the copper writes + Wait10 + next frame's input/update, so it's
-        // effectively free. (cpu_cls was ~2.5ms of blocking CPU time.)
+        // Clear the spare buffer asynchronously. blit_cls first waits for
+        // all rendering of the completed frame to finish.
         blit_cls(bitplane_fg3);
 
         // PC background / main-wall palette, quantized to the OCS DAC.
@@ -329,9 +331,13 @@ int main() {
             col0=col1=0xfff;
         }
 
-        // Flip render buffers on next frame; same helper (and so the same
-        // well-terminated list shape) as the initial build above.
-        copPtr = build_frame_tail(copListSetBpl, bitplane_fg2, bitplane_fg3, col0, col1);
+        // Build only the inactive list, then publish it as a complete frame.
+        copPtr = build_frame_tail(draw_copper + tail_offset, bitplane_fg2, bitplane_fg3, col0, col1);
+        // The VBlank COPJMP workaround briefly masks blitter DMA. Publish
+        // only once the spare clear is finished, so no blit is interrupted.
+        blit_wait();
+        QueueDisplayList(draw_copper);
+        draw_copper = draw_copper == copper1 ? copper1 + 512 : copper1;
 
         // Bitplane fg3: Blank bitplane
         // Bitplane fg2: Line rendering and fill
@@ -342,9 +348,6 @@ int main() {
         bitplane_fg2 = bitplane_fg3;
         bitplane_fg3 = tmp;
 
-        // No blit_wait() here: the blit_cls above runs on into Wait10 / next
-        // frame's update, and render_game's blit_line_mode() waits for it
-        // before anything draws into the buffer.
     }
 
 shutdown:
@@ -363,7 +366,7 @@ shutdown:
     if (bitplane_fg1) FreeMem(bitplane_fg1, BITPLANE_SIZE);
     if (bitplane_fg2) FreeMem(bitplane_fg2, BITPLANE_SIZE);
     if (bitplane_fg3) FreeMem(bitplane_fg3, BITPLANE_SIZE);
-    if (copper1) FreeMem(copper1, 1024);
+    if (copper1) FreeMem(copper1, 2048);
 
     if (exit_status) {
         static const char message[] = "Not enough Chip RAM for display buffers.\n";

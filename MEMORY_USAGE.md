@@ -1,5 +1,10 @@
 # Release memory use
 
+**Display handoff update:** two 1,024-byte copper lists now replace the single
+list, adding 1,024 bytes of runtime Chip RAM to the historical figures below.
+Only the inactive list is rebuilt; VBlank installs it before the old list and
+its frame buffers may be reused. Bitplanes are also cleared at allocation.
+
 **Packed-disk update (execram 1.3.0):** memory classes are preserved and the
 music bank is embedded again. The packed executable allocates 222,904 ordinary
 bytes and 242,604 Chip bytes, plus 31,672 bytes of runtime Chip allocations.
