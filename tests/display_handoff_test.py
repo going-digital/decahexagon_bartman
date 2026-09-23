@@ -26,7 +26,7 @@ typedef uintptr_t ULONG;
 #define DMAF_SETCLR 0x8000
 static struct {
     UWORD intreq, dmaconr, dmacon, copjmp1;
-    ULONG vposr, cop1lc;
+    ULONG vposr, cop2lc;
 } registers, *custom = &registers;
 static unsigned frameCounter;
 '''
@@ -34,7 +34,7 @@ test = r'''
 int main(void) {
     UWORD lists[2][128] = {{0}};
     unsigned active = 0;
-    custom->cop1lc = (ULONG)lists[active];
+    custom->cop2lc = (ULONG)lists[active];
     for (unsigned frame = 1; frame <= 1000; ++frame) {
         unsigned draw = active ^ 1;
         /* Force VBlanks throughout construction, including between the
@@ -43,28 +43,51 @@ int main(void) {
             lists[draw][word] = frame;
             custom->vposr = 0;
             interruptHandler();
-            assert(custom->cop1lc == (ULONG)lists[active]);
+            assert(custom->cop2lc == (ULONG)lists[active]);
             for (unsigned i = 0; i < 128; ++i)
                 assert(lists[active][i] == frame - 1);
         }
         QueueDisplayList(lists[draw]);
         /* Late IRQs on either video standard must leave ownership pending. */
-        const unsigned late[] = {16, 44, 100, 255, 261, 311};
+        const unsigned late[] = {8, 15, 16, 44, 100, 255, 261, 311};
         for (unsigned i = 0; i < sizeof(late)/sizeof(late[0]); ++i) {
             custom->vposr = late[i] << 8;
             interruptHandler();
             assert(pending_display == lists[draw]);
-            assert(custom->cop1lc == (ULONG)lists[active]);
+            assert(custom->cop2lc == (ULONG)lists[active]);
         }
         custom->dmaconr = (frame & 1) ? DMAF_BLITTER : 0;
-        custom->vposr = (frame % 16) << 8;
+        custom->vposr = (frame % 8) << 8;
         interruptHandler();
         assert(!pending_display);
         WaitDisplayList();
-        assert(custom->cop1lc == (ULONG)lists[draw]);
-        assert(custom->copjmp1 == 0x7fff);
-        assert(custom->dmacon == (DMAF_SETCLR | custom->dmaconr));
+        assert(custom->cop2lc == (ULONG)lists[draw]);
+        assert(custom->copjmp1 == 0);
+        assert(custom->dmacon == 0);
         active = draw;
+    }
+    /* Render the third set while the second waits for presentation. Force
+     * acceptance at every possible word boundary, then recycle only after
+     * acknowledgement. Mirrors the production 0/1/2 buffer rotation. */
+    for (unsigned accept=0;accept<=128;++accept) {
+        UWORD triple[3][128]={{0}};
+        unsigned display=0, pending=1, draw=2;
+        pending_display=0;
+        custom->cop2lc=(ULONG)triple[display];
+        for(unsigned frame=1;frame<=30;++frame) {
+            for(unsigned i=0;i<128;++i)triple[pending][i]=frame;
+            QueueDisplayList(triple[pending]);
+            for(unsigned i=0;i<=128;++i) {
+                if(i==accept) {custom->vposr=0;interruptHandler();}
+                if(i<128)triple[draw][i]=frame+1;
+                assert(custom->cop2lc!=(ULONG)triple[draw]);
+                for(unsigned j=0;j<128;++j)assert(triple[pending][j]==frame);
+            }
+            WaitDisplayList();
+            assert(custom->cop2lc==(ULONG)triple[pending]);
+            for(unsigned j=0;j<128;++j)triple[display][j]=0;
+            unsigned retired=display;display=pending;pending=draw;draw=retired;
+        }
     }
     puts("Display handoff: partial writes, delayed IRQs, repeated frames and buffer reuse passed");
 }

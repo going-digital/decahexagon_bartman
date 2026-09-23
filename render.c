@@ -283,7 +283,7 @@ void render_game(void* buf) {
     for (UWORD i=0;i<gamestate.num_sides;++i) {
         UWORD index = angle >> 6;
         frame_sin[i] = sin_table[index];
-        frame_cos[i] = sin_table[(index + 256) & 1023];
+        frame_cos[i] = cos_table[index];
         angle -= gamestate.segment_angle;
     }
 

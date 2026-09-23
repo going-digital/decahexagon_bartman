@@ -5,8 +5,8 @@
 #include "hw.h"
 #include "config.h"
 
-// End-of-list copper list, parked in chip mem (defined in coplist.c).
-extern const UWORD copper2[2];
+// Fixed VBlank dispatcher in Chip RAM; frame lists end with an infinite WAIT.
+extern const UWORD copper_dispatch[4];
 
 __attribute__((always_inline)) inline
 USHORT* copWrite(USHORT* copListEnd, UWORD offset, UWORD data) {

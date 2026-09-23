@@ -5,8 +5,8 @@
 #include "pc_world.h"
 #include "pc_palette.h"
 
-/* Temporary 2D renderer coordinates. PC walls project at hub+distance/5;
- * screen scaling is independent of their simulation speed/spawn distance. */
+/* PC walls project at hub+distance/5. Camera-scaled direction tables match
+ * the PC's untilted baseline view; zoom remains a relative camera control. */
 #define HUB_RADIUS 40
 #define PLAYER_RADIUS 54
 #define ZOOM_ONE 256

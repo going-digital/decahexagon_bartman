@@ -1,6 +1,8 @@
 #include "trig.h"
+#include "view_scale.h"
 
 WORD sin_table[1024];
+WORD cos_table[1024];
 
 WORD frame_sin[MAX_NUM_SIDES];
 WORD frame_cos[MAX_NUM_SIDES];
@@ -29,6 +31,11 @@ void init_tables(void) {
         :
         : "cc", "memory", "d0", "d1", "d2", "d3", "a1"
     );
+    // Build X before modifying the raw sine samples needed by its quarter turn.
+    for (UWORD i=0;i<1024;++i)
+        cos_table[i]=view_scale_x(sin_table[(i+256)&1023]);
+    for (UWORD i=0;i<1024;++i)
+        sin_table[i]=view_scale_y(sin_table[i]);
 }
 
 void direction_to_cartesian(WORD sine, WORD cosine, UWORD length, WORD* x, WORD* y) {
@@ -42,7 +49,6 @@ void direction_to_cartesian(WORD sine, WORD cosine, UWORD length, WORD* x, WORD*
         : [length]"d"(length)
         : "cc"
     );
-    result -= result >> 2;
     *y = result;
 
     result = cosine;
@@ -60,5 +66,5 @@ void direction_to_cartesian(WORD sine, WORD cosine, UWORD length, WORD* x, WORD*
 
 void polar_to_cartesian(UWORD angle, UWORD length, WORD* x, WORD* y) {
     UWORD index = angle >> 6;
-    direction_to_cartesian(sin_table[index], sin_table[(index + 256) & 1023], length, x, y);
+    direction_to_cartesian(sin_table[index], cos_table[index], length, x, y);
 }

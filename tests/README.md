@@ -247,4 +247,7 @@ The shared host/68000 checks include 181 boundary cases. See
 VBlank handler with mocked registers. It forces interrupts between every
 word of an inactive list, delays presentation past the safe top-of-frame
 window, and checks 1,000 alternating publications and buffer reuses. This
-checks ownership and publication ordering, not Copper bus timing.
+also tests drawing a third frame while another is pending, with acceptance
+at every possible word boundary. It verifies that switching never strobes
+COPJMP1 or touches blitter DMA. It checks ownership and publication ordering,
+not Copper bus timing; emulator runs exercise the fixed copper dispatcher.

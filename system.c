@@ -182,16 +182,23 @@ void FreeSystem(void) {
 __attribute__((interrupt)) void interruptHandler(void) {
     custom->intreq = INTF_VERTB;
     custom->intreq = INTF_VERTB; // Reset vbl req. twice for a4000 bug.
-    /* A late IRQ must repeat the old frame, never switch during display.
-     * Restart before line 16, well above the earliest (NTSC) display row. */
-    if (pending_display &&
-        ((*(volatile ULONG*)&custom->vposr >> 8) & 511) < 16) {
-        UWORD blitter_dma = custom->dmaconr & DMAF_BLITTER;
-        custom->dmacon = DMAF_BLITTER; // COPJMP/blitter hardware workaround
-        custom->cop1lc = (ULONG)pending_display;
-        custom->copjmp1 = 0x7fff;
-        custom->dmacon = DMAF_SETCLR | blitter_dma;
-        pending_display = 0; // Old list and frame buffers may now be reused.
+    if (pending_display) {
+        /* Keep the beam check and pointer write together even if an audio
+         * IRQ arrives. Only this short publication masks higher interrupts.
+         * COP1 has restarted into the fixed WAIT; no CPU COPJMP or blitter
+         * DMA pause is needed. A late IRQ repeats the previous frame. */
+#ifdef __m68k__
+        UWORD saved_sr;
+        __asm volatile ("move.w %%sr,%0\n\tori.w #0x0700,%%sr"
+                        : "=d"(saved_sr) : : "memory", "cc");
+#endif
+        if (((*(volatile ULONG*)&custom->vposr >> 8) & 511) < 8) {
+            custom->cop2lc = (ULONG)pending_display;
+            pending_display = 0; // Old list and frame buffers may be reused.
+        }
+#ifdef __m68k__
+        __asm volatile ("move.w %0,%%sr" : : "d"(saved_sr) : "memory", "cc");
+#endif
     }
     // DEMO - increment frameCounter
     frameCounter++;

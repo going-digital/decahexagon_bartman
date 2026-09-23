@@ -38,16 +38,9 @@ static void Wait12() { WaitLine(0x12); }
 static void Wait13() { WaitLine(0x13); }
 
 // Rebuilds the copper list's per-frame-varying tail (bitplane pointers, HUD
-// sprite pointers/colours, palette), then unconditionally jumps to copper2 -
-// parking the copper there for the rest of the frame. Used both to seed the
-// very first frame (before the main loop starts) and every loop iteration
-// after: the SAME code path both times, so the list is always well-formed
-// (properly terminated) rather than relying on each frame's write being at
-// least as long as the previous one's. (It used not to be: the old
-// steady-state write was 2 words LONGER than the one-off initial write that
-// carried the copjmp2 jump, so that jump was gone from frame 1 onward and
-// the copper ran off the end of this list into whatever chip memory happened
-// to follow it - harmless only by luck.)
+// sprite pointers/colours, palette), then parks the copper in an infinite
+// WAIT. Startup and steady-state lists use this same complete termination;
+// the fixed COP1 dispatcher enters the selected frame list via COP2.
 static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD col0, UWORD col1) {
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bpl0);
     #ifdef SHOW_DRAW_PLANE
@@ -64,8 +57,8 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
     // HUD/title pointers include a WAIT between their two sprite rows.
     copPtr = hud_emit_copper(copPtr);
 
-    *copPtr++ = offsetof(struct Custom, copjmp2);
-    *copPtr++ = 0x7fff;
+    *copPtr++ = 0xffff;
+    *copPtr++ = 0xfffe;
     return copPtr;
 }
 
@@ -143,7 +136,7 @@ int main() {
     bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
     bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
 
-    USHORT* copper1 = (USHORT*)AllocMem(2048, MEMF_CHIP | MEMF_CLEAR);
+    USHORT* copper1 = (USHORT*)AllocMem(3072, MEMF_CHIP | MEMF_CLEAR);
     if (!bitplane_fg1 || !bitplane_fg2 || !bitplane_fg3 || !copper1) {
         exit_status = 20;
         goto shutdown;
@@ -161,7 +154,7 @@ int main() {
     debug_register_bitmap(bitplane_fg2, "FG2", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_bitmap(bitplane_fg3, "FG3", SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0);
     debug_register_copperlist(copper1, "copper1", 1024, 0);
-    debug_register_copperlist(copper2, "copper2", sizeof(copper2), 0);
+    debug_register_copperlist(copper_dispatch, "dispatch", sizeof(copper_dispatch), 0);
 #endif
 
     copPtr = screenScanDefault(copPtr);
@@ -186,11 +179,13 @@ int main() {
     unsigned tail_offset = copPtr - copper1;
     copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x000, 0x000);
     USHORT* draw_copper = copper1 + 512;
-    for (unsigned i = 0; i < (unsigned)(copPtr-copper1); ++i)
+    for (unsigned i = 0; i < (unsigned)(copPtr-copper1); ++i) {
         draw_copper[i] = copper1[i];
+        copper1[1024+i] = copper1[i];
+    }
 
-    custom->cop1lc = (ULONG)copper1;
-    custom->cop2lc = (ULONG)copper2;
+    custom->cop1lc = (ULONG)copper_dispatch;
+    custom->cop2lc = (ULONG)copper1;
     custom->dmacon = DMAF_BLITTER; // Disable blitter dma for copjmp bug
     custom->copjmp1 = 0x7fff; // Start copper
     // BLITHOG gives the blitter every bus cycle - great when the CPU has
@@ -221,9 +216,8 @@ int main() {
     fib_bench_run();
 #endif
     for (;;) {
-        // Do not recycle either the old copper list or its bitplanes/sprites
-        // until VBlank has actually installed the completed replacement.
-        WaitDisplayList();
+        // The draw bitplane, sprite slot and copper list are the free third
+        // set, so rendering can overlap presentation of the pending frame.
         // Wait for the next vblank. If a frame was missed, frameCounter has
         // already moved on and we fall straight through - degrading to a lower
         // frame rate instead of the whole-frame stall Wait10() caused when
@@ -318,8 +312,10 @@ int main() {
         }
 #endif
 
-        // Clear the spare buffer asynchronously. blit_cls first waits for
-        // all rendering of the completed frame to finish.
+        // The previous display may still be scanning fg3. Finish the new
+        // render, then wait for that old frame to retire before clearing it.
+        blit_wait();
+        WaitDisplayList();
         blit_cls(bitplane_fg3);
 
         // PC background / main-wall palette, quantized to the OCS DAC.
@@ -333,11 +329,9 @@ int main() {
 
         // Build only the inactive list, then publish it as a complete frame.
         copPtr = build_frame_tail(draw_copper + tail_offset, bitplane_fg2, bitplane_fg3, col0, col1);
-        // The VBlank COPJMP workaround briefly masks blitter DMA. Publish
-        // only once the spare clear is finished, so no blit is interrupted.
-        blit_wait();
         QueueDisplayList(draw_copper);
-        draw_copper = draw_copper == copper1 ? copper1 + 512 : copper1;
+        draw_copper += 512;
+        if (draw_copper == copper1 + 1536) draw_copper = copper1;
 
         // Bitplane fg3: Blank bitplane
         // Bitplane fg2: Line rendering and fill
@@ -366,7 +360,7 @@ shutdown:
     if (bitplane_fg1) FreeMem(bitplane_fg1, BITPLANE_SIZE);
     if (bitplane_fg2) FreeMem(bitplane_fg2, BITPLANE_SIZE);
     if (bitplane_fg3) FreeMem(bitplane_fg3, BITPLANE_SIZE);
-    if (copper1) FreeMem(copper1, 2048);
+    if (copper1) FreeMem(copper1, 3072);
 
     if (exit_status) {
         static const char message[] = "Not enough Chip RAM for display buffers.\n";

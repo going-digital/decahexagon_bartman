@@ -18,6 +18,7 @@ header=r'''
 #include <math.h>
 #include "player_shape.h"
 #include "render.h"
+#include "view_scale.h"
 #define PLAYER_RADIUS 54
 #define PLAYER_TIP_LEN 6
 #define PLAYER_HALF_ANG 1500
@@ -44,8 +45,8 @@ static void blit_wait(void){}
 static WORD zscale(WORD r){return ((unsigned)r*zoom)>>8;}
 static void polar_to_cartesian(UWORD a,UWORD r,WORD *x,WORD *y){
  ++polar_calls;double angle=(a>>6)*6.283185307179586/1024;
- *x=(WORD)floor(cos(angle)*r);
- WORD yy=(WORD)floor(sin(angle)*r);*y=yy-(yy>>2);
+ *x=(WORD)(((int32_t)view_scale_x((WORD)floor(cos(angle)*16384))*r)>>14);
+ *y=(WORD)(((int32_t)view_scale_y((WORD)floor(sin(angle)*16384))*r)>>14);
 }
 static void pt(UWORD a,WORD r,WORD *x,WORD *y){polar_to_cartesian(a,r,x,y);*x+=CX+ox;*y+=CY+oy;}
 '''

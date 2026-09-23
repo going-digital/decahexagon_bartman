@@ -1,9 +1,16 @@
 # Release memory use
 
-**Display handoff update:** two 1,024-byte copper lists now replace the single
-list, adding 1,024 bytes of runtime Chip RAM to the historical figures below.
-Only the inactive list is rebuilt; VBlank installs it before the old list and
-its frame buffers may be reused. Bitplanes are also cleared at allocation.
+**Baseline visibility update:** separate camera-scaled X/Y direction tables
+add 2,048 bytes of ordinary BSS. Scaling runs during table initialization;
+the per-vertex path retains two 68000 multiplies and drops the old Y squeeze.
+
+**Display pipeline update:** three 1,024-byte copper lists now replace the
+original single list, adding 2,048 bytes of runtime Chip RAM to the historical
+figures below (1,024 bytes beyond the first handoff fix). An 8-byte fixed
+dispatcher replaces the old 4-byte parked list. The third list pairs with the
+existing third bitplane/sprite buffers: it can be rendered while another frame
+awaits presentation. The old display is acknowledged before reuse. Bitplanes
+are cleared at allocation; no extra bitplane or player sprite bank is needed.
 
 **Packed-disk update (execram 1.3.0):** memory classes are preserved and the
 music bank is embedded again. The packed executable allocates 222,904 ordinary

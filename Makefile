@@ -164,7 +164,7 @@ $(vasm_objects): obj/%.o : %.asm
 
 .PHONY: test
 HOST_CC ?= cc
-test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video test-projection-edges test-player-shape test-pcm-lifecycle test-display-handoff
+test: test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video test-projection-edges test-player-shape test-pcm-lifecycle test-display-handoff test-view-scale
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c render_clip.c tests/core_checks.c tests/wave_checks.c tests/schedule_checks.c tests/progression_checks.c tests/menu_checks.c tests/lifecycle_checks.c tests/death_checks.c tests/clip_checks.c tests/projection_checks.c tests/trig_checks.c tests/core_test.c -o out/core_test
 	./out/core_test
@@ -287,6 +287,11 @@ test-pulse:
 	out/pc_pulse_test
 
 .PHONY: test-video
+.PHONY: test-view-scale
+test-view-scale: | out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror tests/view_scale_test.c -lm -o out/view_scale_test
+	out/view_scale_test
+
 .PHONY: test-display-handoff
 test-display-handoff:
 	python3 tests/display_handoff_test.py
