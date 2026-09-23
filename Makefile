@@ -35,7 +35,7 @@ $(error Runtime decompression is retired; soundtrack playback requires predecode
 endif
 c_sources += fib_pcm.c pcm_lifecycle.c tests/fib_stream.c
 SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1 -DFIB_TRIAL_SONG=1 -DFIB_TRIAL_PCM=1
-SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).pcm1"'
+SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).boosted.pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).boosted.pcm1"'
 VPATH += tests
 endif
 SOUND_EFFECTS ?= 1
@@ -249,7 +249,11 @@ test-death:
 	python3 tests/compare_death.py
 
 ifeq ($(MUSIC_FIB_STREAM),1)
-obj/fib_stream.o: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1
+$(PCM_ASSET).boosted.pcm0: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1 tools/audio/boost_pcm.py
+	python3 tools/audio/boost_pcm.py $(PCM_ASSET) $(PCM_ASSET).boosted
+$(PCM_ASSET).boosted.pcm1: $(PCM_ASSET).boosted.pcm0
+	@test -f $@ || python3 tools/audio/boost_pcm.py $(PCM_ASSET) $(PCM_ASSET).boosted
+obj/fib_stream.o: $(PCM_ASSET).boosted.pcm0 $(PCM_ASSET).boosted.pcm1
 endif
 
 .PHONY: test-pcm-lifecycle
@@ -261,7 +265,7 @@ test-pcm-lifecycle:
 	out/pcm_seek_test
 
 # Clips are converted offline; the target never decodes compressed audio.
-out/sfx.pcm: tools/audio/prepare_sfx.py $(wildcard assets/sounds/*.ogg)
+out/sfx.pcm: tools/audio/prepare_sfx.py tools/audio/boost_pcm.py $(wildcard assets/sounds/*.ogg)
 	python3 tools/audio/prepare_sfx.py
 out/sfx_samples.h: out/sfx.pcm
 	@test -f $@ || python3 tools/audio/prepare_sfx.py

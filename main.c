@@ -87,6 +87,7 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
 #endif
 
 int main() {
+    int exit_status = 0;
 
     SysBase = *((struct ExecBase**)4UL);
 
@@ -142,11 +143,16 @@ int main() {
     bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
     bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP);
 
+    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP | MEMF_CLEAR);
+    if (!bitplane_fg1 || !bitplane_fg2 || !bitplane_fg3 || !copper1) {
+        exit_status = 20;
+        goto shutdown;
+    }
+
     // Builds the HUD's sprite buffers - needs to happen before the copper
     // list below, which points SPRxPT at them from the very first frame.
     hud_init();
 
-    USHORT* copper1 = (USHORT*)AllocMem(1024, MEMF_CHIP | MEMF_CLEAR);
     USHORT* copPtr = copper1;
 
 #if BUILD_DEBUG
@@ -238,7 +244,6 @@ int main() {
 #endif
         // --- poll -> update -------------------------------------------------
         input_poll(&input);
-        if (input.quit) break;                                  // dev: both mouse buttons
         if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
         ULONG ticks = pc_clock_advance(&simulation_clock, elapsed_frames, DISPLAY_RATE);
         while (ticks--) {
@@ -342,6 +347,7 @@ int main() {
         // before anything draws into the buffer.
     }
 
+shutdown:
 #if MUSIC_FIB_STREAM
     fib_stream_stop();
 #endif
@@ -354,11 +360,17 @@ int main() {
     FreeSystem();
     hud_free();
     render_free();
-    FreeMem(bitplane_fg1, BITPLANE_SIZE);
-    FreeMem(bitplane_fg2, BITPLANE_SIZE);
-    FreeMem(bitplane_fg3, BITPLANE_SIZE);
-    FreeMem(copper1, 1024);
+    if (bitplane_fg1) FreeMem(bitplane_fg1, BITPLANE_SIZE);
+    if (bitplane_fg2) FreeMem(bitplane_fg2, BITPLANE_SIZE);
+    if (bitplane_fg3) FreeMem(bitplane_fg3, BITPLANE_SIZE);
+    if (copper1) FreeMem(copper1, 1024);
+
+    if (exit_status) {
+        static const char message[] = "Not enough Chip RAM for display buffers.\n";
+        Write(Output(), (APTR)message, sizeof(message)-1);
+    }
 
     CloseLibrary((struct Library*)DOSBase);
     CloseLibrary((struct Library*)GfxBase);
+    return exit_status;
 }

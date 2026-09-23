@@ -2,6 +2,7 @@
 """Offline original PC clips -> word-aligned signed 8-bit Paula PCM."""
 import hashlib,json,subprocess
 from pathlib import Path
+from boost_pcm import boost_pcm
 ROOT=Path(__file__).resolve().parents[2]
 NAMES=['begin','excellent','gameover','start','die','rankup','line','triangle','square','pentagon','hexagon','menuselect','menuchoose','awesome','wonderful','superhexagon']
 def main():
@@ -13,7 +14,7 @@ def main():
         # Preserve every audible sample and the onset; discard digital zero
         # tails only. menuselect belongs to PC screens not implemented here.
         original_bytes=len(pcm)
-        pcm=pcm.rstrip(b'\0') if name!='menuselect' else b''
+        pcm=boost_pcm(pcm.rstrip(b'\0')) if name!='menuselect' else b''
         pcm+=b'\0'*(len(pcm)&1)
         assert len(pcm)<=131070 and (len(pcm)>=2 or name=='menuselect')
         rows.append(f'    {{{len(bank)}, {len(pcm)//2}}}, /* {ident}: {name} */')

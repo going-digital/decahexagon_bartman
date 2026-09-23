@@ -32,12 +32,15 @@ static struct View *ActiView;
 static APTR SystemSprPt[8];
 static UWORD SystemColor[32];
 
+/* Supervisor callback lives in executable text, never freshly written stack
+ * memory: separate instruction/data caches need no runtime synchronization. */
+extern ULONG ReadVBRSupervisor(void);
+
 static APTR GetVBR(void) {
     APTR vbr = 0;
-    UWORD getvbr[] = { 0x4e7a, 0x0801, 0x4e73 }; // MOVEC.L VBR,D0 RTE
 
     if (SysBase->AttnFlags & AFF_68010)
-        vbr = (APTR)Supervisor((ULONG (*)())getvbr);
+        vbr = (APTR)Supervisor(ReadVBRSupervisor);
 
     return vbr;
 }

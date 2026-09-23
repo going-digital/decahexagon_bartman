@@ -1,4 +1,15 @@
 	.cfi_sections .debug_frame
+	.section .text.ReadVBRSupervisor,"ax",@progbits
+	.balign 2
+	.type ReadVBRSupervisor, function
+	.globl ReadVBRSupervisor
+ReadVBRSupervisor:
+	/* MOVEC VBR,D0; encoded for the -mcpu=68000 assembler. The C caller
+	 * checks AFF_68010 before calling through Exec Supervisor(). */
+	.word 0x4e7a, 0x0801
+	rte
+	.size ReadVBRSupervisor, .-ReadVBRSupervisor
+
 	.section .text.__mulsi3,"ax",@progbits
 	.type __mulsi3, function
 	.globl	__mulsi3

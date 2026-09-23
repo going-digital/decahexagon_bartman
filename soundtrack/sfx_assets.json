@@ -2,7 +2,7 @@
   "sample_rate": 8000,
   "format": "signed 8-bit mono, even padded",
   "bytes": 107778,
-  "sha256": "62c0a7ab916dbe4a13c516e924ab8669d03599ab130d3056705a5423a93936b6",
+  "sha256": "a1d75d01fccbbbb12bdd88119979f2fd7eaedc2f144c7a8d50755241b4054f82",
   "clips": [
     {
       "id": 0,

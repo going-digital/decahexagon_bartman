@@ -1217,6 +1217,16 @@ and the release audio overlay have been removed. Accepted music is unchanged.
 
 ## Default packed disk
 
+Music and effects receive an offline +6 dB sample boost via
+`tools/audio/boost_pcm.py`. A soft knee above magnitude 96 compresses peaks
+toward 127 to avoid hard clipping. Hardware volume remains at its existing
+maximum, including the existing music fades. The music build generates
+`.boosted.pcm0/.pcm1` from the selected `PCM_ASSET`, preserving the original
+banks, sequence metadata, sample count and memory split. Effects apply the
+same curve during preparation. There is no added runtime processing or PCM
+memory cost. The 96-slice Courtesy bank gains 5.95 dB RMS and the combined
+effects bank gains 5.56 dB RMS; listening verification remains outstanding.
+
 `make` / `make adf` now create the execram-packed `out/hexagon.adf`;
 `out/hexagon_packed.adf` is an identical compatibility copy. Use
 `make adf-unpacked` for an explicit unpacked diagnostic disk. Keep the existing

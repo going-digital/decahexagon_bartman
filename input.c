@@ -10,6 +10,7 @@
 #define KEY_LEFT   0x4f
 #define KEY_RIGHT  0x4e
 #define KEY_SPACE  0x40
+#define KEY_RETURN 0x44
 #define KEY_ESC    0x45
 #if CHEAT_MODE
 #define KEY_CHEAT  0x08
@@ -17,9 +18,9 @@ static UBYTE k_cheat;
 #endif
 
 // Held key state, maintained across polls from press/release events.
-static UBYTE k_left, k_right, k_space, k_esc;
+static UBYTE k_left, k_right, k_space, k_return, k_esc;
 // Edge flags, set by kbd_scan, consumed (cleared) by input_poll.
-static UBYTE k_space_edge, k_esc_edge;
+static UBYTE k_select_edge, k_esc_edge;
 
 static UBYTE prev_fire;
 
@@ -64,7 +65,8 @@ static void kbd_scan(void) {
 #endif
         case KEY_LEFT:  k_left  = !up; break;
         case KEY_RIGHT: k_right = !up; break;
-        case KEY_SPACE: k_space = !up; if (!up) k_space_edge = 1; break;
+        case KEY_SPACE: k_space = !up; if (!up) k_select_edge = 1; break;
+        case KEY_RETURN: k_return = !up; if (!up) k_select_edge = 1; break;
         case KEY_ESC:   k_esc   = !up; if (!up) k_esc_edge = 1;   break;
         }
     }
@@ -80,10 +82,10 @@ void input_init(void) {
 #if CHEAT_MODE
     k_cheat = 0;
 #endif
-    k_left = k_right = k_space = k_esc = 0;
-    k_space_edge = k_esc_edge = 0;
+    k_left = k_right = k_space = k_return = k_esc = 0;
+    k_select_edge = k_esc_edge = 0;
     kbd_scan(); // drain anything already pending
-    k_space_edge = k_esc_edge = 0;
+    k_select_edge = k_esc_edge = 0;
 }
 
 void input_poll(InputState* in) {
@@ -105,14 +107,13 @@ void input_poll(InputState* in) {
     in->held = (left ? PC_INPUT_POSITIVE : 0) | (right ? PC_INPUT_NEGATIVE : 0);
     in->turn = left ? -1 : (right ? 1 : 0);
 
-    UBYTE fire = (k_space || JoyFire()) ? 1 : 0;
+    UBYTE fire = (k_space || k_return || JoyFire()) ? 1 : 0;
     in->fire = fire;
-    in->fire_edge = (k_space_edge || (fire && !prev_fire)) ? 1 : 0;
+    in->fire_edge = (k_select_edge || (fire && !prev_fire)) ? 1 : 0;
     prev_fire = fire;
 
     in->back_edge = k_esc_edge;
-    in->quit = (lmb && rmb) ? 1 : 0; // dev hard-exit; Escape is handled per-mode
 
-    k_space_edge = 0;
+    k_select_edge = 0;
     k_esc_edge = 0;
 }
