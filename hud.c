@@ -369,7 +369,36 @@ static UWORD *loading_sprite_pointers;
 static UBYTE save_failed;
 void hud_save_failed(UBYTE failed) { save_failed=failed; }
 /* The native executable, including BSS, resides entirely in Chip RAM. */
-static UWORD loading_copper[128];
+static UWORD loading_copper[256];
+static volatile UWORD *busy_waits[6];
+static UWORD busy_frame;
+static APTR busy_previous_irq;
+/* Only copper WAIT coordinates change. No game, audio, disk or blitter state
+ * is touched, and frameCounter deliberately does not advance during I/O. */
+__attribute__((interrupt)) static void loading_interrupt(void) {
+    custom->intreq=INTF_VERTB;custom->intreq=INTF_VERTB;
+    UWORD x=(busy_frame++ >> 1)%88;
+    if(x>44)x=88-x;
+    x=0x59+2*x;
+    for(unsigned row=0;row<6;++row) {
+        volatile UWORD *p=busy_waits[row];
+        p[0]=(p[0]&0xff00)|x;
+        p[6]=(p[6]&0xff00)|(x+12);
+    }
+}
+void hud_loading_begin(void) {
+    UWORD sr;
+    __asm volatile("move.w %%sr,%0\n move.w #0x2700,%%sr":"=d"(sr)::"memory","cc");
+    busy_frame=0;busy_previous_irq=GetInterruptHandler();
+    SetInterruptHandler((APTR)loading_interrupt);
+    __asm volatile("move.w %0,%%sr"::"d"(sr):"memory","cc");
+}
+void hud_loading_end(void) {
+    UWORD sr;
+    __asm volatile("move.w %%sr,%0\n move.w #0x2700,%%sr":"=d"(sr)::"memory","cc");
+    SetInterruptHandler(busy_previous_irq);
+    __asm volatile("move.w %0,%%sr"::"d"(sr):"memory","cc");
+}
 
 UWORD* hud_loading_copper(void *plane,UBYTE saving) {
     UWORD *cp=loading_sprite_pointers;
@@ -614,6 +643,24 @@ void hud_init(void) {
         for (WORD ch=0;ch<SPRITE_CHANNELS;++ch)
             cp=copWritePtr(cp,offsetof(struct Custom,sprpt)+ch*sizeof(APTR),
                 loading_buf[ch] ? loading_buf[ch] : (UWORD*)blank_sprite);
+        /* Six raster lines: grey rail with a bouncing white segment. WAIT
+         * words are patched only at VBlank, before these display lines. */
+        for(unsigned row=0;row<6;++row) {
+            UWORD y=(DISPLAY_HW_Y+TITLE_Y+24+row)<<8;
+            *cp++=y|0x51;*cp++=0xfffe;
+            cp=copWrite(cp,offsetof(struct Custom,color[0]),0x333);
+            cp=copWrite(cp,offsetof(struct Custom,color[1]),0x333);
+            busy_waits[row]=cp;
+            *cp++=y|0x59;*cp++=0xfffe;
+            cp=copWrite(cp,offsetof(struct Custom,color[0]),0xfff);
+            cp=copWrite(cp,offsetof(struct Custom,color[1]),0xfff);
+            *cp++=y|0x65;*cp++=0xfffe;
+            cp=copWrite(cp,offsetof(struct Custom,color[0]),0x333);
+            cp=copWrite(cp,offsetof(struct Custom,color[1]),0x333);
+            *cp++=y|0xc1;*cp++=0xfffe;
+            cp=copWrite(cp,offsetof(struct Custom,color[0]),0);
+            cp=copWrite(cp,offsetof(struct Custom,color[1]),0);
+        }
         *cp++=0xffff;*cp++=0xfffe;
 #endif
         paint_banner(gameover_buf, title_str_gameover,

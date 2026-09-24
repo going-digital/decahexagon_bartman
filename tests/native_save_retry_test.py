@@ -8,13 +8,14 @@ root = Path(__file__).resolve().parents[1]
 source = (root/'trackloader/native_save.c').read_text()
 source = '\n'.join(line for line in source.splitlines() if not line.startswith('#include'))
 source, count = re.subn(r'__asm volatile\(.*?\);', '(void)sr;', source, flags=re.S)
-assert count == 2
+assert count == 4
 source = source.replace('unsigned short sr;', 'unsigned short sr=0;')
 prelude = r'''
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include "trackloader/save_disk.h"
+#include "include/hardware/intbits.h"
 typedef uintptr_t ULONG;
 typedef unsigned short UWORD;
 enum {MODE_PLAYING,MODE_ATTRACT,MODE_GAMEOVER};
@@ -37,6 +38,9 @@ static void WaitDisplayList(void){}
 static void fib_stream_stop(void){}
 static void sfx_shutdown(void){}
 static void sfx_init(void){}
+static unsigned busy;
+static void hud_loading_begin(void){assert(!busy);busy=1;}
+static void hud_loading_end(void){assert(busy);busy=0;}
 static void *hud_loading_copper(void *p,unsigned saving){assert(saving);return p;}
 static int io(unsigned op,unsigned sector,void *buffer){
  if(op==2){begins++;commits++;return 1;}

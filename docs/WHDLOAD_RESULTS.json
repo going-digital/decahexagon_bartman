@@ -1,0 +1,166 @@
+{
+  "status": "WHDLoad builds and emulator smoke/lifecycle checks pass; hardware and exhaustive compatibility validation remain",
+  "whdload": "20.0",
+  "game_memory_bytes": 194496,
+  "chip_reservation": 524288,
+  "expansion_reservations": [
+    524288,
+    1048576,
+    1572864
+  ],
+  "current_slaves": {
+    "1": "8487709c1e7ec0bcbe58c6aada504f35afc0e49e17b925f32d5ece90e0d01be4",
+    "2": "41d569ffb6ece03b47ad3d00dd6c73f281e89c00d3a08fddb14bca5e7cda9ff7",
+    "3": "ae30ca48d6fb7b17c89cba77bf42dec9c1b71809560618150982901e3df36089"
+  },
+  "trials": [
+    {
+      "slots": 3,
+      "cpu": "68020",
+      "video": "PAL",
+      "evidence": "scratchpad/whdload",
+      "slave_sha256": "7be494efa8e78ecdebaffcfbf2d95dd669f88f0782d2073753d4ed26729c5a5f",
+      "game_sha256": "ba5960584c104c1767ac21a5767cec1ab29009104ed0a1d4743a111c9521dfa8",
+      "checks": [
+        "startup",
+        "Courtesy/Otis/Focus gameplay",
+        "CRC-valid generations 1, 2 and 3",
+        "cold relaunch restores 237-tick score",
+        "normal OS return"
+      ],
+      "matches_current_slave": false
+    },
+    {
+      "slots": 2,
+      "cpu": "68060",
+      "video": "NTSC",
+      "evidence": "scratchpad/whdload/test_1790255439093651000",
+      "slave_sha256": "275ffdbb120a5ed3d459a5bf1107d6801499cb053b2b64323cf017bc19f5bd08",
+      "game_sha256": "72d4679d4c71705e4e5f4787eb222de3fcd8c318fe2f30d01546a3f5989cbf1f",
+      "checks": [
+        "PRELOAD disabled",
+        "restores existing score",
+        "Focus cache miss and gameplay",
+        "CRC-valid generation 4",
+        "clean Workbench return"
+      ],
+      "matches_current_slave": false
+    },
+    {
+      "slots": 1,
+      "cpu": "68000",
+      "video": "PAL",
+      "evidence": "scratchpad/whdload/test_1790255595998747000",
+      "slave_sha256": "8487709c1e7ec0bcbe58c6aada504f35afc0e49e17b925f32d5ece90e0d01be4",
+      "game_sha256": "72d4679d4c71705e4e5f4787eb222de3fcd8c318fe2f30d01546a3f5989cbf1f",
+      "checks": [
+        "startup",
+        "score restore",
+        "gameplay",
+        "normal exit via Escape"
+      ],
+      "matches_current_slave": true
+    },
+    {
+      "slots": 2,
+      "cpu": "68060",
+      "video": "NTSC",
+      "evidence": "scratchpad/whdload/test_1790255850536432000",
+      "slave_sha256": "41d569ffb6ece03b47ad3d00dd6c73f281e89c00d3a08fddb14bca5e7cda9ff7",
+      "game_sha256": "72d4679d4c71705e4e5f4787eb222de3fcd8c318fe2f30d01546a3f5989cbf1f",
+      "checks": [
+        "PRELOAD disabled",
+        "both saves protected via AmigaDOS",
+        "failed write leaves both files byte-identical",
+        "exit reports unsaved progress"
+      ],
+      "matches_current_slave": true
+    },
+    {
+      "slots": 3,
+      "cpu": "68060",
+      "video": "PAL",
+      "evidence": "scratchpad/whdload/test_1790256105340882000",
+      "slave_sha256": "ae30ca48d6fb7b17c89cba77bf42dec9c1b71809560618150982901e3df36089",
+      "game_sha256": "72d4679d4c71705e4e5f4787eb222de3fcd8c318fe2f30d01546a3f5989cbf1f",
+      "checks": [
+        "Workbench project icon launch via WBLoad",
+        "startup",
+        "score restore",
+        "clean Workbench return"
+      ],
+      "matches_current_slave": true
+    }
+  ],
+  "saves": [
+    {
+      "path": "scratchpad/whdload/os/Decahexagon/data/save-a",
+      "sha256": "4d97f2c42a4ccec27f3165839339b6e31857a493eba1178e602f7c0a6c490b70",
+      "generation": 3,
+      "best_ticks": [
+        237,
+        223,
+        142,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "scratchpad/whdload/os/Decahexagon/data/save-b",
+      "sha256": "f8def3c9c0100dadced0bbd20b2f19060570acb5ae7e828101e247e3adb70766",
+      "generation": 2,
+      "best_ticks": [
+        237,
+        223,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "scratchpad/whdload/test_1790255439093651000/system/Decahexagon/data/save-a",
+      "sha256": "4d97f2c42a4ccec27f3165839339b6e31857a493eba1178e602f7c0a6c490b70",
+      "generation": 3,
+      "best_ticks": [
+        237,
+        223,
+        142,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "scratchpad/whdload/test_1790255439093651000/system/Decahexagon/data/save-b",
+      "sha256": "91aa4c507add39b7c06e5c780d81ab10fb9e796aa33b2f4ec97c39a227d92402",
+      "generation": 4,
+      "best_ticks": [
+        237,
+        223,
+        171,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "host_tests": [
+    "test-whdload",
+    "test-tune-cache",
+    "test-trackloader-storage"
+  ],
+  "native_adf_sha256": "332e5d41cefeab58003b0a6fb4ac787b22587958b7dbb77daa0a14c848bc8abe",
+  "limits": [
+    "No physical Amiga tests",
+    "No exhaustive Snoop/MMU/accelerator option matrix or full-song endurance in WHDLoad",
+    "First PAL/NTSC lifecycle trials precede final minimum-version header and exit-error refinement; exact slave hashes recorded separately",
+    "Emulator input and screenshots were driven interactively; preparation is scripted"
+  ],
+  "archive": {
+    "path": "out/whdload/Decahexagon.zip",
+    "bytes": 851968,
+    "sha256": "cdd6e62ba8157f3fadee68afc111697f88757ef81279fec5ebdb01046ea990d7"
+  }
+}

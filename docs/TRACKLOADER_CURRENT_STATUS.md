@@ -1,26 +1,34 @@
 # Current trackloader validation
 
-Factory image: `out/trackloader/823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3.adf`
+Factory image: `out/trackloader/332e5d41cefeab58003b0a6fb4ac787b22587958b7dbb77daa0a14c848bc8abe.adf`
 
-All reports below identify this exact image. Regenerate this summary with
-`python3 tools/trackloader/summarize_release_checks.py`; it rejects stale reports.
+Only 3 of 19 reports below identify this exact image. Older
+reports are explicitly marked as needing a rerun. The summary tool rejects
+stale reports by default; `--allow-stale` produces this partial-validation view.
 This summary checks report identity; run the referenced test tools to reproduce
 the underlying validation.
 
 | Check | Evidence |
 | --- | --- |
-| Track switching and full-song DMA endurance | [Current all-PC image: PAL/NTSC switching and all three NTSC endurance checks pass](TRACKLOADER_PC_AUDIO_RELEASE_RESULTS.json) |
-| Isolated source-to-ADF rebuild | [Automated isolated cue/audio/ADF rebuild matches reference byte-for-byte](TRACKLOADER_ISOLATED_BUILD_RESULTS.json) |
-| PAL writable save retry | [Writable reinsertion produced valid save data; screenshots require visual review](TRACKLOADER_WRITABLE_RETRY_RESULTS.json) |
-| PAL save and cold reboot | [PAL current-image save and cold reboot pass](TRACKLOADER_SAVE_REBOOT_PAL_RESULTS.json) |
-| PAL save selection, corruption, identity and generation wrap | [PAL native cold-boot recovery verified in game RAM](TRACKLOADER_SAVE_RECOVERY_PAL_RESULTS.json) |
-| PAL wrong disk and reinsertion | [Expected native switching and media-swap serial sequences verified](TRACKLOADER_OFS_SWITCHING_RESULTS_OFS_REINSERT.json) |
-| PAL swap during tune read | [Expected native switching and media-swap serial sequences verified](TRACKLOADER_OFS_SWITCHING_RESULTS_OFS_MIDREAD.json) |
-| NTSC writable save retry | [Writable reinsertion produced valid save data; screenshots require visual review](TRACKLOADER_WRITABLE_RETRY_RESULTS_NTSC.json) |
-| NTSC save and cold reboot | [NTSC current-image save and cold reboot pass](TRACKLOADER_SAVE_REBOOT_NTSC_RESULTS.json) |
-| NTSC save selection, corruption, identity and generation wrap | [NTSC native cold-boot recovery verified in game RAM](TRACKLOADER_SAVE_RECOVERY_NTSC_RESULTS.json) |
-| NTSC wrong disk and reinsertion | [Expected native switching and media-swap serial sequences verified](TRACKLOADER_OFS_SWITCHING_RESULTS_NTSC_OFS_REINSERT.json) |
-| NTSC swap during tune read | [Expected native switching and media-swap serial sequences verified](TRACKLOADER_OFS_SWITCHING_RESULTS_NTSC_OFS_MIDREAD.json) |
+| Track switching and full-song DMA endurance | Needs rerun: [older image report](TRACKLOADER_PC_AUDIO_RELEASE_RESULTS.json) |
+| Isolated source-to-ADF rebuild | Needs rerun: [older image report](TRACKLOADER_ISOLATED_BUILD_RESULTS.json) |
+| PAL writable save retry | Needs rerun: [older image report](TRACKLOADER_WRITABLE_RETRY_RESULTS.json) |
+| PAL loading activity | Needs rerun: [older image report](TRACKLOADER_LOADING_ACTIVITY_PAL_RESULTS.json) |
+| PAL track switching | Needs rerun: [older image report](TRACKLOADER_OFS_SWITCHING_RESULTS_OFS_SWITCHING.json) |
+| PAL save and cold reboot | Needs rerun: [older image report](TRACKLOADER_SAVE_REBOOT_PAL_RESULTS.json) |
+| PAL save selection, corruption, identity and generation wrap | Needs rerun: [older image report](TRACKLOADER_SAVE_RECOVERY_PAL_RESULTS.json) |
+| PAL wrong disk and reinsertion | Needs rerun: [older image report](TRACKLOADER_OFS_SWITCHING_RESULTS_OFS_REINSERT.json) |
+| PAL swap during tune read | Needs rerun: [older image report](TRACKLOADER_OFS_SWITCHING_RESULTS_OFS_MIDREAD.json) |
+| NTSC writable save retry | Needs rerun: [older image report](TRACKLOADER_WRITABLE_RETRY_RESULTS_NTSC.json) |
+| NTSC loading activity | Needs rerun: [older image report](TRACKLOADER_LOADING_ACTIVITY_NTSC_RESULTS.json) |
+| NTSC track switching | Needs rerun: [older image report](TRACKLOADER_OFS_SWITCHING_RESULTS_NTSC_OFS_SWITCHING.json) |
+| NTSC save and cold reboot | Needs rerun: [older image report](TRACKLOADER_SAVE_REBOOT_NTSC_RESULTS.json) |
+| NTSC save selection, corruption, identity and generation wrap | Needs rerun: [older image report](TRACKLOADER_SAVE_RECOVERY_NTSC_RESULTS.json) |
+| NTSC wrong disk and reinsertion | Needs rerun: [older image report](TRACKLOADER_OFS_SWITCHING_RESULTS_NTSC_OFS_REINSERT.json) |
+| NTSC swap during tune read | Needs rerun: [older image report](TRACKLOADER_OFS_SWITCHING_RESULTS_NTSC_OFS_MIDREAD.json) |
+| PAL 1-slot soundtrack cache | [Startup preload and MRU retention verified in game RAM](TRACKLOADER_TUNE_CACHE_1_PAL_RESULTS.json) |
+| PAL 2-slot soundtrack cache | [Startup preload and MRU retention verified in game RAM](TRACKLOADER_TUNE_CACHE_2_PAL_RESULTS.json) |
+| PAL 3-slot soundtrack cache | [Startup preload and MRU retention verified in game RAM](TRACKLOADER_TUNE_CACHE_3_PAL_RESULTS.json) |
 
 Audio uses all three PC recordings, boosted before Fibonacci encoding, at a
 250 KiB budget per tune. Host loop excerpts are available at

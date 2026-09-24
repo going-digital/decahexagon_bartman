@@ -13,7 +13,7 @@ fn=lib.track_executable_prepare
 fn.argtypes=[ctypes.c_void_p,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.POINTER(Info)];fn.restype=ctypes.c_int
 raw=(out/'game.exe1').read_bytes();memory=struct.unpack_from('>I',raw,12)[0];capacity=max(memory,len(raw))
 sources=re.search(r'^c_sources := (.+)$',(ROOT/'Makefile').read_text(),re.M)[1].split()
-sources+=['sfx.c','paula_irq.c','fib_pcm.c','pcm_lifecycle.c','tests/fib_stream.c','trackloader/chip_arena.c','trackloader/save.c','trackloader/save_disk.c','trackloader/native_save.c']
+sources+=['sfx.c','paula_irq.c','fib_pcm.c','pcm_lifecycle.c','tests/fib_stream.c','trackloader/chip_arena.c','trackloader/save.c','trackloader/save_disk.c','trackloader/native_save.c','trackloader/tune_cache.c']
 objects=[str(out/(source.replace('/','_')+'.o')) for source in sources]+[str(out/'asm.o')]
 rows=[]
 for base in (0x20000,0x40000):

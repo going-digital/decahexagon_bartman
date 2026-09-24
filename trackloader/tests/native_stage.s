@@ -3,6 +3,8 @@
 ; cues [262144,278528), display heap [278528,360448).
 ; DiskIO workspace [24000,37056), track cache [38000,43632),
 ; OFS scratch [54000,55244) reused as tune metadata after disk loading.
+        lea boot_args(pc),a0
+        movem.l d4-d6,40(a0)
         lea resident_base(pc),a0
         move.l a4,(a0)
         move.l a4,sp
@@ -60,6 +62,7 @@ sum:    moveq #0,d3
         bne.s sum
         cmp.l #GAME_PACKED_SUM,d2
         bne fail
+        ifnd WHDLOAD
         move.l a4,-(sp)
         move.l a4,a6
         adda.l #52000,a6
@@ -68,6 +71,7 @@ sum:    moveq #0,d3
         adda.l #GAME_SOURCE_OFFSET,a5
         bsr inflate
         move.l (sp)+,a4
+        endif
         move.l a4,a0
         adda.l #54000,a0
         move.l a0,-(sp)          ; output info
@@ -79,7 +83,12 @@ sum:    moveq #0,d3
         lea 20(sp),sp
         tst.l d0
         beq fail
+        ifd WHDLOAD
+        move.l resload_base(pc),a0
+        jsr resload_FlushCache(a0)
+        endif
         bsr restore_save
+        ifnd WHDLOAD
         move.l a4,-(sp)
         move.l a4,a6
         adda.l #52000,a6
@@ -87,6 +96,7 @@ sum:    moveq #0,d3
         adda.l #45000,a4
         bsr inflate
         move.l (sp)+,a4
+        endif
         ; Native game contract: stop DMA, CIAs and outstanding interrupts.
         move.w #$7fff,$dff096
         move.w #$7fff,$dff09a
@@ -101,6 +111,10 @@ sum:    moveq #0,d3
         move.l d0,(a0)
         lea prepare_track(pc),a1
         move.l a1,16(a0)
+        ifd WHDLOAD
+        lea commit_save(pc),a1
+        move.l a1,56(a0)
+        endif
         lea save_transfer(pc),a1
         move.l a1,24(a0)
         lea save_identity(pc),a1
@@ -111,6 +125,9 @@ sum:    moveq #0,d3
         move.l a4,d0
         add.l #46800,d0
         move.l d0,36(a0)
+        move.l a4,d0
+        add.l #54000,d0
+        move.l d0,52(a0)
         move.l a0,-(sp)
         lea entered(pc),a0
         bsr serial
@@ -119,12 +136,30 @@ sum:    moveq #0,d3
         move.l (a0),a0
         jsr (a0)
         addq.l #4,sp
+        ifd WHDLOAD
+        cmp.l #21,d0
+        beq whd_save_failed
+        endif
         tst.l d0
         bne fail
         lea returned(pc),a0
         bsr serial
-halt:   bra.s halt
-fail:   move.w #$f00,$dff180
+halt:
+        ifd WHDLOAD
+        pea TDREASON_OK
+        move.l resload_base(pc),a0
+        jmp resload_Abort(a0)
+        else
+        bra.s halt
+        endif
+fail:
+        ifd WHDLOAD
+        pea whd_error(pc)
+        pea TDREASON_FAILMSG
+        move.l resload_base(pc),a0
+        jmp resload_Abort(a0)
+        endif
+        move.w #$f00,$dff180
         lea failure(pc),a0
         bsr serial
         bra.s halt
@@ -135,6 +170,18 @@ restore_save:
         move.l a4,a2
         adda.l #38000,a2
 save_read:
+        ifd WHDLOAD
+        move.l a2,-(sp)
+        move.l d5,d0
+        sub.l #1738,d0
+        divu #11,d0
+        and.l #$ffff,d0
+        move.l d0,-(sp)
+        clr.l -(sp)
+        bsr save_file_io
+        lea 12(sp),sp
+        subq.l #1,d0
+        else
         moveq #0,d0
         move.l d5,d1
         moveq #1,d2
@@ -142,6 +189,7 @@ save_read:
         move.l a2,a0
         lea 24000(a4),a1
         bsr diskio
+        endif
         tst.l d0
         beq.s save_read_next
         lea save_read_error(pc),a0
@@ -198,14 +246,15 @@ base_profile:
         mulu #48,d0
         lea descriptors(pc),a0
         adda.l d0,a0
-        cmpa.l loaded_descriptor(pc),a0
-        bne.s load_track
-        moveq #1,d0
-        rts
+        bra.s load_track
 not_ready:
         moveq #0,d0
         rts
 load_track:
+        lea tune_arena(pc),a1
+        move.l 8(sp),(a1)
+        lea cached_metadata(pc),a1
+        move.l 12(sp),(a1)
         lea current_descriptor(pc),a1
         move.l a0,(a1)
         movem.l d2-d7/a2-a6,-(sp)
@@ -220,8 +269,6 @@ load_track:
         jsr (a0)
         tst.l d0
         beq callback_failed_early
-        lea loaded_descriptor(pc),a0
-        clr.l (a0)
         lea GAME_SFX_STOP(a5),a0
         jsr (a0)
         move.w $dff002,d6
@@ -230,10 +277,23 @@ load_track:
         and.w #$7fff,d7
         move.w #$7fff,$dff09a
         move.w #$7fff,$dff096
-        move.w #$83a0,$dff096 ; display DMA: static loading list
+        move.w #$83a0,$dff096 ; display DMA: loading list
+        move.w #$c020,$dff09a ; only private VBlank activity handler
+        move.w #$2200,sr
+        move.l cached_metadata(pc),a0
+        cmpa.w #0,a0
+        beq.s read_tune
+        move.l a4,a1
+        adda.l #54000,a1
+        moveq #23,d0
+copy_metadata:
+        move.l (a0)+,(a1)+
+        dbf d0,copy_metadata
+        bra.w tune_prepared
+read_tune:
         moveq #0,d0
         move.l current_descriptor(pc),a0
-        move.l #$c01000,a1
+        move.l tune_arena(pc),a1
         adda.l (a0),a1
         lea 32(a0),a0
         lea 24000(a4),a2
@@ -248,7 +308,7 @@ load_track:
         move.l current_descriptor(pc),a2
         cmp.l 4(a2),d1
         bne callback_failed
-        move.l #$c01000,a0
+        move.l tune_arena(pc),a0
         adda.l (a2),a0
         moveq #0,d2
 packed_sum:
@@ -262,8 +322,8 @@ packed_sum:
         move.l a4,-(sp)
         move.l a4,a6
         adda.l #52000,a6
-        move.l #$c01000,a4
-        move.l #$c01000,a5
+        move.l tune_arena(pc),a4
+        move.l tune_arena(pc),a5
         adda.l (a2),a5
         bsr inflate
         move.l (sp)+,a4
@@ -275,11 +335,12 @@ packed_sum:
         move.l #500000,-(sp)
         move.l current_descriptor(pc),a0
         move.l 12(a0),-(sp)
-        move.l #$c01000,-(sp)
+        move.l tune_arena(pc),-(sp)
         bsr executable_binary+4
         lea 20(sp),sp
         tst.l d0
         beq callback_failed
+tune_prepared:
         ; Immutable compressed cues -> dedicated 16 KiB Chip region.
         move.l current_descriptor(pc),a2
         lea descriptors(pc),a5
@@ -329,8 +390,6 @@ cue_sum:
         addq.l #4,sp
         tst.l d0
         beq callback_failed
-        lea loaded_descriptor(pc),a0
-        move.l a2,(a0)
         lea 32(a2),a0
         bsr serial
         lea tune_ready(pc),a0
@@ -342,6 +401,7 @@ callback_failed:
         bsr serial
         moveq #0,d5
 restore_hardware:
+        move.w #$2700,sr
         move.l a4,a5
         adda.l #65536,a5
         lea GAME_SFX_INIT(a5),a0
@@ -361,12 +421,16 @@ callback_return:
         movem.l (sp)+,d2-d7/a2-a6
         rts
 resident_base: dc.l 0
+tune_arena: dc.l 0
+cached_metadata: dc.l 0
 current_descriptor: dc.l 0
-loaded_descriptor: dc.l 0
 descriptors: include "scratchpad/trackloader/native_game/tunes.i"
 load_error: dc.b 'NATIVE-TUNE-FAIL',10,0
 tune_ready: dc.b 'NATIVE-TUNE-READY',10,0
         even
+        ifd WHDLOAD
+serial: rts
+        else
 serial: move.w #368,$dff032
 next:   moveq #0,d0
         move.b (a0)+,d0
@@ -378,7 +442,11 @@ delay:  subq.l #1,d1
         bne.s delay
         bra.s next
 done:   rts
-boot_args: dc.l 0,81920,0,0,0,0,0,0,0,0 ; heap, bytes, VBR, detected PAL flag, prepare
+        endif
+boot_args: dc.l 0,81920,0,0,0,0,0,0,0,0,0,0,0,0 ; heap, bytes, VBR, detected PAL flag, prepare
+        ifd WHDLOAD
+        dc.l 0 ; extended boot contract: file commit callback
+        endif
 filename: dc.b 'DF0:game',0
 entered: dc.b 'NATIVE-GAME-ENTRY',10,0
 returned: dc.b 'NATIVE-GAME-RETURN',10,0
@@ -386,6 +454,9 @@ failure: dc.b 'NATIVE-GAME-FAIL',10,0
         even
 ; C adapter: a0=DF0:name, a1=destination, d1=trusted bytes, d2=capacity.
 ; Scratch is disjoint from disk workspace, destination and player DMA buffers.
+        ifd WHDLOAD
+        include "whdload/storage.s"
+        else
 bounded_load:
         movem.l d1-d7/a0-a6,-(sp)
         lea cached_track(pc),a3
@@ -517,6 +588,7 @@ save_anchors: incbin "scratchpad/trackloader/native_game/save_anchors.deflate"
         even
 cached_track: dc.w -1
         include "scratchpad/trackloader/native_game/guarded_diskio.s"
+        endif
         include "scratchpad/trackloader/inflate_core_distance_fixed.s"
 executable_binary:
         incbin "scratchpad/trackloader/native_game/executable_pic.bin"

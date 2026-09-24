@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Summarize current-image evidence, rejecting reports from older disk builds."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--allow-stale',action='store_true',help='Label older reports as needing a rerun instead of failing')
+args=parser.parse_args()
 root=Path(__file__).resolve().parents[2]
 docs=root/'docs'
 image=root/'scratchpad/trackloader/native_game/native_menu.adf'
@@ -12,23 +16,34 @@ cases=[('Track switching and full-song DMA endurance','TRACKLOADER_PC_AUDIO_RELE
 for video in ('PAL','NTSC'):
  suffix='_NTSC' if video=='NTSC' else ''
  cases.append((video+' writable save retry',f'TRACKLOADER_WRITABLE_RETRY_RESULTS{suffix}.json','source_sha256'))
+ cases.append((video+' loading activity',f'TRACKLOADER_LOADING_ACTIVITY_{video}_RESULTS.json','source_sha256'))
+ cases.append((video+' track switching',f'TRACKLOADER_OFS_SWITCHING_RESULTS{suffix}_OFS_SWITCHING.json','adf_sha256'))
  cases.extend([
   (video+' save and cold reboot',f'TRACKLOADER_SAVE_REBOOT_{video}_RESULTS.json','source_sha256'),
   (video+' save selection, corruption, identity and generation wrap',f'TRACKLOADER_SAVE_RECOVERY_{video}_RESULTS.json','source_sha256')])
  for scenario,label in [('OFS_REINSERT','wrong disk and reinsertion'),('OFS_MIDREAD','swap during tune read')]:
   suffix='_NTSC' if video=='NTSC' else ''
   cases.append((video+' '+label,f'TRACKLOADER_OFS_SWITCHING_RESULTS{suffix}_{scenario}.json','adf_sha256'))
+for slots in (1,2,3):
+ name=f'TRACKLOADER_TUNE_CACHE_{slots}_PAL_RESULTS.json'
+ if (docs/name).exists():cases.append((f'PAL {slots}-slot soundtrack cache',name,'source_sha256'))
 rows=[]
+matched=0
 for label,name,key in cases:
  report=json.loads((docs/name).read_text())
- assert report[key]==digest, 'Stale evidence: '+name
+ if report[key]!=digest:
+  assert args.allow_stale, 'Stale evidence: '+name
+  rows.append(f'| {label} | Needs rerun: [older image report]({name}) |')
+  continue
+ matched+=1
  rows.append(f'| {label} | [{report["status"]}]({name}) |')
 text=f'''# Current trackloader validation
 
 Factory image: `out/trackloader/{digest}.adf`
 
-All reports below identify this exact image. Regenerate this summary with
-`python3 tools/trackloader/summarize_release_checks.py`; it rejects stale reports.
+Only {matched} of {len(cases)} reports below identify this exact image. Older
+reports are explicitly marked as needing a rerun. The summary tool rejects
+stale reports by default; `--allow-stale` produces this partial-validation view.
 This summary checks report identity; run the referenced test tools to reproduce
 the underlying validation.
 
@@ -59,4 +74,4 @@ Chronological implementation details: [feasibility record](TRACKLOADER_FEASIBILI
 Build and test commands: [build guide](TRACKLOADER_BUILD.md).
 '''
 (docs/'TRACKLOADER_CURRENT_STATUS.md').write_text(text)
-print('Current-image evidence:',len(cases),'reports; SHA-256',digest)
+print('Current-image evidence:',matched,'matching reports; SHA-256',digest)

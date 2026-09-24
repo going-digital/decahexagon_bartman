@@ -402,3 +402,28 @@ trackloader-cues:
 test-trackloader-isolated:
 	@test -n "$(PC_GAME_BIN)" -a -n "$(PC_MUSIC_DIR)" -a -n "$(EXECRAM_SOURCE)" || { echo 'Set PC_GAME_BIN, PC_MUSIC_DIR and EXECRAM_SOURCE'; exit 1; }
 	$(AUDIO_PYTHON) tools/trackloader/check_isolated_build.py --binary "$(PC_GAME_BIN)" --music-dir "$(PC_MUSIC_DIR)" --execram-source "$(EXECRAM_SOURCE)"
+
+.PHONY: test-tune-cache
+test-tune-cache:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror -I. trackloader/tune_cache.c tests/tune_cache_test.c -o out/tune_cache_test
+	out/tune_cache_test
+
+# Requires an extracted official WHDLoad DEV package and native payload outputs.
+WHDLOAD_SDK ?= scratchpad/whdload/sdk/WHDLoad
+.PHONY: whdload
+whdload:
+	python3 tools/whdload/build.py --sdk "$(WHDLOAD_SDK)"
+
+.PHONY: test-whdload
+test-whdload:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror -I. tests/whd_save_files_test.c whdload/save_files.c trackloader/save.c -o out/whd_save_files_test
+	out/whd_save_files_test
+
+# Sequential builds share generated native assets; the packager orders them.
+.PHONY: dist release
+dist:
+	@test -n "$(EXECRAM_SOURCE)" || { echo 'Set EXECRAM_SOURCE to your local execram checkout'; exit 1; }
+	python3 tools/build_distribution.py --execram-source "$(EXECRAM_SOURCE)" --whdload-sdk "$(WHDLOAD_SDK)"
+release: dist

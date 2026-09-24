@@ -30,7 +30,7 @@ subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-mpcrel','-Wa,--registe
 subprocess.run([str(sdk.parent/'m68k-amiga-elf/bin/objcopy'),'-O','binary',str(native/'executable_pic.elf'),str(native/'executable_pic.bin')],check=True)
 boot_source=(root/'trackloader/tests/load_boot.s').read_text().replace('move.l #65536,d0','move.l #360448,d0')
 (native/'native_boot.s').write_text(boot_source)
-defines=[f'-D{k}={v}' for k,v in dict(GAME_SOURCE_OFFSET=proof['source_offset'],GAME_PACKED_BYTES=len(packed),GAME_PACKED_SUM=sum(packed),GAME_PACKAGE_BYTES=len(raw)).items()]
+defines=['-DNATIVE_CACHE=1']+[f'-D{k}={v}' for k,v in dict(GAME_SOURCE_OFFSET=proof['source_offset'],GAME_PACKED_BYTES=len(packed),GAME_PACKED_SUM=sum(packed),GAME_PACKAGE_BYTES=len(raw)).items()]
 descriptors=[]
 for index,(track,lead) in enumerate([('courtesy',0),('otis',0),('focus',0)],1):
  tune=(out/f'{track}.fibonacci.deflate').read_bytes()

@@ -1,0 +1,163 @@
+{
+  "status": "Startup preload and MRU retention verified in game RAM",
+  "fast": "0",
+  "slots": 1,
+  "video": "PAL",
+  "source_sha256": "332e5d41cefeab58003b0a6fb4ac787b22587958b7dbb77daa0a14c848bc8abe",
+  "trials": [
+    {
+      "phase": "startup",
+      "count": 1,
+      "active": 0,
+      "slots": [
+        {
+          "arena": 12587008,
+          "valid": 1,
+          "track": 0,
+          "rank": 0
+        }
+      ]
+    },
+    {
+      "track": 1,
+      "hit": false,
+      "early": {
+        "count": 1,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 0,
+            "track": 0,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 1,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          }
+        ]
+      }
+    },
+    {
+      "track": 0,
+      "hit": false,
+      "early": {
+        "count": 1,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 0,
+            "track": 1,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 1,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 0
+          }
+        ]
+      }
+    },
+    {
+      "track": 2,
+      "hit": false,
+      "early": {
+        "count": 1,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 0,
+            "track": 0,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 1,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 2,
+            "rank": 0
+          }
+        ]
+      }
+    },
+    {
+      "track": 0,
+      "hit": false,
+      "early": {
+        "count": 1,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 0,
+            "track": 2,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 1,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 0
+          }
+        ]
+      }
+    },
+    {
+      "track": 1,
+      "hit": false,
+      "early": {
+        "count": 1,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 0,
+            "track": 0,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 1,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          }
+        ]
+      }
+    }
+  ],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/tune_cache_1790252420271538000"
+}

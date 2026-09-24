@@ -1983,3 +1983,68 @@ Report: `TRACKLOADER_ISOLATED_BUILD_RESULTS.json`. Unlike the preceding manual
 snapshot trial, this run also regenerates cues rather than copying them.
 The command tests the working tree, not a committed Git checkout, and still
 requires installed dependencies and the matching licensed PC inputs.
+
+## Animated loading and saving activity
+
+Track loads and saves now show a grey rail with a moving white segment below
+`LOAD TRACK` / `SAVING`. It is an indeterminate activity indicator, not a
+percentage or time estimate. A private level-3 VBlank handler updates only
+copper WAIT coordinates; gameplay, audio processing and the gameplay frame
+counter do not run in this handler. Resident tune loading permits only this
+VBlank interrupt during disk reads, inflate and Fibonacci expansion. Save
+transactions use the same display/handler and restore the normal interrupt
+vector afterward. Both playfield colours match along the rail so old geometry cannot mask
+the indicator, while bitplane timing remains enabled for sprite text.
+
+PAL and NTSC control-protocol tests observe the activity counter advancing
+through the load while the gameplay frame count remains fixed, then confirm
+the normal handler is restored. Screenshot inspection confirms the rail and
+moving segment are visible. This does not add a display during the initial
+boot-block/resident startup before the game HUD exists.
+
+New ADF: `4a3caf9be38c094d889c5cafc226c1a6ab15debc0b5605a2ea2fe4db1250d193`.
+Stage size is 22,389 bytes; 60 disk sectors remain free. Older exhaustive
+validation belongs to the earlier image and must not be attributed to this
+build. `summarize_release_checks.py --allow-stale` now explicitly labels those
+reports as needing reruns while its default still rejects stale evidence.
+
+Final-image checks pass: PAL/NTSC loading animation and IRQ restoration,
+PAL/NTSC writable save and cold reboot, and NTSC Courtesy/Otis/Focus/Courtesy
+switching. Host storage/retry tests pass with the new display lifecycle mocked
+and balanced. Reports `TRACKLOADER_LOADING_ACTIVITY_{PAL,NTSC}_RESULTS.json`
+include observed busy/game frame counters. Final PAL and NTSC screenshots were
+visually reviewed for readable text and a clean activity rail. Hardware tests
+and the older exhaustive media-failure cases remain outside this change's checks.
+
+## Memory-aware soundtrack preload and cache
+
+Startup now loads Courtesy before entering the menu, followed by Otis and Focus
+when decoded-bank memory is available. Each slot reserves 500,000 contiguous
+bytes. The original reclaimed A500 slow-RAM bank remains supported; additional
+banks are allocated through Exec before OS takeover, preferring non-Chip RAM
+and falling back to Chip RAM. Overlapping slow-RAM allocations are rejected.
+
+One slot retains the active tune; two retain the two most recently used tunes;
+three retain the whole soundtrack set. Cache misses replace the least recently
+used bank. Hits restore bank metadata and rebind the small resident cue stream
+without reading the floppy, inflating the bank or decoding Fibonacci samples.
+Failed replacements remain invalid and retryable. Courtesy is made active again
+after preloading. Startup therefore takes longer with extra slots, while later
+track changes avoid repeated loading. The loading activity bar remains active
+during preload.
+
+`make test-tune-cache` checks hits, profile aliases, eviction, failed loads and
+repeated recency updates. `tools/trackloader/check_tune_cache.py` checks actual
+boot allocation, startup contents and repeated track selections in emulator RAM.
+
+Cache validation passes on PAL A500 emulation with one, two and three slots
+(0, 512 KiB and 2 MiB additional Fast RAM respectively). All preload counts
+match available memory. Repeated Otis/Courtesy/Focus/Courtesy/Otis selections
+confirm one-slot replacement, two-slot least-recently-used eviction and all-hit
+three-slot operation. Host cache and storage/retry tests also pass.
+
+Built ADF: `out/trackloader/332e5d41cefeab58003b0a6fb4ac787b22587958b7dbb77daa0a14c848bc8abe.adf`.
+Stage size is 22,521 / 22,528 bytes; game memory is 195,772 / 196,608 bytes;
+59 disk sectors remain free. Reports are `TRACKLOADER_TUNE_CACHE_{1,2,3}_PAL_RESULTS.json`.
+These checks do not replace NTSC, physical hardware or media-failure validation
+for this image; the current-status page marks older-image evidence explicitly.

@@ -234,3 +234,39 @@ ADF and never overwrites it. Build logs and the isolated workspace are retained
 for inspection. Use `--expected-adf` with `check_isolated_build.py` directly to
 compare with another reference image. This checks the working-tree snapshot,
 including uncommitted changes, rather than a Git checkout.
+
+### Soundtrack cache checks
+
+`make test-tune-cache` runs host tests for decoded-bank reuse and eviction.
+For boot and menu-switch checks, run `tools/trackloader/check_tune_cache.py`
+with `--rom /path/to/kick13.rom` and one of these memory configurations:
+
+| Arguments | Expected decoded slots |
+| --- | --- |
+| `--fast 0 --slots 1` | Courtesy preloaded; later tracks replace it |
+| `--fast 512K --slots 2` | Courtesy and Otis preloaded; least-recently-used eviction |
+| `--fast 2M --slots 3` | All three preloaded |
+
+The emulator checks use 512 KiB Chip plus 512 KiB slow RAM, read-only disposable
+ADF copies, and report the image hash with observed cache contents. Extra memory
+is allocated before OS takeover; actual available contiguous blocks determine
+the slot count. More slots increase boot loading time but avoid repeated tune
+reads and sample decompression when changing levels.
+
+## Combined distribution
+
+Build both editions and publish one ZIP with:
+
+```sh
+make dist EXECRAM_SOURCE=/path/to/execram WHDLOAD_SDK=/path/to/WHDLoad
+```
+
+`make release` is an alias. Prepared soundtrack assets are required as above.
+The default SDK path is `scratchpad/whdload/sdk/WHDLoad`.
+The result is `out/Hexagon.zip`, which extracts into `hexagon/` and contains
+the factory ADF, the WHDLoad
+installation directory (all three cache variants), instructions and manifests.
+The two builds run sequentially before packaging. The previous ZIP is replaced
+only after the new package passes integrity checks. Personal saves and stray
+files in the output directories are excluded. Individual `trackloader-adf` and
+`whdload` targets remain available for development.

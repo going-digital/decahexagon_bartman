@@ -37,17 +37,19 @@ UWORD *bitplane_fg2;
 UWORD *bitplane_fg3;
 
 #if TRACKLOADER
-static GameRunPreparer resident_prepare;
+static TrackTuneCache tune_cache;
 static int prepare_with_display(UBYTE profile) {
     /* Retire pending publication and blits before lending display ownership to
-     * the synchronous loader. Its interrupts are masked; copper DMA continues. */
+     * the synchronous loader. A private VBlank handler animates the loading bar while gameplay is paused. */
     blit_wait();
     WaitDisplayList();
     custom->dmacon=DMAF_COPPER;
     custom->cop1lc=(ULONG)hud_loading_copper(bitplane_fg1,0);
     custom->copjmp1=0;
     custom->dmacon=DMAF_SETCLR|DMAF_COPPER;
-    int ready=resident_prepare(profile);
+    hud_loading_begin();
+    int ready=track_tune_cache_prepare(&tune_cache,profile);
+    hud_loading_end();
     custom->dmacon=DMAF_COPPER;
     custom->cop1lc=(ULONG)copper_dispatch;
     custom->copjmp1=0;
@@ -245,9 +247,16 @@ int main() {
 #if TRACKLOADER
     if (boot->saved_state) game_restore_save(boot->saved_state);
     native_save_init(boot);
-    resident_prepare=boot->prepare;
+    track_tune_cache_init(&tune_cache,boot->tune_arenas,boot->tune_metadata,boot->prepare);
     game_set_run_preparer(prepare_with_display);
     __asm volatile("move.w #0x2000,%%sr" : : : "memory","cc");
+#endif
+#if TRACKLOADER
+    /* Preload only as many decoded banks as were allocated before takeover.
+     * Failure remains retryable through the normal run-start loading screen. */
+    for(unsigned track=0;track<tune_cache.count;track++)
+        if(!prepare_with_display((UBYTE)track))break;
+    if(tune_cache.slots[0].valid)prepare_with_display(0);
 #endif
     InputState input;
     UWORD last_frame = (UWORD)frameCounter;
@@ -401,6 +410,10 @@ int main() {
     }
 
 shutdown:
+#if WHDLOAD
+    /* Normal title exit retries a pending snapshot before teardown. */
+    if (!exit_status && !native_save_finish(bitplane_fg1)) exit_status=21;
+#endif
 #if MUSIC_FIB_STREAM
     fib_stream_stop();
 #endif

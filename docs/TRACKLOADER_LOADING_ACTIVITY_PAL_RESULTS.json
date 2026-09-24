@@ -1,0 +1,68 @@
+{
+  "status": "Loading activity advances while gameplay clock stays paused; normal IRQ restored",
+  "video": "PAL",
+  "source_sha256": "4a3caf9be38c094d889c5cafc226c1a6ab15debc0b5605a2ea2fe4db1250d193",
+  "trials": [
+    {
+      "seconds": 65,
+      "active": true,
+      "busy_frames": 248,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 70,
+      "active": true,
+      "busy_frames": 498,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 75,
+      "active": true,
+      "busy_frames": 748,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 80,
+      "active": true,
+      "busy_frames": 997,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 85,
+      "active": true,
+      "busy_frames": 1247,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 90,
+      "active": true,
+      "busy_frames": 1496,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 95,
+      "active": true,
+      "busy_frames": 1746,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 100,
+      "active": true,
+      "busy_frames": 1996,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 105,
+      "active": true,
+      "busy_frames": 2245,
+      "game_frames": 1302
+    },
+    {
+      "seconds": 110,
+      "active": true,
+      "busy_frames": 43,
+      "game_frames": 1486
+    }
+  ],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/loading_activity_1790251197134938000"
+}

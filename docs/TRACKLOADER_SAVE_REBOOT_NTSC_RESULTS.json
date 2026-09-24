@@ -1,14 +1,14 @@
 {
   "status": "NTSC current-image save and cold reboot pass",
-  "source_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
-  "saved_sha256": "4ef30feaf245459fb8d0e76493edc58368e8095ad6eaa51bd09a920f1688a0d3",
-  "identity": "7f0a0e0f8d1460bf8a1455ccb5347266",
+  "source_sha256": "4a3caf9be38c094d889c5cafc226c1a6ab15debc0b5605a2ea2fe4db1250d193",
+  "saved_sha256": "d47526c716743a401ab053e809a62b4b1539c0b0c06837f95f29fedea21cf11a",
+  "identity": "9b46742937308cfd2f13018e7b2bf68b",
   "changed_sectors": [
     1738
   ],
   "generation": 1,
   "best_ticks": [
-    191,
+    146,
     0,
     0,
     0,
@@ -17,11 +17,10 @@
   ],
   "reboot_disk_unchanged": true,
   "factory_disk_unchanged": true,
-  "evidence": "scratchpad/trackloader/native_game/save_reboot_ntsc_1790231288738560000",
+  "evidence": "scratchpad/trackloader/native_game/save_reboot_ntsc_1790251241026496000",
   "limitations": [
     "Basic record persistence; no completion or achievement trigger tested",
     "No interrupted-write or physical hardware test",
     "Screenshot content requires separate visual review"
-  ],
-  "visual_review": "Reboot screenshot inspected: menu displays saved best time 003.18."
+  ]
 }

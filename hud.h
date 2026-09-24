@@ -25,5 +25,7 @@ UBYTE hud_flash_now(void);               // 1 for a couple of ticks as the title
 
 /* Static loading list for the native blocking loader. */
 UWORD* hud_loading_copper(void *plane,UBYTE saving);
+void hud_loading_begin(void);
+void hud_loading_end(void);
 
 void hud_save_failed(UBYTE failed);

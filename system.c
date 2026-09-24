@@ -112,7 +112,9 @@ void TakeSystem(void) {
     __asm volatile("move.w #0x2700,%%sr" : : : "memory","cc");
     custom->intena=0x7fff;custom->intreq=0x7fff;
     custom->dmacon=0x7fff;pending_display=0;frameCounter=0;
+#if !WHDLOAD
     StopFloppyMotors();
+#endif
     *(volatile UWORD *)0xdff106=0;custom->fmode=0;
     for(unsigned i=0;i<32;i++)custom->color[i]=0;
 }

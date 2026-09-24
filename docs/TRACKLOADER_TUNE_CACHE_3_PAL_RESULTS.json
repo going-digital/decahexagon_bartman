@@ -1,0 +1,295 @@
+{
+  "status": "Startup preload and MRU retention verified in game RAM",
+  "fast": "2M",
+  "slots": 3,
+  "video": "PAL",
+  "source_sha256": "332e5d41cefeab58003b0a6fb4ac787b22587958b7dbb77daa0a14c848bc8abe",
+  "trials": [
+    {
+      "phase": "startup",
+      "count": 3,
+      "active": 0,
+      "slots": [
+        {
+          "arena": 12587008,
+          "valid": 1,
+          "track": 0,
+          "rank": 0
+        },
+        {
+          "arena": 2097184,
+          "valid": 1,
+          "track": 1,
+          "rank": 2
+        },
+        {
+          "arena": 2597184,
+          "valid": 1,
+          "track": 2,
+          "rank": 1
+        }
+      ]
+    },
+    {
+      "track": 1,
+      "hit": true,
+      "early": {
+        "count": 3,
+        "active": 1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 2
+          }
+        ]
+      },
+      "after": {
+        "count": 3,
+        "active": 1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 2
+          }
+        ]
+      }
+    },
+    {
+      "track": 0,
+      "hit": true,
+      "early": {
+        "count": 3,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 2
+          }
+        ]
+      },
+      "after": {
+        "count": 3,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 0
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 1
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 2
+          }
+        ]
+      }
+    },
+    {
+      "track": 2,
+      "hit": true,
+      "early": {
+        "count": 3,
+        "active": 2,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 2
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 3,
+        "active": 2,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 2
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 0
+          }
+        ]
+      }
+    },
+    {
+      "track": 0,
+      "hit": true,
+      "early": {
+        "count": 3,
+        "active": -1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 2
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 0
+          }
+        ]
+      },
+      "after": {
+        "count": 3,
+        "active": 0,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 0
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 2
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 1
+          }
+        ]
+      }
+    },
+    {
+      "track": 1,
+      "hit": true,
+      "early": {
+        "count": 3,
+        "active": 1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 2
+          }
+        ]
+      },
+      "after": {
+        "count": 3,
+        "active": 1,
+        "slots": [
+          {
+            "arena": 12587008,
+            "valid": 1,
+            "track": 0,
+            "rank": 1
+          },
+          {
+            "arena": 2097184,
+            "valid": 1,
+            "track": 1,
+            "rank": 0
+          },
+          {
+            "arena": 2597184,
+            "valid": 1,
+            "track": 2,
+            "rank": 2
+          }
+        ]
+      }
+    }
+  ],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/tune_cache_1790252633554939000"
+}
