@@ -63,6 +63,38 @@ verify_ram:
         bne.s verify_ram
         move.l #$c01000,a2
         endif
+        ; Identify the boot IORequest's unit through public OpenDevice calls.
+        ; Do not depend on private trackdisk unit structure offsets.
+        suba.w #56,sp
+        moveq #0,d7
+boot_find_unit:
+        move.l sp,a1
+        moveq #13,d0
+boot_clear_request:
+        clr.l (a1)+
+        dbf d0,boot_clear_request
+        move.l sp,a1
+        move.w #56,18(a1)
+        lea boot_device(pc),a0
+        move.l d7,d0
+        moveq #0,d1
+        jsr -444(a6)           ; OpenDevice
+        tst.l d0
+        bne.s boot_next_unit
+        move.l 24(sp),a0
+        cmpa.l 24(a3),a0
+        seq d2
+        move.l sp,a1
+        jsr -450(a6)           ; CloseDevice (D2 preserved)
+        tst.b d2
+        bne.s boot_unit_found
+boot_next_unit:
+        addq.l #1,d7
+        cmp.l #4,d7
+        bcs.s boot_find_unit
+        bra.w failed
+boot_unit_found:
+        adda.w #56,sp
         move.l a4,a5
         jsr -30(a6)            ; Supervisor: does not return
 failed:
@@ -98,3 +130,6 @@ cache_chip:
 cache_return:
         rts
         endif
+
+boot_device: dc.b 'trackdisk.device',0
+        even

@@ -161,7 +161,7 @@ static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
 // font. Only the letters actually needed by title_str_*[] below are
 // authored (not a full alphabet) - add more here as more banners want them.
 enum {
-    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P, TF_L, TF_C, TF_K, TF_D,
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P, TF_L, TF_C, TF_K, TF_D, TF_W, TF_I,
     TITLE_GLYPH_COUNT
 };
 static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
@@ -317,6 +317,8 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
         0b1001,
         0b1110
     },
+    /* W */ {9,9,9,15,15,9},
+    /* I */ {15,6,6,6,6,15},
 };
 
 static const UBYTE title_names[6][16] = {
@@ -329,6 +331,7 @@ static const UBYTE title_names[6][16] = {
 };
 static const UBYTE title_lengths[6]={7,9,10,13,15,16};
 static const UBYTE title_saving[]={TF_S,TF_A,TF_V,TF_E};
+static const UBYTE title_write_protected[]={TF_W,TF_R,TF_I,TF_T,TF_E,TF_SPACE,TF_P,TF_R,TF_O,TF_T,TF_E,TF_C,TF_T,TF_E,TF_D};
 static const UBYTE title_save_error[]={TF_S,TF_A,TF_V,TF_E,TF_SPACE,TF_E,TF_R,TF_R,TF_O,TF_R};
 static const UBYTE title_loading[]={TF_L,TF_O,TF_A,TF_D,TF_SPACE,TF_T,TF_R,TF_A,TF_C,TF_K};
 static const UBYTE title_load_error[]={TF_L,TF_O,TF_A,TF_D,TF_SPACE,TF_E,TF_R,TF_R,TF_O,TF_R};
@@ -366,6 +369,7 @@ static UWORD* load_error_buf[SPRITE_CHANNELS];
 #if TRACKLOADER
 static UWORD* loading_buf[SPRITE_CHANNELS],*saving_buf[SPRITE_CHANNELS],*save_error_buf[SPRITE_CHANNELS];
 static UWORD *loading_sprite_pointers;
+static UWORD *write_protected_buf[SPRITE_CHANNELS];
 static UBYTE save_failed;
 void hud_save_failed(UBYTE failed) { save_failed=failed; }
 /* The native executable, including BSS, resides entirely in Chip RAM. */
@@ -373,17 +377,22 @@ static UWORD loading_copper[256];
 static volatile UWORD *busy_waits[6];
 static UWORD busy_frame;
 static APTR busy_previous_irq;
+/* Leave 16 horizontal counts between colour transitions: each transition
+ * writes both playfield colours before the Copper can fetch its next WAIT.
+ * In particular, do not let the moving segment crowd the fixed right edge. */
+enum { BUSY_LEFT=0x51, BUSY_START=0x61, BUSY_TRAVEL=32,
+       BUSY_WIDTH=0x10, BUSY_RIGHT=0xc1 };
 /* Only copper WAIT coordinates change. No game, audio, disk or blitter state
  * is touched, and frameCounter deliberately does not advance during I/O. */
 __attribute__((interrupt)) static void loading_interrupt(void) {
     custom->intreq=INTF_VERTB;custom->intreq=INTF_VERTB;
-    UWORD x=(busy_frame++ >> 1)%88;
-    if(x>44)x=88-x;
-    x=0x59+2*x;
+    UWORD x=(busy_frame++ >> 1)%(2*BUSY_TRAVEL);
+    if(x>BUSY_TRAVEL)x=2*BUSY_TRAVEL-x;
+    x=BUSY_START+2*x;
     for(unsigned row=0;row<6;++row) {
         volatile UWORD *p=busy_waits[row];
         p[0]=(p[0]&0xff00)|x;
-        p[6]=(p[6]&0xff00)|(x+12);
+        p[6]=(p[6]&0xff00)|(x+BUSY_WIDTH);
     }
 }
 void hud_loading_begin(void) {
@@ -573,7 +582,7 @@ void hud_free(void) {
         free_sprite(&locked_buf[ch]);
         free_sprite(&load_error_buf[ch]);
 #if TRACKLOADER
-        free_sprite(&loading_buf[ch]);free_sprite(&saving_buf[ch]);free_sprite(&save_error_buf[ch]);
+        free_sprite(&loading_buf[ch]);free_sprite(&saving_buf[ch]);free_sprite(&save_error_buf[ch]);free_sprite(&write_protected_buf[ch]);
 #endif
         free_sprite(&gameover_buf[ch]);
     }
@@ -621,6 +630,7 @@ void hud_init(void) {
 #if TRACKLOADER
             loading_buf[ch]=alloc_canvas_slice(pos,ctl);
             saving_buf[ch]=alloc_canvas_slice(pos,ctl);save_error_buf[ch]=alloc_canvas_slice(pos,ctl);
+            write_protected_buf[ch]=alloc_canvas_slice(pos,ctl);
 #endif
             gameover_buf[ch] = alloc_canvas_slice(pos, ctl);
         }
@@ -631,8 +641,12 @@ void hud_init(void) {
         paint_banner(loading_buf,title_loading,sizeof(title_loading));
         paint_banner(saving_buf,title_saving,sizeof(title_saving));
         paint_banner(save_error_buf,title_save_error,sizeof(title_save_error));
+        paint_banner(write_protected_buf,title_write_protected,sizeof(title_write_protected));
         UWORD *cp=loading_copper+4; /* plane pointer filled before activation */
-        cp=copWrite(cp,offsetof(struct Custom,bplcon0),BPLCON0F_COLOR|BPLCON0F_BPU210);
+        /* Activity uses the background colour and banner sprites only.
+         * Fetching the old gameplay plane exposes its pixels between the
+         * sequential COLOR00/COLOR01 writes at every bar transition. */
+        cp=copWrite(cp,offsetof(struct Custom,bplcon0),BPLCON0F_COLOR);
         cp=copWrite(cp,offsetof(struct Custom,color[1]),0);
         cp=copWrite(cp,offsetof(struct Custom,color[0]),0);
         for (WORD bank=0;bank<4;++bank) {
@@ -647,17 +661,17 @@ void hud_init(void) {
          * words are patched only at VBlank, before these display lines. */
         for(unsigned row=0;row<6;++row) {
             UWORD y=(DISPLAY_HW_Y+TITLE_Y+24+row)<<8;
-            *cp++=y|0x51;*cp++=0xfffe;
+            *cp++=y|BUSY_LEFT;*cp++=0xfffe;
             cp=copWrite(cp,offsetof(struct Custom,color[0]),0x333);
             cp=copWrite(cp,offsetof(struct Custom,color[1]),0x333);
             busy_waits[row]=cp;
-            *cp++=y|0x59;*cp++=0xfffe;
+            *cp++=y|BUSY_START;*cp++=0xfffe;
             cp=copWrite(cp,offsetof(struct Custom,color[0]),0xfff);
             cp=copWrite(cp,offsetof(struct Custom,color[1]),0xfff);
-            *cp++=y|0x65;*cp++=0xfffe;
+            *cp++=y|(BUSY_START+BUSY_WIDTH);*cp++=0xfffe;
             cp=copWrite(cp,offsetof(struct Custom,color[0]),0x333);
             cp=copWrite(cp,offsetof(struct Custom,color[1]),0x333);
-            *cp++=y|0xc1;*cp++=0xfffe;
+            *cp++=y|BUSY_RIGHT;*cp++=0xfffe;
             cp=copWrite(cp,offsetof(struct Custom,color[0]),0);
             cp=copWrite(cp,offsetof(struct Custom,color[1]),0);
         }
@@ -741,7 +755,7 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     else if (banner==BANNER_GAMEOVER) banner_buf=gameover_buf;
     else if (banner==BANNER_LOAD_ERROR) banner_buf=load_error_buf;
 #if TRACKLOADER
-    else if (banner==BANNER_SAVE_ERROR) banner_buf=save_error_buf;
+    else if (banner==BANNER_SAVE_ERROR) banner_buf=save_failed==2 ? write_protected_buf : save_error_buf;
 #endif
     // Colours must be set before the upper row, not after the multiplex WAIT.
     // Celebratory blink on the digit HUD's 3 colour banks (0-5, the only

@@ -11,6 +11,7 @@ _Static_assert(sizeof(TrackSaveDiskScratch)==2048,"resident save workspace size"
 #if WHDLOAD
 static int (*commit_save)(const TrackSave *);
 #else
+static unsigned char drive_select;
 static TrackSaveMedia media;
 static TrackSaveDiskScratch *scratch;
 #endif
@@ -28,7 +29,8 @@ void native_save_init(const TrackGameBoot *boot) {
 #if WHDLOAD
     pending_valid=attempted=0;commit_save=boot->commit_save;
 #else
-    transfer=boot->disk_transfer;pending_valid=attempted=0;
+    drive_select=(unsigned char)~(1u<<(3+(boot->boot_drive&3)));
+    transfer=boot->boot_drive<4?boot->disk_transfer:0;pending_valid=attempted=0;
     scratch=(TrackSaveDiskScratch*)boot->save_scratch;
     if(!scratch || ((ULONG)scratch&1) || !transfer || !boot->save_identity || !boot->save_anchors){transfer=0;return;}
     for(unsigned i=0;i<16;i++)media.identity[i]=boot->save_identity[i];
@@ -39,6 +41,19 @@ void native_save_init(const TrackGameBoot *boot) {
 #endif
 }
 #if !WHDLOAD
+static int disk_write_protected(void) {
+    unsigned short sr;
+    volatile unsigned char *port=(volatile unsigned char*)0xbfd100;
+    volatile unsigned char *sense=(volatile unsigned char*)0xbfe001;
+    __asm volatile("move.w %%sr,%0\n move.w #0x2700,%%sr":"=d"(sr)::"memory","cc");
+    unsigned char previous=*port;
+    *port=drive_select; /* Boot drive selected, motor off. */
+    (void)*sense; /* CIA bus cycle for selection to settle. */
+    int protected= !(*sense & 8); /* active-low /DSKPROT */
+    *port=previous;
+    __asm volatile("move.w %0,%%sr"::"d"(sr):"memory","cc");
+    return protected;
+}
 static int read_sector(void *ctx,uint32_t n,unsigned char *b) {(void)ctx;return transfer(0,n,b);}
 static int write_sector(void *ctx,uint32_t n,const unsigned char *b) {(void)ctx;return transfer(1,n,(void*)b);}
 #endif
@@ -49,10 +64,16 @@ int native_save_tick(void *plane) {
 #else
     if(!transfer || attempted
 #endif
-       || (game_mode()!=MODE_ATTRACT && game_mode()!=MODE_GAMEOVER))return 0;
+       /* Keep the death/retry loop uninterrupted. Persist accumulated runs
+        * only when the player deliberately returns to level selection. */
+       || game_mode()!=MODE_ATTRACT)return 0;
     if(!pending_valid)pending_valid=game_save_snapshot(&pending);
     if(!pending_valid)return 0;
     attempted=1;
+#if !WHDLOAD
+    /* Query the selected drive before stopping audio or doing any disk I/O. */
+    if(disk_write_protected()) { hud_save_failed(2);return 0; }
+#endif
     blit_wait();WaitDisplayList();
     unsigned short sr;
     __asm volatile("move.w %%sr,%0\n move.w #0x2700,%%sr":"=d"(sr)::"memory","cc");

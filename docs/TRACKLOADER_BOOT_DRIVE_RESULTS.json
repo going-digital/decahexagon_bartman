@@ -1,0 +1,37 @@
+{
+  "status": "Boot-drive selection, soundtrack load, menu saves and protected-drive bypass pass",
+  "adf_sha256": "7a3c212aababdf4c83ea50927906bdb778cafa421c626848a8054ca944e48270",
+  "emulator": "Copperline A500OCS PAL, 512K Chip + 512K slow",
+  "trials": [
+    {
+      "drive": 1,
+      "write_protected": false,
+      "kickstart": "3.1",
+      "changed_sectors": [
+        1738
+      ],
+      "evidence": "scratchpad/trackloader/native_game/loading_activity_1790276488554618000"
+    },
+    {
+      "drive": 0,
+      "write_protected": false,
+      "kickstart": "1.3",
+      "changed_sectors": [
+        1738
+      ],
+      "evidence": "scratchpad/trackloader/native_game/external_boot_1790276576075326000"
+    },
+    {
+      "drive": 1,
+      "write_protected": true,
+      "kickstart": "3.1",
+      "changed_sectors": [],
+      "evidence": "scratchpad/trackloader/native_game/external_boot_1790276617239644000"
+    }
+  ],
+  "limitations": [
+    "Physical external Gotek not tested",
+    "DF2/DF3 masks host-tested only; no boot trials",
+    "External boot requires compatible firmware or boot selector"
+  ]
+}

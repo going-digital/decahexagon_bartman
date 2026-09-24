@@ -5,6 +5,9 @@
 ; OFS scratch [54000,55244) reused as tune metadata after disk loading.
         lea boot_args(pc),a0
         movem.l d4-d6,40(a0)
+        ifnd WHDLOAD
+        move.l d7,56(a0) ; physical boot drive, from boot IORequest
+        endif
         lea resident_base(pc),a0
         move.l a4,(a0)
         move.l a4,sp
@@ -188,7 +191,7 @@ save_read:
         move.w #$8000,d3
         move.l a2,a0
         lea 24000(a4),a1
-        bsr diskio
+        bsr boot_diskio
         endif
         tst.l d0
         beq.s save_read_next
@@ -446,6 +449,8 @@ done:   rts
 boot_args: dc.l 0,81920,0,0,0,0,0,0,0,0,0,0,0,0 ; heap, bytes, VBR, detected PAL flag, prepare
         ifd WHDLOAD
         dc.l 0 ; extended boot contract: file commit callback
+        else
+boot_drive: dc.l 0
         endif
 filename: dc.b 'DF0:game',0
 entered: dc.b 'NATIVE-GAME-ENTRY',10,0
@@ -457,6 +462,9 @@ failure: dc.b 'NATIVE-GAME-FAIL',10,0
         ifd WHDLOAD
         include "whdload/storage.s"
         else
+boot_diskio:
+        move.l boot_drive(pc),d0
+        bra.w diskio
 bounded_load:
         movem.l d1-d7/a0-a6,-(sp)
         lea cached_track(pc),a3
@@ -479,7 +487,7 @@ bounded_load:
         moveq #0,d1
         moveq #0,d2
         move.w #$8000,d3
-        bsr diskio              ; always stop the motor, including errors
+        bsr boot_diskio              ; always stop the motor, including errors
         move.l (sp)+,d0
         subq.l #1,d0            ; C success 1 -> historical success 0
         movem.l (sp)+,d1-d7/a0-a6
@@ -500,7 +508,7 @@ read_sector:
         moveq #11,d2
         moveq #0,d3
         moveq #0,d0
-        bsr diskio
+        bsr boot_diskio
         tst.l d0
         bne.s sector_failed
         lea cached_track(pc),a0
@@ -541,20 +549,25 @@ save_transfer:
 transfer_io:
         move.l 24(sp),d1
         cmp.l #1760,d1
-        bcc.s transfer_fail
+        bcc.w transfer_fail
         tst.l d3
         beq.s transfer_check
         cmp.l #1,d3
-        bne.s transfer_fail
+        bne.w transfer_fail
         cmp.l #1738,d1
         beq.s transfer_check
         cmp.l #1749,d1
-        bne.s transfer_fail
+        bne.w transfer_fail
 transfer_check:
         tst.b (a2)
         beq.s transfer_read
         move.b $bfd100,d4
-        move.b #$f7,$bfd100
+        moveq #-1,d0
+        move.l boot_drive(pc),d1
+        addq.w #3,d1
+        bclr d1,d0
+        move.b d0,$bfd100
+        move.l 24(sp),d1
         btst #2,$bfe001
         sne d0
         move.b d4,$bfd100
@@ -569,7 +582,7 @@ transfer_read:
         ori.w #$8000,d3
         moveq #0,d0
         moveq #1,d2
-        bsr diskio
+        bsr boot_diskio
         lea native_disk_guard_enabled(pc),a0
         clr.b (a0)
         move.b #1,(a2)

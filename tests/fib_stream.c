@@ -163,8 +163,9 @@ void fib_stream_start(void) {
         music_rng^=music_rng>>9;
         music_rng^=music_rng<<8;
     }
-    /* Embedded PCM uses a 12 kHz timeline on both PAL and NTSC. */
-    ULONG start_position=external_bank?0:(ULONG)pcm_start_offset_ms(music_started,music_rng)*12;
+    /* Embedded and disk-loaded banks share the 12 kHz timeline on PAL/NTSC.
+     * Bank ownership must not suppress randomized retry starts. */
+    ULONG start_position=(ULONG)pcm_start_offset_ms(music_started,music_rng)*12;
     if(!fib_song_seek(&song,start_position)) start_position=0;
     fill_position=start_position;fill_slot=0;
     music_started=1;

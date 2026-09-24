@@ -15,3 +15,9 @@ WHDLoad/Hexagon/
 Both editions use the same PC-derived soundtracks. Personal saves, emulator
 configurations, ROMs, AmigaOS and developer SDK files are not included.
 The manifests record file sizes and SHA-256 hashes.
+
+Progress stays in memory during retries. Return to level selection with Escape
+to save your scores and unlocks before switching off or forcibly quitting.
+
+The ADF keeps using the physical drive it booted from (DF0 through DF3).
+External-drive boot still requires firmware or a boot selector that supports it.

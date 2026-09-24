@@ -19,11 +19,11 @@ proof=json.loads((root/'docs/TRACKLOADER_EXECUTABLE_TARGET_RESULTS.json').read_t
 assert proof['packed_sha256']==hashlib.sha256(packed).hexdigest() and proof['overlap_matches']
 assert proof['arena_bytes']<=196608 and struct.unpack_from('>I',raw,12)[0]<=196608
 entry=native/'executable_pic.s';entry.write_text('.text\n.global _start\n_start: bra.w track_executable_prepare\n bra.w resident_tune_prepare\n bra.w track_ofs_load\n')
-# Keep tune expansion/decoding at O2; shrink validation and boot-only glue.
+# Keep sample expansion/decoding at O2; shrink validation and boot-only glue.
 pic_objects=[]
-for source in ['trackloader/ofs.c','trackloader/executable.c','trackloader/tests/resident_tune.c','trackloader/tune.c','trackloader/fib_expand.c','fib_decode.c']:
+for source in ['trackloader/ofs.c','trackloader/executable.c','trackloader/tests/resident_tune.c','trackloader/tune.c','trackloader/fib_expand.c','fib_decode.c','whdload/memory.c']:
  obj=native/('pic_'+source.replace('/','_')+'.o')
- optimization='-Os' if source in ['trackloader/ofs.c','trackloader/executable.c','trackloader/tests/resident_tune.c'] else '-O2'
+ optimization='-Os' if source in ['trackloader/ofs.c','trackloader/executable.c','trackloader/tests/resident_tune.c','trackloader/tune.c','whdload/memory.c'] else '-O2'
  subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-mpcrel',optimization,'-ffreestanding','-fno-builtin','-c',str(root/source),'-o',str(obj)],check=True)
  pic_objects.append(str(obj))
 subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-mpcrel','-Wa,--register-prefix-optional','-nostdlib','-Wl,-Ttext=0',str(entry),*pic_objects,'-o',str(native/'executable_pic.elf')],check=True)

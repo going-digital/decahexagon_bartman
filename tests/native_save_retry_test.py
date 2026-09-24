@@ -7,6 +7,7 @@ import tempfile
 root = Path(__file__).resolve().parents[1]
 source = (root/'trackloader/native_save.c').read_text()
 source = '\n'.join(line for line in source.splitlines() if not line.startswith('#include'))
+source = re.sub(r'static int disk_write_protected\(void\) \{.*?\n\}', 'static int disk_write_protected(void){return protection_flag;}', source, flags=re.S)
 source, count = re.subn(r'__asm volatile\(.*?\);', '(void)sr;', source, flags=re.S)
 assert count == 4
 source = source.replace('unsigned short sr;', 'unsigned short sr=0;')
@@ -20,11 +21,11 @@ typedef uintptr_t ULONG;
 typedef unsigned short UWORD;
 enum {MODE_PLAYING,MODE_ATTRACT,MODE_GAMEOVER};
 typedef struct {int (*disk_transfer)(unsigned,unsigned,void*);void *save_scratch;
- const unsigned char *save_identity,*save_anchors;} TrackGameBoot;
+ const unsigned char *save_identity,*save_anchors;unsigned boot_drive;} TrackGameBoot;
 static struct {UWORD dmaconr,intenar,intena,dmacon,copjmp1,intreq;ULONG cop1lc;} hw,*custom=&hw;
 static unsigned char copper_dispatch[4];
 static unsigned mode=MODE_GAMEOVER,dirty=1,snapshots,commits,acks,error,begins;
-static unsigned protected_disk=1,fail_readback,writes;
+static unsigned protection_flag,protected_disk=1,fail_readback,writes;
 static unsigned char slots[2][512],identity_bytes[16];
 static TrackSave current,submitted;
 static int game_mode(void){return mode;}
@@ -60,20 +61,34 @@ static int io(unsigned op,unsigned sector,void *buffer){
 checks = r'''
 int main(void){
  TrackSaveDiskScratch workspace;unsigned char id[16]={0},anchors[1548]={0};
- TrackGameBoot boot={io,&workspace,id,anchors};native_save_init(&boot);
+ TrackGameBoot boot={io,&workspace,id,anchors,0};
+ for(unsigned unit=0;unit<4;unit++){
+  boot.boot_drive=unit;native_save_init(&boot);
+  assert(drive_select==(unsigned char)~(8u<<unit));
+ }
+ boot.boot_drive=4;native_save_init(&boot);assert(!transfer);
+ boot.boot_drive=0;native_save_init(&boot);
  current.generation=1;current.records.best[0]=359;
+ /* Death/retry must never start disk I/O or capture a pending snapshot. */
+ assert(!native_save_tick(0) && !commits && !snapshots && !begins);
+ mode=MODE_PLAYING;assert(!native_save_tick(0));
+ mode=MODE_GAMEOVER;assert(!native_save_tick(0) && !commits && !snapshots);
+ mode=MODE_ATTRACT;
+ protection_flag=1;
+ assert(!native_save_tick(0) && error==2 && !commits && !begins && !writes && !busy);
+ mode=MODE_PLAYING;native_save_tick(0);mode=MODE_ATTRACT;protection_flag=0;
  assert(native_save_tick(0)==1 && error && dirty && commits==1 && !acks && snapshots==1 && !writes);
  assert(!native_save_tick(0) && commits==1);
  mode=MODE_PLAYING;assert(!native_save_tick(0) && !error);
- current.records.best[0]=500;mode=MODE_GAMEOVER;
+ current.records.best[0]=500;mode=MODE_ATTRACT;
  assert(native_save_tick(0)==1 && commits==2 && !acks && snapshots==1 && !writes);
  assert(submitted.records.best[0]==359 && submitted.generation==1);
  /* Reinsert writable media, then lose the first write's readback. */
- mode=MODE_PLAYING;native_save_tick(0);mode=MODE_GAMEOVER;protected_disk=0;fail_readback=1;
+ mode=MODE_PLAYING;native_save_tick(0);mode=MODE_ATTRACT;protected_disk=0;fail_readback=1;
  assert(native_save_tick(0)==1 && !acks && dirty && error && writes==1);
  TrackSave decoded;
  assert(track_save_decode(slots[0],id,&decoded) && decoded.generation==1 && decoded.records.best[0]==359);
- mode=MODE_PLAYING;native_save_tick(0);mode=MODE_GAMEOVER;
+ mode=MODE_PLAYING;native_save_tick(0);mode=MODE_ATTRACT;
  assert(native_save_tick(0)==1 && acks==1 && dirty && !error && writes==1);
  /* Already-written snapshot acknowledged without rewriting; newer RAM follows. */
  assert(native_save_tick(0)==1 && acks==2 && !dirty && snapshots==2 && writes==2);

@@ -28,4 +28,5 @@ UWORD* hud_loading_copper(void *plane,UBYTE saving);
 void hud_loading_begin(void);
 void hud_loading_end(void);
 
+/* 0 clear, 1 save error, 2 disk write protected. */
 void hud_save_failed(UBYTE failed);

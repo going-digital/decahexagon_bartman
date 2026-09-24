@@ -22,6 +22,8 @@ typedef struct {
     void *tune_metadata; /* resident info + PCM binding, 96 bytes */
 #if WHDLOAD
     int (*commit_save)(const TrackSave *snapshot);
+#else
+    unsigned boot_drive; /* physical trackdisk unit 0..3 */
 #endif
 } TrackGameBoot;
 /* Returns with interrupts and DMA off. Caller supplies any subsequent UI/reset.

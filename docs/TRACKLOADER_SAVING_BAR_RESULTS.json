@@ -1,0 +1,244 @@
+{
+  "status": "PAL saving bar has fixed bounds and width, no residual playfield pixels; normal IRQ restored; save CRC valid",
+  "source_sha256": "0c9f87293cd4fcd482c92b628facdb9680368cc0d34b44712cf866c7fb030fc5",
+  "evidence": "scratchpad/trackloader/native_game/loading_activity_1790268414899858000",
+  "clean_frames": 57,
+  "positions": 33,
+  "saved_sectors": [
+    1738
+  ],
+  "limitations": [
+    "PAL emulator only; no hardware or NTSC trial",
+    "Initial takeover capture retains previous gameplay frame"
+  ],
+  "frames": [
+    {
+      "frame": "save-043.png",
+      "left": 204
+    },
+    {
+      "frame": "save-044.png",
+      "left": 228
+    },
+    {
+      "frame": "save-045.png",
+      "left": 244
+    },
+    {
+      "frame": "save-046.png",
+      "left": 268
+    },
+    {
+      "frame": "save-047.png",
+      "left": 284
+    },
+    {
+      "frame": "save-048.png",
+      "left": 308
+    },
+    {
+      "frame": "save-049.png",
+      "left": 324
+    },
+    {
+      "frame": "save-050.png",
+      "left": 348
+    },
+    {
+      "frame": "save-051.png",
+      "left": 364
+    },
+    {
+      "frame": "save-052.png",
+      "left": 388
+    },
+    {
+      "frame": "save-053.png",
+      "left": 404
+    },
+    {
+      "frame": "save-054.png",
+      "left": 428
+    },
+    {
+      "frame": "save-055.png",
+      "left": 444
+    },
+    {
+      "frame": "save-056.png",
+      "left": 436
+    },
+    {
+      "frame": "save-057.png",
+      "left": 420
+    },
+    {
+      "frame": "save-058.png",
+      "left": 396
+    },
+    {
+      "frame": "save-059.png",
+      "left": 380
+    },
+    {
+      "frame": "save-060.png",
+      "left": 356
+    },
+    {
+      "frame": "save-061.png",
+      "left": 340
+    },
+    {
+      "frame": "save-062.png",
+      "left": 316
+    },
+    {
+      "frame": "save-063.png",
+      "left": 300
+    },
+    {
+      "frame": "save-064.png",
+      "left": 276
+    },
+    {
+      "frame": "save-065.png",
+      "left": 260
+    },
+    {
+      "frame": "save-066.png",
+      "left": 236
+    },
+    {
+      "frame": "save-067.png",
+      "left": 220
+    },
+    {
+      "frame": "save-068.png",
+      "left": 196
+    },
+    {
+      "frame": "save-069.png",
+      "left": 212
+    },
+    {
+      "frame": "save-070.png",
+      "left": 236
+    },
+    {
+      "frame": "save-071.png",
+      "left": 252
+    },
+    {
+      "frame": "save-072.png",
+      "left": 276
+    },
+    {
+      "frame": "save-073.png",
+      "left": 292
+    },
+    {
+      "frame": "save-074.png",
+      "left": 316
+    },
+    {
+      "frame": "save-075.png",
+      "left": 332
+    },
+    {
+      "frame": "save-076.png",
+      "left": 356
+    },
+    {
+      "frame": "save-077.png",
+      "left": 372
+    },
+    {
+      "frame": "save-078.png",
+      "left": 396
+    },
+    {
+      "frame": "save-079.png",
+      "left": 412
+    },
+    {
+      "frame": "save-080.png",
+      "left": 436
+    },
+    {
+      "frame": "save-081.png",
+      "left": 452
+    },
+    {
+      "frame": "save-082.png",
+      "left": 428
+    },
+    {
+      "frame": "save-083.png",
+      "left": 412
+    },
+    {
+      "frame": "save-084.png",
+      "left": 388
+    },
+    {
+      "frame": "save-085.png",
+      "left": 372
+    },
+    {
+      "frame": "save-086.png",
+      "left": 348
+    },
+    {
+      "frame": "save-087.png",
+      "left": 332
+    },
+    {
+      "frame": "save-088.png",
+      "left": 308
+    },
+    {
+      "frame": "save-089.png",
+      "left": 292
+    },
+    {
+      "frame": "save-090.png",
+      "left": 268
+    },
+    {
+      "frame": "save-091.png",
+      "left": 252
+    },
+    {
+      "frame": "save-092.png",
+      "left": 228
+    },
+    {
+      "frame": "save-093.png",
+      "left": 212
+    },
+    {
+      "frame": "save-094.png",
+      "left": 196
+    },
+    {
+      "frame": "save-095.png",
+      "left": 220
+    },
+    {
+      "frame": "save-096.png",
+      "left": 236
+    },
+    {
+      "frame": "save-097.png",
+      "left": 260
+    },
+    {
+      "frame": "save-098.png",
+      "left": 276
+    },
+    {
+      "frame": "save-099.png",
+      "left": 300
+    }
+  ]
+}
