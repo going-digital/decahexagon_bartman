@@ -6,3 +6,5 @@ assets/*.mp3
 /scratchpad
 
 /tools/audio/__pycache__/
+
+/tools/trackloader/__pycache__/

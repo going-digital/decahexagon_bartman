@@ -1,0 +1,74 @@
+{
+  "status": "PASS: removal during active write stops DMA before reinsertion; both images unchanged",
+  "source_sha256": "96017d688d3749bf07cda0f30160e38943500d43699c3b29eae46bcb9a0d2460",
+  "write_arm_events": [
+    {
+      "cck": 414055922,
+      "detail": "DSKLEN = D961 (cpu write, v183 h202)",
+      "frame": 5827,
+      "hpos": 204,
+      "pc": 25776,
+      "reason": "reg_watch",
+      "retired_instructions": 69551545,
+      "seconds": 116.73757525948753,
+      "vpos": 183
+    },
+    {
+      "cck": 414055930,
+      "detail": "DSKLEN = D961 (cpu write, v183 h210)",
+      "frame": 5827,
+      "hpos": 212,
+      "pc": 25782,
+      "reason": "reg_watch",
+      "retired_instructions": 69551546,
+      "seconds": 116.73757751498141,
+      "vpos": 183
+    }
+  ],
+  "delay_ms": 100,
+  "eject_gap_ms": 20,
+  "gap_events": [
+    {
+      "cck": 414414219,
+      "detail": "DSKLEN = 4000 (cpu write, v197 h66)",
+      "frame": 5832,
+      "hpos": 68,
+      "pc": 27134,
+      "reason": "reg_watch",
+      "retired_instructions": 69595679,
+      "seconds": 116.83859234626343,
+      "vpos": 197
+    },
+    {
+      "cck": 414481567,
+      "detail": "cck 414481563",
+      "frame": 5833,
+      "hpos": 224,
+      "pc": 99690,
+      "reason": "target",
+      "retired_instructions": 69606743,
+      "seconds": 116.85758022157408,
+      "vpos": 180
+    }
+  ],
+  "swap_stop": {
+    "cck": 414410625,
+    "detail": "cck 414410620",
+    "frame": 5832,
+    "hpos": 106,
+    "pc": 27068,
+    "reason": "target",
+    "retired_instructions": 69595236,
+    "seconds": 116.83757906563346,
+    "vpos": 181
+  },
+  "changed_sectors": [],
+  "foreign_changed_sectors": [],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/ccp_active_write_1790213700798480000",
+  "limitations": [
+    "No DSKLEN reprogramming before swap; partial ADF persistence is emulator-dependent",
+    "ADF emulator model, not physical-drive validation"
+  ],
+  "visual_review": "after_swap.png shows SAVE ERROR",
+  "removal_to_dma_stop_ms": 1.0132806299623098
+}

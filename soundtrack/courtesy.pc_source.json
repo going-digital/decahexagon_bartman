@@ -1,0 +1,17 @@
+{
+  "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music1.dat",
+  "sha256": "5dd58d3d1bc58d8b8102ef75804a669cd61df501da48cf371a75013adc72907c",
+  "pc_track": 1,
+  "decoded": "scratchpad/audio/courtesy_pc/decoded.wav",
+  "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+  "cue_asset": "assets/music1.cues",
+  "cue_offset_seconds": 0,
+  "compression_grid": {
+    "bpm": 130.03100000000066,
+    "phase_seconds": 0.02109819196960689,
+    "reviewed": false,
+    "downbeat_known": false,
+    "variable_tempo_checked": false
+  },
+  "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+}

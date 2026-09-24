@@ -1,0 +1,28 @@
+{
+  "status": "All three PC cue tables match accepted hashes",
+  "executable_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "check_only": false,
+  "output_dir": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/cue_extract_xst6srjo/cues",
+  "tracks": [
+    {
+      "track": 1,
+      "entries": 11441,
+      "sha256": "2f943408b38dd8a335a6e75c3da8c24768d8339c03065e440b5d064722c0fcf4",
+      "literal_offset": 1535890
+    },
+    {
+      "track": 2,
+      "entries": 8830,
+      "sha256": "17615c04081551ae07835b45052fb91c115196fda544688ea240ccd21cf4b9d5",
+      "literal_offset": 1581095
+    },
+    {
+      "track": 3,
+      "entries": 9734,
+      "sha256": "bffd3ae08525bd944cc5eda42fa0a4fcfaf014982e08b3bacdbecb8825292344",
+      "literal_offset": 1616054
+    }
+  ],
+  "isolated_output_matches_repository": true,
+  "unsupported_binary_rejected_before_writes": true
+}

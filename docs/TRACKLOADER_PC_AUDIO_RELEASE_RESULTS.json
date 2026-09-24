@@ -1,0 +1,29 @@
+{
+  "status": "Current all-PC image: PAL/NTSC switching and all three NTSC endurance checks pass",
+  "adf_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "tracks": [
+    {
+      "track": "courtesy",
+      "song_samples": 2273678,
+      "consumed_samples": 2374144,
+      "underruns": 0
+    },
+    {
+      "track": "otis",
+      "song_samples": 1750594,
+      "consumed_samples": 1855488,
+      "underruns": 0
+    },
+    {
+      "track": "focus",
+      "song_samples": 1933426,
+      "consumed_samples": 2036736,
+      "underruns": 0
+    }
+  ],
+  "limitations": [
+    "Endurance bypasses collisions in emulator RAM",
+    "Silent tests do not assess audible quality or cue alignment",
+    "No physical hardware validation"
+  ]
+}

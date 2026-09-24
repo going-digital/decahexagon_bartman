@@ -1,0 +1,14 @@
+{
+  "status": "Actual C save transaction on disposable ADF: reopen, latest state, idempotent retry and damaged-newest fallback pass",
+  "source_sha256": "55edf38c46d7ab0823df95c1ad3ad9f539ff0c851b88332015d5edfb28495f1e",
+  "writes": [
+    1738,
+    1749
+  ],
+  "artifact": "scratchpad/trackloader/native_game/save_recovery_trial.adf",
+  "outside_slots_unchanged": true,
+  "limitations": [
+    "Host sector callbacks; no emulated boot or native DiskIO writes",
+    "Physical torn-track behavior is not modeled"
+  ]
+}

@@ -1237,3 +1237,264 @@ hunks. Both music banks are embedded in the executable; no separate
 `music.pcm0` file is needed, including for direct AmigaDOS launches. Executable
 decompression happens only at launch. There is no gameplay disk access or
 runtime audio decompression.
+
+## Focus and Otis audition banks
+
+Focus and Otis now have Courtesy-style 12 kHz mono FBP2 banks, using the
+approved beat grids, optimal offline Fibonacci encoding/decoding followed by
+usage-weighted dictionary reduction. Playback needs no runtime decompression
+or interpolation. These are listening candidates, not accepted replacements.
+The per-track asset budget is Courtesy's 272,412 bytes, not 96 entries: the
+other tracks have longer half-beat slices.
+
+| Track | Dictionary slices | Asset bytes |
+| --- | ---: | ---: |
+| Courtesy (accepted) | 96 | 272,412 |
+| Focus (candidate) | 64 | 268,854 |
+| Otis (candidate) | 49 | 268,604 |
+
+Focus needs a common source gain of 0.917957 before quantization to avoid
+clipping; Otis uses unity. The audition page applies the game's existing
+soft-knee volume boost equally to each reconstruction and its 12 kHz reference.
+Courtesy is included as a listening control. Switching between players in one
+track preserves playback position and pauses the previous player.
+
+Reproduce from the repository root (run each track in sequence):
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compress_beat_bank.py --optimal --track focus --sample-rate 12000
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compact_pcm_song.py --track focus --budget-bytes 272412
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compress_beat_bank.py --optimal --track otis --sample-rate 12000
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compact_pcm_song.py --track otis --budget-bytes 272412
+venv/bin/python tools/audio/prepare_soundtrack_audition.py
+```
+
+Open `scratchpad/audio/audition/index.html`. Full-song WAVs and split banks are
+local generated artifacts; tracked reports record sizes, hashes and assignments.
+The host build of the actual target PCM reader matches both sequences byte for
+byte through varying read sizes, the memory split and the loop boundary, with
+buffer guards checked. This does not establish Paula output quality or target
+performance. No game soundtrack selection or loading has changed: integrating
+all three still needs a memory/loading plan rather than keeping all banks resident.
+
+## Fibonacci delta and IMA ADPCM disk auditions
+
+The user rejected the Focus candidate and requested smaller disk assets.
+`tools/audio/audition_codecs.py` compares optimal 4-bit Fibonacci delta and
+FFmpeg IMA WAV ADPCM on two dictionary sizes for each full track. Both start
+from original 12 kHz source slices, not already decoded Fibonacci samples.
+Compact retains the previous selection/assignments (96/64/49 slices); fuller
+retains the first-stage dictionaries (134/91/69). Selection itself is unchanged;
+these trials do not establish that Focus quality is now acceptable.
+
+Total experimental disk package sizes for all three tracks:
+
+| Dictionary | Fibonacci delta | IMA ADPCM |
+| --- | ---: | ---: |
+| Compact | 420,540 bytes | 421,659 bytes |
+| Fuller | 583,766 bytes | 586,276 bytes |
+
+Sizes include an experimental AUD1 header, JSON sequence/offset metadata and
+codec payload (including codec headers/padding). This is a host experiment,
+not an Amiga-loadable format. It excludes game code, decoder code, effects and
+filesystem overhead; a complete single-disk build has not been demonstrated.
+Decoding at track load is a possible integration path preserving current PCM
+playback costs, but needs loading and peak-memory work. Streaming decoding
+would need new A500 timing validation; earlier runtime Fibonacci experiments
+were too expensive. The larger banks also require more decoded RAM.
+
+Run `OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/audition_codecs.py`, then
+open `scratchpad/audio/codec_audition/index.html`. Full-song controls include
+the reference, rejected/previous candidate, and each dictionary before codec.
+All listening previews receive the same game gain after decode. ADPCM is
+rounded to signed 8-bit for Paula, and codec padding is excluded from playback.
+The experiment verifies reconstructed song lengths and reports both codec-only
+and overall objective errors in `disk_codec_audition.json`. Objective errors
+are not listening acceptance. No runtime code or release disk changed.
+
+### 20% larger dictionary audition
+
+After the user rejected the larger-dictionary listening quality, the per-tune
+first-stage budget increased from 192 to 230.4 KiB (+20%). Rebuild each track
+with `compress_beat_bank.py --optimal --track TRACK --sample-rate 12000
+--budget-kib 230.4`, then run `audition_codecs.py --budget-kib 230.4` (using the
+same venv and OPENBLAS_NUM_THREADS=1 as above). Defaults preserve prior trials.
+The new listening page is `scratchpad/audio/codec_audition_budget_230.4/index.html`.
+It includes previous larger-dictionary codec previews for direct comparison,
+plus the original and before-codec controls, all with identical game gain.
+
+Combined experimental disk packages are 702,897 bytes for Fibonacci delta and
+704,621 bytes for IMA ADPCM. Actual package growth differs slightly from 20%
+because slices are indivisible and package metadata differs from the dictionary
+budget accounting. Reports are in `disk_codec_audition_budget_230.4.json` and
+per-track `*.rate_12000_budget_230.4.json`. Full-song decoded sample counts pass;
+quality still requires listening. Game/disk integration remains unchanged.
+
+### 250 KiB Fibonacci candidates
+
+The user prefers Fibonacci delta over IMA ADPCM and requested a 250K per-tune
+budget, interpreted here as 250 KiB (256,000 bytes). New dictionaries contain
+176 Courtesy, 119 Focus and 91 Otis slices. Full experimental packages,
+including sequence metadata and codec headers, are respectively 255,816,
+253,693 and 250,588 bytes (760,097 bytes combined). No quality acceptance of
+these particular reconstructions is implied by the codec preference.
+
+Rebuild each track with `compress_beat_bank.py --optimal --track TRACK
+--sample-rate 12000 --budget-kib 250`, then run:
+
+```sh
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/audition_codecs.py --budget-kib 250 --codec fibonacci --previous-budget-kib 230.4 --max-package-kib 250
+```
+
+Open `scratchpad/audio/codec_audition_budget_250/index.html`. Previous 230.4 KiB
+Fibonacci previews are retained for direct comparison. The package-size ceiling
+and full-song sample counts are asserted. Disk compression does not reduce the
+decoded sample banks: these are approximately 490–494 KB per tune, excluding
+player state and other game memory. Track loading/peak RAM and total disk fit
+still need integration work. Report: `disk_codec_audition_budget_250.json`.
+
+
+## Pre-encoding gain for the trackloader assets
+
+The trackloader now uses the existing +6 dB/soft-knee boost **before** Fibonacci
+encoding, directly on the original dictionary samples. Its post-decode gain pass
+has been removed. The embedded DOS soundtrack pipeline is unchanged.
+
+Regenerate and audition with:
+
+```
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/audition_codecs.py --budget-kib 250 --codec fibonacci --previous-budget-kib 250 --max-package-kib 250
+```
+
+The default is `--gain-stage before`; `--gain-stage after` retains the historical
+comparison workflow. New output is in
+`scratchpad/audio/codec_audition_budget_250_preboost/index.html`, alongside
+boosted-reference and previous post-decode-boost controls. Preboost previews
+play decoded samples directly, without double gain. Encoding uses original PCM,
+not a decode/re-encode of the previous Fibonacci stream.
+
+Courtesy, Focus and Otis AUD packages are 255,838, 253,715 and 250,610 bytes.
+Raw-zultra runtime payloads are 232,835, 229,616 and 225,897 bytes respectively.
+The new lossy reconstructions need listening acceptance; validation establishes
+byte-correct decoding, loop/seek behaviour, overlap safety and native Courtesy
+start/retry, not subjective equivalence to the previous encodes.
+
+
+## Accepted encodes and PC track verification
+
+The user accepted the pre-encoding-boost auditions on 2026-09-24. Preserve these
+encodes while integrating the other tracks; acceptance does not establish PC cue
+alignment.
+
+`OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/verify_pc_tracks.py` verifies
+the installed PC binary hash, compares five waveform windows against all three
+PC recordings and extracts all three cue tables from verified RIP-relative
+literal references. Track 2 applies the PC's double-precision 0.6 multiplier
+and truncation. Track 1 is checked against the existing asset byte-for-byte.
+
+Courtesy matches PC track 1 at source time minus 0.051 seconds. Focus matches
+track 3 at minus 0.0485 seconds (correlation 0.931–0.971 across five windows),
+so Focus belongs to Hexagonest/Hyper Hexagonest, not Hexagoner. Normal and Hyper
+share music according to the PC restart selection code.
+
+Otis needs a separate alignment investigation. The source is 156.4445 seconds;
+PC track 2 is 145.883 seconds. Full-waveform matches are weak (0.20–0.26), while
+amplitude-envelope matching finds strongly related passages at inconsistent
+positions. This is insufficient to apply music2.cues with a single time offset.
+The cue table has been extracted accurately but is not attached to Otis playback.
+Evidence and exact source hashes: `soundtrack/pc_track_verification.json`.
+
+
+## Otis original versus PC recording
+
+The full-sequence comparison supersedes the earlier ambiguous local matches.
+Original MP3: 156.4444 seconds; installed PC music2.dat: 145.8826 seconds, about
+10.56 seconds shorter. Monotonic log-spectral alignment matches all 1,458 PC
+frames at a constant +6.7-second source offset at 100 ms resolution. This supports
+an approximately 6.7-second opening cut and 3.9-second ending cut, rather than
+internal rearrangement or a substantial playback-speed change. Repeated phrases
+had misled the independent short-window matches.
+
+Envelope refinement estimates offsets from 6.695 to 6.646 seconds across the
+recording. These are approximate, not a sample-exact cue transform. Direct
+waveform agreement remains weak even after a fine speed/offset search; this
+comparison cannot establish identical mastering/encoding or explain the residual
+waveform difference. Use the PC recording for exact PC cue alignment rather than
+assuming that trimming the accepted source will produce identical PCM.
+
+Reproduce: `OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compare_otis_pc.py`.
+Evidence: `soundtrack/otis_pc_comparison.json`. Listening comparisons:
+`scratchpad/audio/otis_pc_comparison/index.html` (8 kHz mono, timing/structure
+previews, not full-band fidelity). The accepted game assets and native ADF were
+not changed by this comparison.
+
+
+## PC recording selected as the Otis source
+
+At the user's request, Otis now uses the installed PC `music2.dat` recording.
+`tools/audio/prepare_pc_otis.py` verifies the PC executable and recording hashes,
+decodes float PCM without manual trim/shift/speed changes, and records the source
+in `soundtrack/otis.pc_source.json`. `audio_sources.py` routes dictionary building
+and audition encoding to the separate `scratchpad/audio/otis_pc` working tree.
+The original MP3 and previous accepted auditions are preserved.
+
+The rebuilt 12 kHz song is 1,750,594 samples (145.8828 seconds). Its boosted-before-
+Fibonacci AUD package is 251,007 bytes, within 250 KiB; its zultra payload is
+228,639 bytes. The expanded metadata/bank arena is 493,846 bytes. Courtesy and
+Focus AUD packages are byte-identical to the accepted versions. The new audition
+page is `scratchpad/audio/codec_audition_budget_250_preboost_pc_otis/index.html`;
+Otis controls on this page share the PC edit, rather than synchronizing players
+with mismatched recordings.
+
+All tune validation/loop/seek/guard tests and actual 68000 combined inflate/decode
+checks pass, with refreshed overlap proofs. The native ADF was rebuilt and has
+69 free sectors. A standalone Copperline PAL A500 Otis IRQ diagnostic passed two
+playback runs with zero underruns and at least 65 completed blocks each.
+Evidence: `docs/TRACKLOADER_PC_OTIS_RESULTS.json`.
+
+This selects and packages the PC source; it does not yet enable Otis in native
+level selection. Its PCM timeline needs zero cue offset. The current player
+still applies Courtesy's 612-sample correction, so a per-track cue offset must
+be added before attaching music2.cues. The dictionary's approximate beat-grid
+phase only selects compression slices and does not shift playback time.
+
+Rebuild in order:
+
+```
+python3 tools/audio/prepare_pc_otis.py
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/compress_beat_bank.py --optimal --track otis --sample-rate 12000 --budget-kib 250
+OPENBLAS_NUM_THREADS=1 venv/bin/python tools/audio/audition_codecs.py --budget-kib 250 --codec fibonacci --previous-budget-kib 250 --max-package-kib 250
+venv/bin/python tools/trackloader/measure_payloads.py --execram-source /path/to/execram
+python3 tools/trackloader/check_tune.py
+python3 tools/trackloader/run_inflate_probe.py
+python3 tools/trackloader/check_combined_loading.py
+python3 tools/trackloader/build_native_boot.py
+```
+
+
+## All three PC recordings (2026-09-24)
+
+Courtesy, Otis and Focus now use the installed PC game's `music1.dat`,
+`music2.dat` and `music3.dat`, verified against the recorded source hashes.
+All retain decoded sample zero with no trim or speed change. The trackloader
+cue leads are zero for all three; the former Courtesy/Focus MP3 offsets no
+longer apply. Beat-grid phase adjustments affect dictionary slicing only.
+Otis regenerates byte-identically to the earlier PC Otis bank.
+
+Reproduce with the project's audio Python environment (NumPy/SciPy required):
+
+```sh
+venv/bin/python tools/audio/prepare_pc_tracks.py
+venv/bin/python tools/audio/compress_beat_bank.py --optimal --track courtesy --sample-rate 12000 --budget-kib 250 --reserve-bytes 2048
+venv/bin/python tools/audio/compress_beat_bank.py --optimal --track otis --sample-rate 12000 --budget-kib 250
+venv/bin/python tools/audio/compress_beat_bank.py --optimal --track focus --sample-rate 12000 --budget-kib 250
+venv/bin/python tools/audio/audition_codecs.py --budget-kib 250 --codec fibonacci --gain-stage before --max-package-kib 250
+```
+
+Courtesy reserves 2 KiB for final container metadata/padding so its final AUD1
+package stays under 250 KiB. Packages are Courtesy 254,725 bytes, Otis 251,007
+bytes and Focus 253,252 bytes. Gain is still applied before Fibonacci encoding.
+The new references and encoded previews are at
+`scratchpad/audio/codec_audition_budget_250_preboost_pc_tracks/index.html`.
+Old auditions remain available in their original directories. The asset lock
+was deliberately updated for this requested source change.

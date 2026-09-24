@@ -1,0 +1,24 @@
+{
+  "status": "PAL A500 wrong non-DOS disk rejection and reinsertion retry passed",
+  "emulator": "Copperline A500OCS PAL, 512K Chip + 512K slow",
+  "adf_sha256": "71770028d8e04aedcf7649520c12ae90e584ab2eef43f0942e248bfec55e42d5",
+  "wrong_disk": "901120 zero bytes, a non-DOS ADF",
+  "sequence_seconds": {
+    "insert_wrong_disk": 50,
+    "start": 60,
+    "insert_game_disk": 85,
+    "retry": 90,
+    "capture": 130
+  },
+  "artifacts": [
+    "scratchpad/trackloader/native_game/wrong_disk.log",
+    "scratchpad/trackloader/native_game/wrong_disk.png",
+    "scratchpad/trackloader/native_game/wrong_disk_recovery.log",
+    "scratchpad/trackloader/native_game/wrong_disk_recovery.png"
+  ],
+  "limitations": [
+    "No full-emulator empty-drive test",
+    "No malformed-filesystem safety guarantee",
+    "No same-named oversized-file protection yet"
+  ]
+}

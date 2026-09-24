@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "description": "250 KiB-budget preboosted Fibonacci banks; all three PC recordings at decoded sample zero; existing PC cue assets. Update deliberately when audio is changed.",
+  "banks": [
+    {
+      "path": "scratchpad/audio/codec_audition_budget_250_preboost_pc_tracks/courtesy_expanded_fibonacci.aud",
+      "bytes": 254725,
+      "sha256": "26cd4d7864ca38dd4109d5fc61188d9c0cb3af8506980f799b1ab0e7887aec6c"
+    },
+    {
+      "path": "scratchpad/audio/codec_audition_budget_250_preboost_pc_tracks/otis_expanded_fibonacci.aud",
+      "bytes": 251007,
+      "sha256": "5c8efbd9502700ae1ea43d6da4431aad6b02c34dc487247b8b879d2f268ffeb6"
+    },
+    {
+      "path": "scratchpad/audio/codec_audition_budget_250_preboost_pc_tracks/focus_expanded_fibonacci.aud",
+      "bytes": 253252,
+      "sha256": "3f38e1d3e34c89111d4c9f2fe4c1f393b5dd56dba75aae582167d38c36cead7a"
+    }
+  ],
+  "disk_assets": [
+    {
+      "path": "scratchpad/trackloader/courtesy.fibonacci.deflate",
+      "bytes": 233148,
+      "sha256": "10444781c83d74a3ba12ebf0c2aac712d50c268f081eb2af170818d4c9380db4"
+    },
+    {
+      "path": "scratchpad/trackloader/otis.fibonacci.deflate",
+      "bytes": 228639,
+      "sha256": "efd6ac290603114d4c6865a57ab847bdf1bf51bcaa2c45875b15d8d3927849ca"
+    },
+    {
+      "path": "scratchpad/trackloader/focus.fibonacci.deflate",
+      "bytes": 231763,
+      "sha256": "487599e8adddeed42c74364dcd88745c92ec2c3b42b3a7e7fa928e02cf87aee9"
+    },
+    {
+      "path": "assets/music1.cues",
+      "bytes": 11441,
+      "sha256": "2f943408b38dd8a335a6e75c3da8c24768d8339c03065e440b5d064722c0fcf4"
+    },
+    {
+      "path": "assets/music2.cues",
+      "bytes": 8830,
+      "sha256": "17615c04081551ae07835b45052fb91c115196fda544688ea240ccd21cf4b9d5"
+    },
+    {
+      "path": "assets/music3.cues",
+      "bytes": 9734,
+      "sha256": "bffd3ae08525bd944cc5eda42fa0a4fcfaf014982e08b3bacdbecb8825292344"
+    }
+  ]
+}

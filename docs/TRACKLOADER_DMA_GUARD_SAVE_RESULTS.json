@@ -1,0 +1,21 @@
+{
+  "status": "Latest DMA-guard image boots, saves and restores on cold reboot",
+  "source_sha256": "96017d688d3749bf07cda0f30160e38943500d43699c3b29eae46bcb9a0d2460",
+  "saved_sha256": "988a58c6cb305299ba806b3d0d37f46fd095f91982a3973a30272937852b5c06",
+  "emulator": "Copperline PAL A500OCS, 512K Chip + 512K slow",
+  "changed_sectors": [
+    1738
+  ],
+  "generation": 1,
+  "best_ticks": 359,
+  "stage_bytes": 22289,
+  "reboot_disk_unchanged": true,
+  "screenshots": [
+    "dma_guard_save.png",
+    "dma_guard_reboot.png"
+  ],
+  "limitations": [
+    "No timed disk removal or physical-drive test",
+    "Screenshot content reviewed separately; artifact association relies on trial procedure"
+  ]
+}

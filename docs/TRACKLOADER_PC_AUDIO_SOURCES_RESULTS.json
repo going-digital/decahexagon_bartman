@@ -1,0 +1,26 @@
+{
+  "status": "All source hashes match PC recordings; reference, AUD1 and TUN1 sample counts agree; Otis regeneration byte-identical",
+  "tracks": [
+    {
+      "track": "courtesy",
+      "source_sha256": "5dd58d3d1bc58d8b8102ef75804a669cd61df501da48cf371a75013adc72907c",
+      "samples": 2273678,
+      "duration_seconds": 189.47316666666666,
+      "package_bytes": 254725
+    },
+    {
+      "track": "otis",
+      "source_sha256": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+      "samples": 1750594,
+      "duration_seconds": 145.88283333333334,
+      "package_bytes": 251007
+    },
+    {
+      "track": "focus",
+      "source_sha256": "9dfbc0345761b43ea58850f28544ed709099ffd6bf30d1d010e1f9081a1faa99",
+      "samples": 1933426,
+      "duration_seconds": 161.11883333333333,
+      "package_bytes": 253252
+    }
+  ]
+}

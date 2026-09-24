@@ -1,0 +1,33 @@
+{
+  "status": "Actual 68000 execution, shared arena, guards and final bytes checked; excludes disk/chipset timing",
+  "expansion_binary_sha256": "713f4ff265d9ea84a7e2d440a5b551bd7a0c2a96782bb974d97bfc3c8c7ab638",
+  "trials": [
+    {
+      "combined_matches": true,
+      "arena_bytes": 494146,
+      "inflate_cycles": 51022860,
+      "expansion_cycles": 33307706,
+      "expansion_stack_bytes": 348,
+      "track": "courtesy",
+      "cpu_seconds_pal_lower_bound": 11.887942270633893
+    },
+    {
+      "combined_matches": true,
+      "arena_bytes": 496646,
+      "inflate_cycles": 51065980,
+      "expansion_cycles": 33592790,
+      "expansion_stack_bytes": 348,
+      "track": "focus",
+      "cpu_seconds_pal_lower_bound": 11.934208652920372
+    },
+    {
+      "combined_matches": true,
+      "arena_bytes": 493846,
+      "inflate_cycles": 52582318,
+      "expansion_cycles": 33449042,
+      "expansion_stack_bytes": 348,
+      "track": "otis",
+      "cpu_seconds_pal_lower_bound": 12.127700425301567
+    }
+  ]
+}

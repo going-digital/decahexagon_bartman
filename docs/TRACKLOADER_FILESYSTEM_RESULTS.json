@@ -1,0 +1,17 @@
+{
+  "status": "Real DosIO 68000 filesystem code; sector I/O mocked, not DMA validation; image is not bootable",
+  "image_sha256": "ec7c1276071b207a8d7d83e0ac5980315241c8bd9e11ba82b5285e2e506ff91e",
+  "free_sectors": 105,
+  "free_bytes": 53760,
+  "save_slots": "Two 512-byte test files, overwrite/readback tested; crash-safe placement not yet implemented",
+  "log": [
+    "DF0:courtesy: 229869 bytes saved and loaded identically",
+    "DF0:focus: 242049 bytes saved and loaded identically",
+    "DF0:otis: 231646 bytes saved and loaded identically",
+    "DF0:game: 86236 bytes saved and loaded identically",
+    "DF0:save_a: 512 bytes saved and loaded identically",
+    "DF0:save_b: 512 bytes saved and loaded identically",
+    "DF0:save_a: 512 bytes saved and loaded identically",
+    "sector calls: 80 reads, 205 writes, 1 formats"
+  ]
+}

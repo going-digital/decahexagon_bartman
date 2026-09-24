@@ -24,8 +24,19 @@ static PcPlayer player;
 static PcMorph morph;
 static PcMenu menu;
 static PcRecords records;
+static uint32_t save_generation,save_achievements;
+static UBYTE save_dirty,save_restore_open;
 static PcLifecycle lifecycle;
 static UBYTE selected_profile;
+static GameRunPreparer run_preparer;
+static UBYTE load_barrier;
+static UBYTE load_failed;
+UBYTE game_load_failed(void) { return load_failed; }
+static UBYTE load_retry_wait;
+void game_set_run_preparer(GameRunPreparer prepare) { run_preparer=prepare; }
+UBYTE game_take_load_barrier(void) {
+    UBYTE pending=load_barrier;load_barrier=0;return pending;
+}
 UBYTE game_selected_profile(void) { return selected_profile; }
 UBYTE game_selection_locked(void) { return !pc_profile_unlocked(&records,selected_profile); }
 static void load_record(void) {
@@ -73,6 +84,35 @@ static void project_state(void) {
     gamestate.segment_angle=pc_render_angle((int16_t)pc_morph_arc(&morph));
     gamestate.player_angle=pc_render_angle(player.angle ? 360-player.angle:0);
 }
+UBYTE game_save_dirty(void) { return save_dirty; }
+int game_restore_save(const TrackSave *state) {
+    if (!state || !save_restore_open || save_dirty) return 0;
+    for (unsigned i=0;i<6;i++) if (state->records.completed[i]>1) return 0;
+    records=state->records;
+    save_generation=state->generation;save_achievements=state->achievements;
+    save_restore_open=0;
+    load_record();
+    return 1;
+}
+int game_save_snapshot(TrackSave *state) {
+    if (!state || !save_dirty || (mode!=MODE_ATTRACT && mode!=MODE_GAMEOVER)) return 0;
+    state->records=records;state->achievements=save_achievements;
+    state->generation=save_generation+1;
+    return 1;
+}
+int game_save_committed(const TrackSave *state) {
+    if (!state || !save_dirty || state->generation!=save_generation+1) return 0;
+    /* A successful write of an older snapshot still advances the disk
+     * generation, but must not discard improvements made since that snapshot. */
+    save_generation=state->generation;
+    if (state->achievements!=save_achievements) return 1;
+    for (unsigned i=0;i<6;i++)
+        if (state->records.best[i]!=records.best[i] ||
+            state->records.completed[i]!=records.completed[i]) return 1;
+    save_dirty=0;
+    return 1;
+}
+
 static void reset_run(void) {
 #if CHEAT_MODE
     cheat_reset();
@@ -87,16 +127,21 @@ static void reset_run(void) {
     shake_x=shake_y=0;new_record=0;gamestate.pulse=0;
 }
 void game_init(void) {
+    records=(PcRecords){0};save_generation=save_achievements=0;
+    save_dirty=0;save_restore_open=1;
+    run_preparer=0;load_barrier=0;load_retry_wait=0;load_failed=0;
     pc_lifecycle_init(&lifecycle);
     pc_sfx_init(&sound_events);
     player.angle=player.previous_angle=30;
     selected_profile=PC_START_STAGE+3*PC_START_HYPER;
-    pc_menu_reset(&menu,selected_profile);reset_run();set_mode(MODE_ATTRACT);
+    pc_menu_reset(&menu,selected_profile);reset_run();set_mode(MODE_ATTRACT);load_record();
 }
 
 static void record_time(void) {
     uint32_t elapsed=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
-    if (pc_record_tick(&records,selected_profile,elapsed)) new_record=1;
+    UBYTE completed=records.completed[selected_profile];
+    if (pc_record_tick(&records,selected_profile,elapsed)) { new_record=1;save_dirty=1; }
+    if (records.completed[selected_profile]!=completed) save_dirty=1;
     load_record();
 }
 
@@ -149,6 +194,12 @@ static void update_playing(const InputState *in) {
 }
 
 static void start_playing(const InputState *in) {
+    if (load_retry_wait) return;
+    if (run_preparer) {
+        load_barrier=1;
+        if (!run_preparer(selected_profile)) { load_failed=1;load_retry_wait=1;return; }
+    }
+    load_failed=0;
     InputState first=*in;
     first.held=0; /* input already ran in selection/death before PC restart */
 #if CHEAT_MODE
@@ -162,6 +213,8 @@ static void start_playing(const InputState *in) {
 }
 
 void game_update(const InputState* in) {
+    save_restore_open=0;
+    if (!in->fire && !in->fire_edge) load_retry_wait=0;
     sfx_emit(pc_sfx_startup(&sound_events));
     mode_timer++;
     update_ambient();
@@ -171,6 +224,7 @@ void game_update(const InputState* in) {
     // Escape abandons a run / backs out to the title. From the title itself
     // main.c turns Escape into a quit.
     if (in->back_edge && mode != MODE_ATTRACT) {
+        load_failed=0;
         sfx_emit(SFX_BIT(SFX_RANKUP));
         reset_run();
         pc_menu_reset(&menu,selected_profile);
@@ -190,7 +244,7 @@ void game_update(const InputState* in) {
             if(!moving && menu.motion) sfx_emit(SFX_BIT(SFX_MENUCHOOSE));
         }
         if (selected_profile!=pc_menu_profile(&menu)) {
-            selected_profile=pc_menu_profile(&menu);load_record();
+            selected_profile=pc_menu_profile(&menu);load_record();load_failed=0;
             pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
             mode_timer=0;
         }

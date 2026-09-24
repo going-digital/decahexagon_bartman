@@ -1,0 +1,205 @@
+{
+  "original": {
+    "path": "assets/Chipzel - Otis [1413220136].mp3",
+    "sha256": "4a6f8814b42ed93442931aa722fba037acdd74a5a12cc96c4d56e8e3823acb31",
+    "seconds": 156.4445
+  },
+  "pc": {
+    "path": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music2.dat",
+    "sha256": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+    "seconds": 145.88275
+  },
+  "method": "3-second log-spectral windows, 40 frequency bands, 100 ms steps; repeated passages can be ambiguous",
+  "matches": [
+    {
+      "pc_seconds": 0,
+      "original_seconds": 6.7,
+      "score": 0.8734848499298096
+    },
+    {
+      "pc_seconds": 5,
+      "original_seconds": 11.7,
+      "score": 0.8493502140045166
+    },
+    {
+      "pc_seconds": 10,
+      "original_seconds": 8.7,
+      "score": 0.8667363524436951
+    },
+    {
+      "pc_seconds": 15,
+      "original_seconds": 13.7,
+      "score": 0.8383725881576538
+    },
+    {
+      "pc_seconds": 20,
+      "original_seconds": 9.8,
+      "score": 0.8431719541549683
+    },
+    {
+      "pc_seconds": 25,
+      "original_seconds": 7.7,
+      "score": 0.8463408946990967
+    },
+    {
+      "pc_seconds": 30,
+      "original_seconds": 43.8,
+      "score": 0.8770856261253357
+    },
+    {
+      "pc_seconds": 35,
+      "original_seconds": 41.7,
+      "score": 0.8236321806907654
+    },
+    {
+      "pc_seconds": 40,
+      "original_seconds": 46.7,
+      "score": 0.8366156220436096
+    },
+    {
+      "pc_seconds": 45,
+      "original_seconds": 58.8,
+      "score": 0.8352750539779663
+    },
+    {
+      "pc_seconds": 50,
+      "original_seconds": 56.7,
+      "score": 0.8278998136520386
+    },
+    {
+      "pc_seconds": 55,
+      "original_seconds": 61.7,
+      "score": 0.7412149906158447
+    },
+    {
+      "pc_seconds": 60,
+      "original_seconds": 73.8,
+      "score": 0.8768385648727417
+    },
+    {
+      "pc_seconds": 65,
+      "original_seconds": 71.7,
+      "score": 0.8294832706451416
+    },
+    {
+      "pc_seconds": 70,
+      "original_seconds": 76.7,
+      "score": 0.8381545543670654
+    },
+    {
+      "pc_seconds": 75,
+      "original_seconds": 88.8,
+      "score": 0.789457380771637
+    },
+    {
+      "pc_seconds": 80,
+      "original_seconds": 86.7,
+      "score": 0.827128529548645
+    },
+    {
+      "pc_seconds": 85,
+      "original_seconds": 91.7,
+      "score": 0.825136125087738
+    },
+    {
+      "pc_seconds": 90,
+      "original_seconds": 103.8,
+      "score": 0.8617808818817139
+    },
+    {
+      "pc_seconds": 95,
+      "original_seconds": 101.7,
+      "score": 0.8358476161956787
+    },
+    {
+      "pc_seconds": 100,
+      "original_seconds": 113.8,
+      "score": 0.8621949553489685
+    },
+    {
+      "pc_seconds": 105,
+      "original_seconds": 125.9,
+      "score": 0.8376573920249939
+    },
+    {
+      "pc_seconds": 110,
+      "original_seconds": 130.9,
+      "score": 0.8283337354660034
+    },
+    {
+      "pc_seconds": 115,
+      "original_seconds": 128.8,
+      "score": 0.8323671221733093
+    },
+    {
+      "pc_seconds": 120,
+      "original_seconds": 140.9,
+      "score": 0.7623167037963867
+    },
+    {
+      "pc_seconds": 125,
+      "original_seconds": 110.3,
+      "score": 0.8033849596977234
+    },
+    {
+      "pc_seconds": 130,
+      "original_seconds": 143.8,
+      "score": 0.8105496764183044
+    },
+    {
+      "pc_seconds": 135,
+      "original_seconds": 120.3,
+      "score": 0.6962780356407166
+    },
+    {
+      "pc_seconds": 140,
+      "original_seconds": 146.7,
+      "score": 0.7629348039627075
+    }
+  ],
+  "whole_sequence_alignment": {
+    "resolution_seconds": 0.1,
+    "matched_frames": 1458,
+    "pc_frames": 1458,
+    "offset_min": 6.7,
+    "offset_max": 6.7,
+    "offset_median": 6.7,
+    "interpretation": "Monotonic spectral alignment supports one leading trim, not internal rearrangement or a material tempo change."
+  },
+  "envelope_offset_refinement": [
+    {
+      "pc_start": 5,
+      "offset_seconds": 6.695000000000065,
+      "correlation": 0.8714687888424043
+    },
+    {
+      "pc_start": 30,
+      "offset_seconds": 6.6840000000000614,
+      "correlation": 0.8623939760712827
+    },
+    {
+      "pc_start": 60,
+      "offset_seconds": 6.676000000000059,
+      "correlation": 0.7719610486734185
+    },
+    {
+      "pc_start": 90,
+      "offset_seconds": 6.665000000000055,
+      "correlation": 0.6943859613219763
+    },
+    {
+      "pc_start": 120,
+      "offset_seconds": 6.646000000000049,
+      "correlation": 0.7376551543234688
+    }
+  ],
+  "estimated_trim": {
+    "start_seconds": 6.676000000000059,
+    "end_seconds": 3.885749999999959
+  },
+  "limitations": [
+    "Spectral/envelope alignment establishes structure, not sample identity.",
+    "Low waveform correlation prevents claiming the PC file is merely a byte-equivalent trim/re-encode.",
+    "Offsets are approximate; exact cue synchronization should use the PC recording itself."
+  ]
+}

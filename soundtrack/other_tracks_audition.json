@@ -1,0 +1,41 @@
+{
+  "status": "Prepared for listening; quality not yet accepted; no target playback claimed",
+  "sample_rate": 12000,
+  "runtime_decompression": false,
+  "gain": "Same boost_pcm soft-knee curve as game, applied equally to reference and reconstruction",
+  "tracks": [
+    {
+      "track": "courtesy",
+      "dictionary_slices": 96,
+      "asset_bytes": 272412,
+      "seconds": 193.33333333333334,
+      "files": {
+        "compressed": "courtesy_compressed.wav",
+        "reference": "courtesy_reference.wav"
+      },
+      "asset_sha256": "613b79c14a80f3fe59e9de4ba61a4d8afa2c91ab6c34728f1bbcac6d18cca78a"
+    },
+    {
+      "track": "focus",
+      "dictionary_slices": 64,
+      "asset_bytes": 268854,
+      "seconds": 162.22225,
+      "files": {
+        "compressed": "focus_compressed.wav",
+        "reference": "focus_reference.wav"
+      },
+      "asset_sha256": "570ad05fba94272c76eaa39aacf98f3056bdcbcd3db6d755657222c441ff0349"
+    },
+    {
+      "track": "otis",
+      "dictionary_slices": 49,
+      "asset_bytes": 268604,
+      "seconds": 156.4445,
+      "files": {
+        "compressed": "otis_compressed.wav",
+        "reference": "otis_reference.wav"
+      },
+      "asset_sha256": "4d45e8276fcc0ba280609404cb958cce96e60326d45e69619f71e22f0302d781"
+    }
+  ]
+}

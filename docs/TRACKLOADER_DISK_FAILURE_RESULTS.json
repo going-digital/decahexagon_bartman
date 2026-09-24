@@ -1,0 +1,38 @@
+{
+  "status": "Unmodified 68000 DosIO/DiskIO failure paths return with destination intact",
+  "hardware": "Mock CIA/custom inputs; timers expire immediately; not wall-clock timing or full emulator no-media validation",
+  "scenarios": [
+    "no disk",
+    "DMA never completes",
+    "track-zero never asserts"
+  ],
+  "trials": [
+    {
+      "scenario": 0,
+      "error": 29,
+      "cycles": 91784,
+      "timer_starts": 437,
+      "dma_starts": 0,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    },
+    {
+      "scenario": 1,
+      "error": -1,
+      "cycles": 1505944,
+      "timer_starts": 8411,
+      "dma_starts": 6,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    },
+    {
+      "scenario": 2,
+      "error": 30,
+      "cycles": 639646,
+      "timer_starts": 2522,
+      "dma_starts": 0,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    }
+  ]
+}

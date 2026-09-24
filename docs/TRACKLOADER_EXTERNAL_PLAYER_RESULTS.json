@@ -1,0 +1,14 @@
+{
+  "status": "68000 object compiled; dependencies audited; not a target playback test",
+  "undefined_symbols": [
+    "custom",
+    "fib_song_read",
+    "fib_song_seek",
+    "frameCounter",
+    "paula_irq_set",
+    "pc_pcm_position",
+    "pc_pulse_cue_index_offset",
+    "pcm_lifecycle_tick",
+    "video_timing"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "status": "Copperline cold-boot Focus disk->inflate->PCM diagnostic passes",
+  "machine": "A500OCS PAL, explicit 512K Chip + 512K slow, Kickstart 1.3",
+  "arena_address": "0xc01000",
+  "arena_bytes": 496646,
+  "stage_bytes": 5640,
+  "stage_sha256": "a960bf01a9e7ca83022cdaae1ca66516f201689bfc25bdae5b2677adac4e1918",
+  "verification": "Packed file length and byte sum, expansion return length, final metadata+PCM byte sum; prior host/68000 harnesses provide full byte comparisons",
+  "limitations": [
+    "Diagnostic fixed A500 memory map only",
+    "No game or audio playback",
+    "No target timing measurement",
+    "PAL Copperline only",
+    "Expansion memory reclaimed after permanent takeover; no OS return"
+  ]
+}

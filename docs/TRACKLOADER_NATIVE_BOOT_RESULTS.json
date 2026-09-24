@@ -1,0 +1,18 @@
+{
+  "status": "Native three-track diagnostic built; not yet boot verified",
+  "stage_bytes": 22373,
+  "chip_block_bytes": 360448,
+  "image_offset": 65536,
+  "image_capacity": 196608,
+  "heap_offset": 278528,
+  "heap_bytes": 81920,
+  "cue_offset": 262144,
+  "cue_capacity": 16384,
+  "free_disk_sectors": 60,
+  "adf_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "limitations": [
+    "A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending",
+    "All profiles mapped; Hyper unlock rules unchanged",
+    "Native saving requires writable disposable media; hardware validation pending"
+  ]
+}

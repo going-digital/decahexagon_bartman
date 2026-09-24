@@ -1,0 +1,22 @@
+{
+  "status": "Timed save-window swap returns SAVE ERROR; disk images unchanged",
+  "source_sha256": "96017d688d3749bf07cda0f30160e38943500d43699c3b29eae46bcb9a0d2460",
+  "emulator": "Copperline PAL A500OCS, 512K Chip + 512K slow",
+  "key": "Space at 60 seconds for 100 ms",
+  "control_capture_seconds": 114,
+  "swap_seconds": 115,
+  "result_capture_seconds": 140,
+  "screenshots": {
+    "control": "save_window.png",
+    "result": "save_swap.png"
+  },
+  "visual_review": "Control shows SAVE; swapped run shows SAVE ERROR",
+  "original_unchanged": true,
+  "replacement_unchanged": true,
+  "limitations": [
+    "Scheduled insertion forces replacement read-only",
+    "Exact disk transfer phase at swap not instrumented",
+    "Does not prove protection of writable replacement or active-DMA removal",
+    "Pending-save retry after reinsertion not tested in this trial"
+  ]
+}

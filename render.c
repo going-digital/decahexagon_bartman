@@ -78,9 +78,9 @@ const UWORD* render_player_pixels(unsigned column) {
 }
 
 void render_free(void) {
-    if (player_sprites) FreeMem(player_sprites,3*sizeof(*player_sprites));
+    if (player_sprites) GameFreeChip(player_sprites,3*sizeof(*player_sprites));
     player_sprites=0;
-    if (player_poses) FreeMem(player_poses,PLAYER_POSES*sizeof(*player_poses));
+    if (player_poses) GameFreeChip(player_poses,PLAYER_POSES*sizeof(*player_poses));
     player_poses=0;
     player_cached_pixels=0;
 }
@@ -92,7 +92,7 @@ static void player_header(UWORD *sprite, WORD x, WORD y, UWORD height) {
 }
 
 static void player_prerender(void) {
-    player_poses=AllocMem(PLAYER_POSES*sizeof(*player_poses),MEMF_CHIP|MEMF_CLEAR);
+    player_poses=GameAllocChip(PLAYER_POSES*sizeof(*player_poses));
     if (!player_poses) return;
     for (unsigned i=0;i<PLAYER_POSES;++i) {
         UWORD a=i<<9;
@@ -102,7 +102,7 @@ static void player_prerender(void) {
         polar_to_cartesian(a+PLAYER_HALF_ANG,(PLAYER_RADIUS*GAMEPLAY_ZOOM)>>8,&xs[2],&ys[2]);
         PlayerShape shape;
         if (!player_shape_build(&shape,xs,ys) || shape.width>16 || shape.height>16) {
-            FreeMem(player_poses,PLAYER_POSES*sizeof(*player_poses));
+            GameFreeChip(player_poses,PLAYER_POSES*sizeof(*player_poses));
             player_poses=0;
             return; // Geometry changes retain the live renderer safely.
         }
@@ -244,7 +244,7 @@ static void spoke_endpoint(UWORD a, WORD cx, WORD cy, WORD* x, WORD* y) {
 }
 
 void render_init(void) {
-    player_sprites=AllocMem(3*sizeof(*player_sprites),MEMF_CHIP|MEMF_CLEAR);
+    player_sprites=GameAllocChip(3*sizeof(*player_sprites));
     player_sprite_slot=0;
     player_prerender();
     for (UWORD i = 0; i < 1024; ++i)

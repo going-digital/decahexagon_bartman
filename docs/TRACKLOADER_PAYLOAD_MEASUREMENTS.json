@@ -1,0 +1,193 @@
+{
+  "gain_stage": "before_fibonacci",
+  "status": "Host size/round-trip evidence only; no target overlap or timing proof",
+  "execram_revision": "6c81194f4533d4480cd41ec53cdd5258cb998d80",
+  "vendor_source_sha256": {
+    "blockdeflate.c": "69f34a177dd4c7580de2fc5d45228aba392226ef44d12774c4fbe116b7521e0f",
+    "dictionary.c": "f7e51376a9fbce5e3cbcb8cf75776f4f93897be5e3a7b30d26dd02fdaa8a51de",
+    "frame.c": "ce2f03a4661067217d4977d53d7ac2f81e89fc4b28bd6517e1147cdd788ec0a7",
+    "libzultra.c": "4b662f8e64137180a3574855547bf6baa69b1c47ec5e6690b02b1218313a7646",
+    "matchfinder.c": "61354618af7146a10cf0184a3ea9b72c38db7364d9df1890241df7c8febcd934",
+    "huffman/bitwriter.c": "8afd605f6f1e47b220eec00a5168ae01615965c018188a518dd05c5be687d616",
+    "huffman/huffencoder.c": "53ccf4ccb41b22e21b75455d424ed972d2b16e2930a94402e1312f1d046582d6",
+    "huffman/huffutils.c": "27317a565ea49bfe97a8e1316428a6872d45103190a12dc77f83db1a9210e9f0",
+    "libdivsufsort/lib/divsufsort.c": "10684f00e12322c2737b0a03478da6f529ddfca4e8c82b634d49f91d6da38f94",
+    "libdivsufsort/lib/divsufsort_utils.c": "686a72d498f5bc542d7ba2df44b427e1f873cbd4dd63164bec5bb92565a49c8f",
+    "libdivsufsort/lib/sssort.c": "20d21bbd6a66886ecb1e118db66dc04ea6f6ef4f675bb85a6629ede80e8f6b8a",
+    "libdivsufsort/lib/trsort.c": "57a02ab28875467e2195ee0c595695b0515be122edf70118454de8df68b3ccfa"
+  },
+  "tunes": [
+    {
+      "source": {
+        "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music1.dat",
+        "sha256": "5dd58d3d1bc58d8b8102ef75804a669cd61df501da48cf371a75013adc72907c",
+        "pc_track": 1,
+        "decoded": "scratchpad/audio/courtesy_pc/decoded.wav",
+        "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+        "cue_asset": "assets/music1.cues",
+        "cue_offset_seconds": 0,
+        "compression_grid": {
+          "bpm": 130.03100000000066,
+          "phase_seconds": 0.02109819196960689,
+          "reviewed": false,
+          "downbeat_known": false,
+          "variable_tempo_checked": false
+        },
+        "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+      },
+      "track": "courtesy",
+      "codec": "fibonacci",
+      "raw_bytes": 249010,
+      "zultra_bytes": 233148,
+      "ofs_sectors": 485,
+      "decoded_pcm_bytes": 488025,
+      "raw_sha256": "f09976fdc9dde012ac8c08b479f91574e76b1c536a708dcd79fbd117125be3d9",
+      "packed_sha256": "10444781c83d74a3ba12ebf0c2aac712d50c268f081eb2af170818d4c9380db4"
+    },
+    {
+      "source": {
+        "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music1.dat",
+        "sha256": "5dd58d3d1bc58d8b8102ef75804a669cd61df501da48cf371a75013adc72907c",
+        "pc_track": 1,
+        "decoded": "scratchpad/audio/courtesy_pc/decoded.wav",
+        "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+        "cue_asset": "assets/music1.cues",
+        "cue_offset_seconds": 0,
+        "compression_grid": {
+          "bpm": 130.03100000000066,
+          "phase_seconds": 0.02109819196960689,
+          "reviewed": false,
+          "downbeat_known": false,
+          "variable_tempo_checked": false
+        },
+        "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+      },
+      "track": "courtesy",
+      "codec": "pcm",
+      "raw_bytes": 492057,
+      "zultra_bytes": 327016,
+      "ofs_sectors": 681,
+      "decoded_pcm_bytes": 488025,
+      "raw_sha256": "303ba84734d8b9ed16b1493924967d82079aae6581541a63151c08a659e9905e",
+      "packed_sha256": "796a0ec0ab1e0e2d24e3320fab3dee2c5351f1e956a5993e0b14afd84bc83f29"
+    },
+    {
+      "source": {
+        "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music3.dat",
+        "sha256": "9dfbc0345761b43ea58850f28544ed709099ffd6bf30d1d010e1f9081a1faa99",
+        "pc_track": 3,
+        "decoded": "scratchpad/audio/focus_pc/decoded.wav",
+        "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+        "cue_asset": "assets/music3.cues",
+        "cue_offset_seconds": 0,
+        "compression_grid": {
+          "bpm": 86.99399999999963,
+          "phase_seconds": 0.3394577901924287,
+          "reviewed": false,
+          "downbeat_known": false,
+          "variable_tempo_checked": false
+        },
+        "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+      },
+      "track": "focus",
+      "codec": "fibonacci",
+      "raw_bytes": 250065,
+      "zultra_bytes": 231763,
+      "ofs_sectors": 482,
+      "decoded_pcm_bytes": 493419,
+      "raw_sha256": "c482172bf7e368a91f829fbcd211a16dd158bd5b29ed4f955062358580d24fbe",
+      "packed_sha256": "487599e8adddeed42c74364dcd88745c92ec2c3b42b3a7e7fa928e02cf87aee9"
+    },
+    {
+      "source": {
+        "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music3.dat",
+        "sha256": "9dfbc0345761b43ea58850f28544ed709099ffd6bf30d1d010e1f9081a1faa99",
+        "pc_track": 3,
+        "decoded": "scratchpad/audio/focus_pc/decoded.wav",
+        "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+        "cue_asset": "assets/music3.cues",
+        "cue_offset_seconds": 0,
+        "compression_grid": {
+          "bpm": 86.99399999999963,
+          "phase_seconds": 0.3394577901924287,
+          "reviewed": false,
+          "downbeat_known": false,
+          "variable_tempo_checked": false
+        },
+        "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+      },
+      "track": "focus",
+      "codec": "pcm",
+      "raw_bytes": 495799,
+      "zultra_bytes": 350905,
+      "ofs_sectors": 730,
+      "decoded_pcm_bytes": 493419,
+      "raw_sha256": "e3e89092ddec8b40484252c1581b7a8673421440378c23d914520bdfa6c0c083",
+      "packed_sha256": "9a8805b3e679c980acb4b2b691259e8d93936e2e63b622c1af0e2e358629fea4"
+    },
+    {
+      "source": {
+        "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music2.dat",
+        "sha256": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+        "pc_track": 2,
+        "decoded": "scratchpad/audio/otis_pc/decoded.wav",
+        "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+        "cue_asset": "assets/music2.cues",
+        "cue_offset_seconds": 0,
+        "compression_grid": {
+          "bpm": 67.50899999999962,
+          "phase_seconds": 0.434163089365844,
+          "reviewed": false,
+          "downbeat_known": false,
+          "variable_tempo_checked": false
+        },
+        "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+      },
+      "track": "otis",
+      "codec": "fibonacci",
+      "raw_bytes": 248755,
+      "zultra_bytes": 228639,
+      "ofs_sectors": 476,
+      "decoded_pcm_bytes": 492130,
+      "raw_sha256": "b6fda6024cb17015b82032c16425d23b46c561ae46308fb6d9e81019b22a7395",
+      "packed_sha256": "efd6ac290603114d4c6865a57ab847bdf1bf51bcaa2c45875b15d8d3927849ca"
+    },
+    {
+      "source": {
+        "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music2.dat",
+        "sha256": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+        "pc_track": 2,
+        "decoded": "scratchpad/audio/otis_pc/decoded.wav",
+        "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+        "cue_asset": "assets/music2.cues",
+        "cue_offset_seconds": 0,
+        "compression_grid": {
+          "bpm": 67.50899999999962,
+          "phase_seconds": 0.434163089365844,
+          "reviewed": false,
+          "downbeat_known": false,
+          "variable_tempo_checked": false
+        },
+        "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues."
+      },
+      "track": "otis",
+      "codec": "pcm",
+      "raw_bytes": 493846,
+      "zultra_bytes": 323918,
+      "ofs_sectors": 674,
+      "decoded_pcm_bytes": 492130,
+      "raw_sha256": "615c726a33557e0fbc00a88592088cd405c119b8cc3310df0db7c35173b5335f",
+      "packed_sha256": "37470b49915257c584b102cc8fb8b0ce2155a419e0c14d163f1c0c80d2957369"
+    }
+  ],
+  "totals": {
+    "fibonacci": {
+      "zultra_bytes": 693550,
+      "ofs_sectors": 1443
+    },
+    "pcm": {
+      "zultra_bytes": 1001839,
+      "ofs_sectors": 2085
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "status": "PAL A500 damaged-payload rejection, visible error, retry and recovery passed",
+  "stage_bytes": 22099,
+  "chip_block_bytes": 360448,
+  "image_offset": 65536,
+  "image_capacity": 196608,
+  "heap_offset": 278528,
+  "heap_bytes": 81920,
+  "cue_offset": 262144,
+  "cue_capacity": 16384,
+  "free_disk_sectors": 69,
+  "adf_sha256": "49bb9662c9a9ea6ae0919bdc7791c04b28aacfd0be08ecd622ea6cbe83bd57ae",
+  "limitations": [
+    "Tests returned packed-payload failure, not no-media timeout or malformed filesystem",
+    "Loading screen still blanks",
+    "No native persistence"
+  ],
+  "fixture_sha256": "f873909d2efb1e2577c47d23411e91e4b2cd82331831aaeedf0768d1199aa85e",
+  "emulator": "Copperline A500OCS PAL, 512K Chip + 512K slow",
+  "tests": [
+    "95-second run: corrupt Courtesy rejected, LOAD ERROR screenshot verified",
+    "180-second run: two Courtesy failures, select Otis, successful game start screenshot verified"
+  ],
+  "artifacts": [
+    "scratchpad/trackloader/native_game/load_failure.log",
+    "scratchpad/trackloader/native_game/load_failure.png",
+    "scratchpad/trackloader/native_game/load_recovery.log",
+    "scratchpad/trackloader/native_game/load_recovery.png"
+  ]
+}

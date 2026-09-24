@@ -1,0 +1,44 @@
+{
+  "status": "DOS executable without music, used only as size proxy for future bare-metal game",
+  "build": "MUSIC_FIB_STREAM=0 SOUND_EFFECTS=1 BUILD_DEBUG=0",
+  "unpacked_file_bytes": 179020,
+  "hunk_allocations": [
+    {
+      "bytes": 35672,
+      "class": "any"
+    },
+    {
+      "bytes": 25724,
+      "class": "any"
+    },
+    {
+      "bytes": 28,
+      "class": "chip"
+    },
+    {
+      "bytes": 8,
+      "class": "any"
+    },
+    {
+      "bytes": 107780,
+      "class": "chip"
+    },
+    {
+      "bytes": 18796,
+      "class": "any"
+    }
+  ],
+  "resident_hunk_bytes": 188008,
+  "packed_file_bytes": 86236,
+  "packed_sha256": "cb2acd4fe1201672481fce43595e94c56845b906070f6c8d8e2285e449b84eec",
+  "estimated_ofs_sectors": 180,
+  "remaining_sectors_after_tunes_and_game": 115,
+  "exclusions": [
+    "boot/root/bitmap",
+    "resident loader",
+    "music player and per-track cues",
+    "save files",
+    "decompression overlap slack",
+    "platform integration changes"
+  ]
+}

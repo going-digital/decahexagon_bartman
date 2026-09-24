@@ -23,6 +23,7 @@ endif
 # Soundtrack trials now only copy offline-predecoded PCM. Runtime codecs retired.
 PCM_ASSET ?= out/courtesy
 MUSIC_FIB_STREAM ?= 0
+PCM_EXTERNAL_ONLY ?= 0
 FIB_TRIAL_SONG ?= 1
 FIB_TRIAL_PCM ?= 1
 MUSIC_FIB_BENCH ?= 0
@@ -35,6 +36,7 @@ $(error Runtime decompression is retired; soundtrack playback requires predecode
 endif
 c_sources += fib_pcm.c pcm_lifecycle.c tests/fib_stream.c
 SELFTEST_CFLAGS += -DMUSIC_FIB_STREAM=1 -DFIB_TRIAL_SONG=1 -DFIB_TRIAL_PCM=1
+SELFTEST_CFLAGS += -DPCM_EXTERNAL_ONLY=$(PCM_EXTERNAL_ONLY)
 SELFTEST_CFLAGS += -DPCM_BANK_FIRST='"$(PCM_ASSET).boosted.pcm0"' -DPCM_BANK_SECOND='"$(PCM_ASSET).boosted.pcm1"'
 VPATH += tests
 endif
@@ -248,7 +250,7 @@ test-death:
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_death.c pc_lifecycle.c pc_morph.c pc_world.c pc_core.c tests/death_probe.c -o out/death_probe
 	python3 tests/compare_death.py
 
-ifeq ($(MUSIC_FIB_STREAM),1)
+ifeq ($(MUSIC_FIB_STREAM)$(PCM_EXTERNAL_ONLY),10)
 $(PCM_ASSET).boosted.pcm0: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1 tools/audio/boost_pcm.py
 	python3 tools/audio/boost_pcm.py $(PCM_ASSET) $(PCM_ASSET).boosted
 $(PCM_ASSET).boosted.pcm1: $(PCM_ASSET).boosted.pcm0
@@ -307,6 +309,96 @@ test-projection-edges:
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror pc_projection.c tests/projection_edges_test.c -o out/projection_edges_test
 	./out/projection_edges_test
 
-ifeq ($(MUSIC_FIB_STREAM),1)
+ifeq ($(MUSIC_FIB_STREAM)$(PCM_EXTERNAL_ONLY),10)
 obj/fib_stream.o: $(PCM_ASSET).pcm0 $(PCM_ASSET).pcm1
 endif
+
+.PHONY: test-diskio-disassembly
+test-diskio-disassembly:
+	python3 tests/diskio_disassembly_test.py
+
+.PHONY: test-pcm-binding
+.PHONY: test-game-loading
+.PHONY: test-cue-offset
+test-cue-offset:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror pc_pulse.c tests/cue_offset_test.c -o out/cue_offset_test
+	out/cue_offset_test
+
+.PHONY: test-chip-arena
+test-chip-arena:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror trackloader/chip_arena.c tests/chip_arena_test.c -o out/chip_arena_test
+	out/chip_arena_test
+
+test-game-loading:
+	python3 tests/game_loading_test.py
+
+test-pcm-binding:
+	python3 tests/pcm_binding_test.py
+
+.PHONY: test-track-save
+test-track-save:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror trackloader/save.c pc_menu.c tests/track_save_test.c -o out/track_save_test
+	out/track_save_test
+
+.PHONY: test-game-save
+test-game-save:
+	python3 tests/game_save_test.py
+
+.PHONY: test-save-disk
+test-save-disk:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror trackloader/save.c trackloader/save_disk.c tests/save_disk_test.c -o out/save_disk_test
+	out/save_disk_test
+
+.PHONY: test-save-interruption
+test-save-interruption:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror trackloader/save.c trackloader/save_disk.c tests/save_interruption_test.c -o out/save_interruption_test
+	out/save_interruption_test
+
+.PHONY: test-save-media-change
+test-save-media-change:
+	mkdir -p out
+	cc -std=c99 -Wall -Wextra -Werror trackloader/save.c trackloader/save_disk.c tests/save_media_change_test.c -o out/save_media_change_test
+	out/save_media_change_test
+
+.PHONY: test-native-save-retry
+test-native-save-retry:
+	python3 tests/native_save_retry_test.py
+
+# Requires prepared soundtrack assets; see docs/TRACKLOADER_BUILD.md.
+.PHONY: trackloader trackloader-adf test-trackloader-storage
+trackloader: trackloader-adf
+trackloader-adf:
+	@test -n "$(EXECRAM_SOURCE)" || { echo 'Set EXECRAM_SOURCE to your local execram checkout'; exit 1; }
+	python3 tools/trackloader/build_release.py --execram-source "$(EXECRAM_SOURCE)"
+
+test-trackloader-storage: test-track-save test-save-disk test-save-interruption test-save-media-change test-game-save test-native-save-retry
+
+.PHONY: trackloader-assets
+trackloader-assets:
+	@test -n "$(EXECRAM_SOURCE)" || { echo 'Set EXECRAM_SOURCE to your local execram checkout'; exit 1; }
+	python3 tools/trackloader/prepare_payloads.py --execram-source "$(EXECRAM_SOURCE)"
+
+.PHONY: test-trackloader-assets
+test-trackloader-assets:
+	python3 tests/trackloader_asset_identity_test.py
+
+AUDIO_PYTHON ?= venv/bin/python
+.PHONY: trackloader-audio
+trackloader-audio:
+	@test -n "$(PC_MUSIC_DIR)" || { echo 'Set PC_MUSIC_DIR to the directory containing music1.dat, music2.dat and music3.dat'; exit 1; }
+	$(AUDIO_PYTHON) tools/audio/build_pc_banks.py --music-dir "$(PC_MUSIC_DIR)"
+
+.PHONY: trackloader-cues
+trackloader-cues:
+	@test -n "$(PC_GAME_BIN)" || { echo 'Set PC_GAME_BIN to the verified PC game executable'; exit 1; }
+	python3 tools/audio/extract_pc_cues.py --binary "$(PC_GAME_BIN)"
+
+.PHONY: test-trackloader-isolated
+test-trackloader-isolated:
+	@test -n "$(PC_GAME_BIN)" -a -n "$(PC_MUSIC_DIR)" -a -n "$(EXECRAM_SOURCE)" || { echo 'Set PC_GAME_BIN, PC_MUSIC_DIR and EXECRAM_SOURCE'; exit 1; }
+	$(AUDIO_PYTHON) tools/trackloader/check_isolated_build.py --binary "$(PC_GAME_BIN)" --music-dir "$(PC_MUSIC_DIR)" --execram-source "$(EXECRAM_SOURCE)"

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Trial shared-duration PCM dictionaries; no runtime codec or interpolation."""
+import argparse
 import ctypes
 import hashlib
 import json
@@ -11,8 +12,12 @@ from scipy.spatial.distance import cdist
 from codec_experiment import ROOT, fib_decode
 from reuse_beats import features, choose
 
-source = ROOT/'scratchpad/audio/courtesy/rate_test/12000'
-output = ROOT/'scratchpad/audio/courtesy/pcm_reuse'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--track', choices=['courtesy', 'focus', 'otis'], default='courtesy')
+parser.add_argument('--budget-bytes', type=int)
+args = parser.parse_args()
+source = ROOT/'scratchpad/audio'/args.track/'rate_test/12000'
+output = ROOT/'scratchpad/audio'/args.track/'pcm_reuse'
 output.mkdir(parents=True, exist_ok=True)
 m = json.loads((source/'192k.json').read_text())
 bank = (source/'192k.bank').read_bytes()
@@ -38,7 +43,15 @@ lib.fib_song_read.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_uint]
 lib.fib_song_read.restype=None
 accepted_jump_rms=float(np.sqrt(np.mean([(int(accepted[b])-int(accepted[b-1]))**2 for b in m['boundaries'] if 0<b<len(accepted)])))
 reports=[]
-for count in [134,128,112,96]:
+counts = [134,128,112,96]
+if args.budget_bytes:
+    # Header, offsets, sequence and verbatim edge fragments are included.
+    fixed = 32 + 4*3 + 4*(len(lengths)+2) + sum(n+(n&1) for n in [m['prefix_length'], m['suffix_length']])
+    count = min(len(slices), (args.budget_bytes-fixed)//(width+(width&1)+4))
+    if count < 1:
+        raise ValueError('Budget cannot hold even one dictionary slice')
+    counts = [count]
+for count in counts:
     if count == len(slices):
         selected=list(range(count)); assignment=np.arange(count)
     else:
@@ -89,5 +102,5 @@ for count in [134,128,112,96]:
             'source_slice_ids':selected,'assignment':assignment.tolist()}
     reports.append(report)
     print(count,total,'bytes; target reader matches; RMSE',round(report['sample_rmse_vs_accepted'],3))
-(ROOT/'soundtrack/pcm_reuse_trials.json').write_text(json.dumps({'status':'host comparison; listening judgement required; no runtime decompression',
+(ROOT/'soundtrack'/('pcm_reuse_trials.json' if args.track == 'courtesy' else f'{args.track}.pcm_reuse_trials.json')).write_text(json.dumps({'status':'host comparison; listening judgement required; no runtime decompression',
     'sample_rate':rate,'accepted_boundary_jump_rms':accepted_jump_rms,'source_bank_sha256':hashlib.sha256(bank).hexdigest(),'trials':reports},indent=2)+'\n')

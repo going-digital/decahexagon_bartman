@@ -1,0 +1,36 @@
+{
+  "status": "Swap immediately after write DMA arm returns SAVE ERROR; both writable images unchanged",
+  "source_sha256": "96017d688d3749bf07cda0f30160e38943500d43699c3b29eae46bcb9a0d2460",
+  "write_arm_events": [
+    {
+      "cck": 414055922,
+      "detail": "DSKLEN = D961 (cpu write, v183 h202)",
+      "frame": 5827,
+      "hpos": 204,
+      "pc": 25776,
+      "reason": "reg_watch",
+      "retired_instructions": 69551545,
+      "seconds": 116.73757525948753,
+      "vpos": 183
+    },
+    {
+      "cck": 414055930,
+      "detail": "DSKLEN = D961 (cpu write, v183 h210)",
+      "frame": 5827,
+      "hpos": 212,
+      "pc": 25782,
+      "reason": "reg_watch",
+      "retired_instructions": 69551546,
+      "seconds": 116.73757751498141,
+      "vpos": 183
+    }
+  ],
+  "changed_sectors": [],
+  "foreign_changed_sectors": [],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/ccp_active_write_1790213444021185000",
+  "limitations": [
+    "Swap immediately after DMA arm; not a sweep of later write phases",
+    "ADF emulator model, not physical-drive validation"
+  ],
+  "visual_review": "after_swap.png shows SAVE ERROR"
+}

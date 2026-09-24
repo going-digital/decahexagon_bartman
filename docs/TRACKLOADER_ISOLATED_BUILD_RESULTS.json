@@ -1,0 +1,17 @@
+{
+  "status": "Automated isolated cue/audio/ADF rebuild matches reference byte-for-byte",
+  "adf_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "workspace": "scratchpad/trackloader/isolated_build_ouf2oppw",
+  "source_snapshot_sha256": "901cabcb6f2c36f8588869f9cd3ffb748710ddff49281bdfe65e64a19d65d42e",
+  "source_files": 343,
+  "cached_cues_supplied": false,
+  "cached_audio_supplied": false,
+  "cached_sfx_supplied": false,
+  "cached_trackloader_outputs_supplied": false,
+  "reference_disk_unchanged": true,
+  "limitations": [
+    "Uses installed ffmpeg, Amiga SDK, vasm and local execram checkout",
+    "Working-tree source snapshot, not a committed clean checkout",
+    "Reproduces existing bytes; does not replace emulator or hardware tests"
+  ]
+}

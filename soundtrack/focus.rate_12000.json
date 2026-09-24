@@ -1,0 +1,24 @@
+{
+  "status": "host only; decoder runtime/code and disk-loading overhead unmeasured",
+  "source_gain": 0.9179570363855912,
+  "track": "focus",
+  "sample_rate": 12000,
+  "pcm_buffers_bytes": 1536,
+  "encoder": "block-optimal",
+  "trials": [
+    {
+      "budget_kib": 64,
+      "dictionary_slices": 28,
+      "accounted_bytes": 63797,
+      "feature_mse": 0.060017619576728624,
+      "preview": "scratchpad/audio/focus/rate_test/12000/64k_fibonacci.wav"
+    },
+    {
+      "budget_kib": 192,
+      "dictionary_slices": 91,
+      "accounted_bytes": 195719,
+      "feature_mse": 0.02850827538321854,
+      "preview": "scratchpad/audio/focus/rate_test/12000/192k_fibonacci.wav"
+    }
+  ]
+}

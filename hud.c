@@ -328,6 +328,10 @@ static const UBYTE title_names[6][16] = {
     {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T}
 };
 static const UBYTE title_lengths[6]={7,9,10,13,15,16};
+static const UBYTE title_saving[]={TF_S,TF_A,TF_V,TF_E};
+static const UBYTE title_save_error[]={TF_S,TF_A,TF_V,TF_E,TF_SPACE,TF_E,TF_R,TF_R,TF_O,TF_R};
+static const UBYTE title_loading[]={TF_L,TF_O,TF_A,TF_D,TF_SPACE,TF_T,TF_R,TF_A,TF_C,TF_K};
+static const UBYTE title_load_error[]={TF_L,TF_O,TF_A,TF_D,TF_SPACE,TF_E,TF_R,TF_R,TF_O,TF_R};
 static const UBYTE title_locked[]={
     TF_L,
     TF_O,
@@ -358,6 +362,23 @@ static UBYTE  cur_glyph[HUD_SLOTS]; // this frame's HUD choice per slot, from hu
 static UBYTE centisecond_digits[FRAME_RATE]; // packed decimal, indexed by tick
 static UWORD glyph_seconds=0xffff;
 static UWORD* locked_buf[SPRITE_CHANNELS];
+static UWORD* load_error_buf[SPRITE_CHANNELS];
+#if TRACKLOADER
+static UWORD* loading_buf[SPRITE_CHANNELS],*saving_buf[SPRITE_CHANNELS],*save_error_buf[SPRITE_CHANNELS];
+static UWORD *loading_sprite_pointers;
+static UBYTE save_failed;
+void hud_save_failed(UBYTE failed) { save_failed=failed; }
+/* The native executable, including BSS, resides entirely in Chip RAM. */
+static UWORD loading_copper[128];
+
+UWORD* hud_loading_copper(void *plane,UBYTE saving) {
+    UWORD *cp=loading_sprite_pointers;
+    for (unsigned ch=0;ch<SPRITE_CHANNELS;ch++)
+        cp=copWritePtr(cp,offsetof(struct Custom,sprpt)+ch*sizeof(APTR),saving?saving_buf[ch]:loading_buf[ch]);
+    copWritePtr(loading_copper,offsetof(struct Custom,bplpt[0]),plane);
+    return loading_copper;
+}
+#endif
 static UWORD* title_buf[6][SPRITE_CHANNELS];    // six profile canvases, one slice per channel
 static UWORD* gameover_buf[SPRITE_CHANNELS]; // "GAME OVER" canvas, same layout
 
@@ -411,8 +432,8 @@ static void pos_ctl(UWORD hstart, UWORD vstart, UWORD* out_pos, UWORD* out_ctl) 
 // Builds one static sprite descriptor: pos/ctl + a bordered rendering of
 // `rows` (HUD_GLYPH_H entries, same encoding as font[]/title_font[]) + terminator.
 static UWORD* build_glyph(UWORD pos, UWORD ctl, const UBYTE* rows) {
-    UWORD* buf = (UWORD*)AllocMem(
-        (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD), MEMF_CHIP | MEMF_CLEAR);
+    UWORD* buf = (UWORD*)GameAllocChip(
+        (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD));
     if (!buf) return 0;
 
     UWORD* p = buf;
@@ -440,8 +461,8 @@ static UWORD* build_glyph(UWORD pos, UWORD ctl, const UBYTE* rows) {
 // slice's content depends on where it falls relative to the whole 8-sprite
 // banner, not on itself in isolation.
 static UWORD* alloc_canvas_slice(UWORD pos, UWORD ctl) {
-    UWORD* buf = (UWORD*)AllocMem(
-        (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD), MEMF_CHIP | MEMF_CLEAR);
+    UWORD* buf = (UWORD*)GameAllocChip(
+        (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD));
     if (!buf) return 0;
     buf[0] = pos;
     buf[1] = ctl;
@@ -510,7 +531,7 @@ static void paint_banner(UWORD* const* slots, const UBYTE* str, WORD len) {
 }
 
 static void free_sprite(UWORD **buf) {
-    if (*buf) FreeMem(*buf, (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD));
+    if (*buf) GameFreeChip(*buf, (2 + HUD_CELL_H * 2 + 2) * sizeof(UWORD));
     *buf = 0;
 }
 
@@ -521,6 +542,10 @@ void hud_free(void) {
     for (WORD ch = 0; ch < SPRITE_CHANNELS; ++ch) {
         for (WORD p=0;p<6;++p) free_sprite(&title_buf[p][ch]);
         free_sprite(&locked_buf[ch]);
+        free_sprite(&load_error_buf[ch]);
+#if TRACKLOADER
+        free_sprite(&loading_buf[ch]);free_sprite(&saving_buf[ch]);free_sprite(&save_error_buf[ch]);
+#endif
         free_sprite(&gameover_buf[ch]);
     }
 }
@@ -563,21 +588,49 @@ void hud_init(void) {
             pos_ctl(base_hstart + ch * 16, DISPLAY_HW_Y + TITLE_Y, &pos, &ctl);
             for (WORD p=0;p<6;++p) title_buf[p][ch]=alloc_canvas_slice(pos,ctl);
             locked_buf[ch]=alloc_canvas_slice(pos,ctl);
+            load_error_buf[ch]=alloc_canvas_slice(pos,ctl);
+#if TRACKLOADER
+            loading_buf[ch]=alloc_canvas_slice(pos,ctl);
+            saving_buf[ch]=alloc_canvas_slice(pos,ctl);save_error_buf[ch]=alloc_canvas_slice(pos,ctl);
+#endif
             gameover_buf[ch] = alloc_canvas_slice(pos, ctl);
         }
         for (WORD p=0;p<6;++p) paint_banner(title_buf[p],title_names[p],title_lengths[p]);
         paint_banner(locked_buf,title_locked,sizeof(title_locked));
+        paint_banner(load_error_buf,title_load_error,sizeof(title_load_error));
+#if TRACKLOADER
+        paint_banner(loading_buf,title_loading,sizeof(title_loading));
+        paint_banner(saving_buf,title_saving,sizeof(title_saving));
+        paint_banner(save_error_buf,title_save_error,sizeof(title_save_error));
+        UWORD *cp=loading_copper+4; /* plane pointer filled before activation */
+        cp=copWrite(cp,offsetof(struct Custom,bplcon0),BPLCON0F_COLOR|BPLCON0F_BPU210);
+        cp=copWrite(cp,offsetof(struct Custom,color[1]),0);
+        cp=copWrite(cp,offsetof(struct Custom,color[0]),0);
+        for (WORD bank=0;bank<4;++bank) {
+            cp=copWrite(cp,offsetof(struct Custom,color[17])+bank*8,0);
+            cp=copWrite(cp,offsetof(struct Custom,color[18])+bank*8,0xfff);
+        }
+        loading_sprite_pointers=cp;
+        for (WORD ch=0;ch<SPRITE_CHANNELS;++ch)
+            cp=copWritePtr(cp,offsetof(struct Custom,sprpt)+ch*sizeof(APTR),
+                loading_buf[ch] ? loading_buf[ch] : (UWORD*)blank_sprite);
+        *cp++=0xffff;*cp++=0xfffe;
+#endif
         paint_banner(gameover_buf, title_str_gameover,
                      sizeof(title_str_gameover) / sizeof(title_str_gameover[0]));
     }
 }
 
-typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED } Banner;
+typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED, BANNER_LOAD_ERROR, BANNER_SAVE_ERROR } Banner;
 
 // Selection keeps its best visible; names are revealed only after unlocking.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
 static Banner banner_active(GameMode m) {
+    if (game_load_failed()) return BANNER_LOAD_ERROR;
+#if TRACKLOADER
+    if (save_failed && m!=MODE_PLAYING) return BANNER_SAVE_ERROR;
+#endif
     UWORD t = game_mode_timer();
     if (m == MODE_ATTRACT) {
         return game_selection_locked() ? BANNER_LOCKED:BANNER_HEXAGON;
@@ -639,6 +692,10 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     if (banner==BANNER_HEXAGON) banner_buf=title_buf[game_selected_profile()];
     else if (banner==BANNER_LOCKED) banner_buf=locked_buf;
     else if (banner==BANNER_GAMEOVER) banner_buf=gameover_buf;
+    else if (banner==BANNER_LOAD_ERROR) banner_buf=load_error_buf;
+#if TRACKLOADER
+    else if (banner==BANNER_SAVE_ERROR) banner_buf=save_error_buf;
+#endif
     // Colours must be set before the upper row, not after the multiplex WAIT.
     // Celebratory blink on the digit HUD's 3 colour banks (0-5, the only
     // channels it ever uses) when this run just beat the record. Always

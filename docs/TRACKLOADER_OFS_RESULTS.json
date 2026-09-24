@@ -1,0 +1,40 @@
+{
+  "status": "Bounded host C OFS reader matches real disk payloads and rejects malformed controls",
+  "valid_sector_reads": {
+    "courtesy": 486,
+    "focus": 479,
+    "otis": 477,
+    "game": 182,
+    "save_a": 4,
+    "save_b": 5
+  },
+  "malformed_cases": [
+    "oversize",
+    "undersize",
+    "block_length",
+    "zero_length",
+    "data_cycle",
+    "wrong_owner",
+    "wrong_sequence",
+    "wrong_data_type",
+    "out_of_disk",
+    "reserved_track",
+    "extension_cycle",
+    "bad_extension_type",
+    "too_many_pointers",
+    "zero_pointers",
+    "trailing_chain",
+    "root_type",
+    "checksum",
+    "read_failure",
+    "capacity",
+    "missing",
+    "path",
+    "long_name",
+    "hash_cycle"
+  ],
+  "limitations": [
+    "This report covers host C execution; native integration is recorded separately",
+    "Failure may leave validated prefix in destination; caller must not publish it"
+  ]
+}

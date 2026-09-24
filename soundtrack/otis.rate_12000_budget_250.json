@@ -1,0 +1,17 @@
+{
+  "status": "host only; decoder runtime/code and disk-loading overhead unmeasured",
+  "source_gain": 1.0,
+  "track": "otis",
+  "sample_rate": 12000,
+  "pcm_buffers_bytes": 1536,
+  "encoder": "block-optimal",
+  "trials": [
+    {
+      "budget_kib": 250.0,
+      "dictionary_slices": 91,
+      "accounted_bytes": 253631,
+      "feature_mse": 0.012622577962893636,
+      "preview": "scratchpad/audio/otis/rate_test/12000/250k_fibonacci.wav"
+    }
+  ]
+}

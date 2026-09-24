@@ -1,0 +1,88 @@
+{
+  "status": "PAL A500 normal-profile switching and same-track retry passed",
+  "stage_bytes": 22073,
+  "chip_block_bytes": 360448,
+  "image_offset": 65536,
+  "image_capacity": 196608,
+  "heap_offset": 278528,
+  "heap_bytes": 81920,
+  "cue_offset": 262144,
+  "cue_capacity": 16384,
+  "free_disk_sectors": 69,
+  "adf_sha256": "a55471419c6122379c410c5d82222685979794c5095d662dc31a989c024d4dec",
+  "limitations": [
+    "Hyper profiles mapped but not exercised through unlock gates",
+    "Captured audio activity is not an underrun or listening-quality test",
+    "No full-song or NTSC validation in this test",
+    "Blocking loads; error UI and bounded no-media recovery remain",
+    "No native persistence"
+  ],
+  "model": "A500 OCS, 512 KiB Chip + 512 KiB slow, PAL",
+  "emulator": "Copperline",
+  "emulated_seconds": 300,
+  "loaded_sequence": [
+    "courtesy",
+    "otis",
+    "focus",
+    "courtesy"
+  ],
+  "profile_tracks": [
+    "courtesy",
+    "otis",
+    "focus",
+    "courtesy",
+    "otis",
+    "focus"
+  ],
+  "cue_lead_samples": [
+    612,
+    0,
+    582,
+    612,
+    0,
+    582
+  ],
+  "audio_windows": [
+    {
+      "track": "courtesy",
+      "start_seconds": 90,
+      "duration_seconds": 5,
+      "rms": 0.04238097797600993,
+      "peak": 0.34048694372177124
+    },
+    {
+      "track": "otis",
+      "start_seconds": 145,
+      "duration_seconds": 5,
+      "rms": 0.04617157097039342,
+      "peak": 0.3399283289909363
+    },
+    {
+      "track": "focus",
+      "start_seconds": 205,
+      "duration_seconds": 5,
+      "rms": 0.07348506466618501,
+      "peak": 0.34009507298469543
+    },
+    {
+      "track": "focus_retry",
+      "start_seconds": 230,
+      "duration_seconds": 5,
+      "rms": 0.07659791662366516,
+      "peak": 0.3588740825653076
+    },
+    {
+      "track": "courtesy_return",
+      "start_seconds": 280,
+      "duration_seconds": 5,
+      "rms": 0.04519350962560043,
+      "peak": 0.3578605651855469
+    }
+  ],
+  "artifacts": {
+    "log": "scratchpad/trackloader/native_game/all_tracks.log",
+    "audio": "scratchpad/trackloader/native_game/all_tracks.wav",
+    "screenshot": "scratchpad/trackloader/native_game/all_tracks.png"
+  },
+  "disk_unchanged_after_test": true
+}

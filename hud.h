@@ -22,3 +22,8 @@ void hud_init(void);                     // build the glyph/title buffers, set s
 void hud_tick(void);                     // pick this frame's HUD glyphs (pure logic, no hardware writes)
 USHORT* hud_emit_copper(USHORT* copPtr); // append this frame's SPRxPT copper writes, return the new end
 UBYTE hud_flash_now(void);               // 1 for a couple of ticks as the title cuts away to the HUD
+
+/* Static loading list for the native blocking loader. */
+UWORD* hud_loading_copper(void *plane,UBYTE saving);
+
+void hud_save_failed(UBYTE failed);

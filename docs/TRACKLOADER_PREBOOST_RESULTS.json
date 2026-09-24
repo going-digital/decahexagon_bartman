@@ -1,0 +1,25 @@
+{
+  "status": "PASS: pre-encoding boost, native Courtesy start and retry",
+  "stage_bytes": 20003,
+  "chip_block_bytes": 360448,
+  "image_offset": 65536,
+  "image_capacity": 196608,
+  "heap_offset": 262144,
+  "heap_bytes": 98304,
+  "free_disk_sectors": 75,
+  "adf_sha256": "976ade0f715e87c4992e2acfcb78acfba74339b67c67671afa9201de0b19b517",
+  "limitations": [
+    "PAL A500 only",
+    "Courtesy profiles only; other stages reject play",
+    "No persistence"
+  ],
+  "gain_stage": "before_fibonacci",
+  "no_runtime_gain_pass": true,
+  "playback_window_rms": [
+    0.024600997034429996,
+    0.029972338932501414
+  ],
+  "disk_unchanged": true,
+  "emulator": "Copperline PAL A500OCS 512K Chip + 512K slow",
+  "screenshot": "scratchpad/trackloader/native_game/preboost.png"
+}

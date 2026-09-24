@@ -1,0 +1,48 @@
+{
+  "status": "PASS: both writable images unchanged",
+  "source_sha256": "96017d688d3749bf07cda0f30160e38943500d43699c3b29eae46bcb9a0d2460",
+  "write_arm_events": [
+    {
+      "cck": 414055922,
+      "detail": "DSKLEN = D961 (cpu write, v183 h202)",
+      "frame": 5827,
+      "hpos": 204,
+      "pc": 25776,
+      "reason": "reg_watch",
+      "retired_instructions": 69551545,
+      "seconds": 116.73757525948753,
+      "vpos": 183
+    },
+    {
+      "cck": 414055930,
+      "detail": "DSKLEN = D961 (cpu write, v183 h210)",
+      "frame": 5827,
+      "hpos": 212,
+      "pc": 25782,
+      "reason": "reg_watch",
+      "retired_instructions": 69551546,
+      "seconds": 116.73757751498141,
+      "vpos": 183
+    }
+  ],
+  "delay_ms": 10,
+  "swap_stop": {
+    "cck": 414091401,
+    "detail": "cck 414091399",
+    "frame": 5828,
+    "hpos": 44,
+    "pc": 26710,
+    "reason": "target",
+    "retired_instructions": 69555914,
+    "seconds": 116.74757809295173,
+    "vpos": 27
+  },
+  "changed_sectors": [],
+  "foreign_changed_sectors": [],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/ccp_active_write_1790213550915935000",
+  "limitations": [
+    "No DSKLEN reprogramming before swap; partial ADF persistence is emulator-dependent",
+    "ADF emulator model, not physical-drive validation"
+  ],
+  "visual_review": "after_swap.png shows SAVE ERROR"
+}

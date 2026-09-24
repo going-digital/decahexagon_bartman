@@ -1,0 +1,10 @@
+{
+  "elf_sha256": "46b31c09616e22539231a19a0207087bbf3f4f671786274fc43b9b51cc076bae",
+  "package_bytes": 179681,
+  "packed_bytes": 86486,
+  "image_bytes": 174653,
+  "memory_bytes": 194036,
+  "relocations": 1249,
+  "sha256": "b070c426e389f61912643fbbbc31083259de92cf8363b3336b848f3e42c87c22",
+  "packed_sha256": "ded767d70debb243534c86451cc4d899a0a2c387db37f884845fb7187f63937f"
+}

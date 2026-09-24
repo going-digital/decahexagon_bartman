@@ -1,0 +1,21 @@
+{
+  "status": "PASS: three tracks loaded and played in one PAL A500 boot",
+  "tracks": [
+    "focus",
+    "courtesy",
+    "otis"
+  ],
+  "same_arena_reused": true,
+  "playback_runs_per_track": 2,
+  "underruns_each_run": 0,
+  "minimum_completed_blocks_each_run": 65,
+  "stage_bytes": 20988,
+  "capture_finite": true,
+  "capture_note": "Recorded output; no waveform fidelity or listening acceptance claim.",
+  "adf_sha256": "a135d48c0897ad86f547c0886783ec7c591135f2ef8427c364e20187c7addd15",
+  "limitations": [
+    "No gameplay rendering or level-selection integration",
+    "PAL Copperline only",
+    "No recoverable disk-error handling"
+  ]
+}

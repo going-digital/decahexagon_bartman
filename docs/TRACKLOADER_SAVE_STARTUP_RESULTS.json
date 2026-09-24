@@ -1,0 +1,30 @@
+{
+  "status": "Native read-only cold-boot restoration and Hyper unlock verified in PAL A500 emulator",
+  "source_sha256": "6ec53b7e7bdd1c976d1054f4374530bad1bd9fde84bd8a1d4c5d837fca680840",
+  "trials": [
+    {
+      "fixture": "save_latest",
+      "sha256": "7fb15abfba3eeb76a5c6e949b130f75163885df59c9dc4de83f498f8389217cd",
+      "display": "075.01",
+      "screenshot": "scratchpad/trackloader/native_game/save_latest.png"
+    },
+    {
+      "fixture": "save_fallback",
+      "sha256": "726a8d3c90c971281bd0a8266514d237613e3d7a67976640735a95ff5515c036",
+      "display": "065.01",
+      "screenshot": "scratchpad/trackloader/native_game/save_fallback.png"
+    },
+    {
+      "fixture": "save_foreign",
+      "sha256": "12e913942de0c3578eabd35dfd2dddd34296e6f64e14bf7810409ba5de133694",
+      "display": "000.00",
+      "screenshot": "scratchpad/trackloader/native_game/save_foreign.png"
+    }
+  ],
+  "unlock_screenshot": "scratchpad/trackloader/native_game/save_unlock.png",
+  "limitations": [
+    "Seeded slots only; no native game writes",
+    "Build-specific identity; migration absent",
+    "No real hardware or NTSC verification"
+  ]
+}

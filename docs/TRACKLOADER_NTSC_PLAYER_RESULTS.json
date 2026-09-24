@@ -1,0 +1,54 @@
+{
+  "status": "NTSC timing fields match; all four sampled playback runs have zero underruns",
+  "source_sha256": "fd37804a4aa739736305c710aefe6f049e8745f8efaac6c1e2ecd148d17b12ca",
+  "game_base": 88552,
+  "video_timing": [
+    60,
+    262,
+    200,
+    298,
+    447
+  ],
+  "trials": [
+    {
+      "seconds": 124,
+      "track": "courtesy",
+      "underruns": 0,
+      "blocks": 92,
+      "running": 0
+    },
+    {
+      "seconds": 189,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 146,
+      "running": 0
+    },
+    {
+      "seconds": 269,
+      "track": "focus",
+      "underruns": 0,
+      "blocks": 62,
+      "running": 0
+    },
+    {
+      "seconds": 340,
+      "track": "courtesy",
+      "underruns": 0,
+      "blocks": 74,
+      "running": 0
+    }
+  ],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/ccp_ntsc_player_1790229752852234000",
+  "limitations": [
+    "Short normal runs, not full-song loops",
+    "No waveform/cue alignment measurement",
+    "No physical hardware validation"
+  ],
+  "load_events": [
+    "DF0:courtesyNATIVE-TUNE-READY",
+    "DF0:otisNATIVE-TUNE-READY",
+    "DF0:focusNATIVE-TUNE-READY",
+    "DF0:courtesyNATIVE-TUNE-READY"
+  ]
+}

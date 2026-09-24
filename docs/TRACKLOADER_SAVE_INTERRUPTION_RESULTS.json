@@ -1,0 +1,30 @@
+{
+  "status": "Interrupted-write transaction suite and native unreadable-track recovery passed",
+  "host_cases": 2052,
+  "host_test": "make test-save-interruption",
+  "emulator": "Copperline PAL A500OCS, 512K Chip + 512K slow",
+  "source_sha256": "55edf38c46d7ab0823df95c1ad3ad9f539ff0c851b88332015d5edfb28495f1e",
+  "trials": [
+    {
+      "name": "save_unreadable_158",
+      "track": 158,
+      "expected_display": "075.01",
+      "sha256": "510d616f7ab1885ca6324bc4c59d899b9c321ee39f086119e177ad132df225f5",
+      "screenshot": "scratchpad/trackloader/native_game/save_unreadable_158.png",
+      "log": "scratchpad/trackloader/native_game/save_unreadable_158.log"
+    },
+    {
+      "name": "save_unreadable_159",
+      "track": 159,
+      "expected_display": "065.01",
+      "sha256": "50f80e260c899f2003b17562f6cee01e85e747735e63e6acce8fa9fff9e56b7a",
+      "screenshot": "scratchpad/trackloader/native_game/save_unreadable_159.png",
+      "log": "scratchpad/trackloader/native_game/save_unreadable_159.log"
+    }
+  ],
+  "limitations": [
+    "Host tests inject sector prefixes and transport status",
+    "Emulator fixtures model damage after interruption, not timed power loss",
+    "No physical drive or mid-write removal validation"
+  ]
+}

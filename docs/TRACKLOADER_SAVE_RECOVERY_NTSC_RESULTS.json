@@ -1,0 +1,100 @@
+{
+  "status": "NTSC native cold-boot recovery verified in game RAM",
+  "source_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "trials": [
+    {
+      "case": "latest",
+      "best_ticks": [
+        4501,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "completed": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "generation": 2,
+      "achievements": 305419896,
+      "disk_unchanged": true
+    },
+    {
+      "case": "fallback",
+      "best_ticks": [
+        3901,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "completed": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "generation": 1,
+      "achievements": 305419896,
+      "disk_unchanged": true
+    },
+    {
+      "case": "foreign",
+      "best_ticks": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "completed": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "generation": 0,
+      "achievements": 0,
+      "disk_unchanged": true
+    },
+    {
+      "case": "generation_wrap",
+      "best_ticks": [
+        4501,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "completed": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "generation": 0,
+      "achievements": 305419896,
+      "disk_unchanged": true
+    }
+  ],
+  "evidence": "scratchpad/trackloader/native_game/recovery_ntsc_1790231587795152000",
+  "limitations": [
+    "Seeded save fixtures, not physical interrupted writes",
+    "Achievement bits tested as opaque storage; no achievement triggers tested",
+    "No physical hardware validation"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "status": "Expected native switching and media-swap serial sequences verified",
+  "adf_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "emulator": "Copperline NTSC A500OCS, 512K Chip + 512K slow",
+  "scenarios": {
+    "ofs_switching": {
+      "seconds": 340,
+      "keys": [
+        [
+          60,
+          64
+        ],
+        [
+          125,
+          69
+        ],
+        [
+          126,
+          78
+        ],
+        [
+          127,
+          64
+        ],
+        [
+          190,
+          69
+        ],
+        [
+          191,
+          78
+        ],
+        [
+          192,
+          64
+        ],
+        [
+          255,
+          64
+        ],
+        [
+          270,
+          69
+        ],
+        [
+          271,
+          79
+        ],
+        [
+          272,
+          79
+        ],
+        [
+          273,
+          64
+        ]
+      ],
+      "swaps": [],
+      "events": [
+        "DF0:courtesyNATIVE-TUNE-READY",
+        "DF0:otisNATIVE-TUNE-READY",
+        "DF0:focusNATIVE-TUNE-READY",
+        "DF0:courtesyNATIVE-TUNE-READY"
+      ],
+      "log": "scratchpad/trackloader/native_game/ofs_switching_ntsc.log",
+      "screenshot": "scratchpad/trackloader/native_game/ofs_switching_ntsc.png"
+    }
+  },
+  "limitations": [
+    "Screenshots require separate visual review",
+    "No empty-drive or physical hardware check",
+    "No audio quality or underrun measurement",
+    "Verify-existing assumes logs belong to the recorded image"
+  ]
+}

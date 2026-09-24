@@ -1,0 +1,89 @@
+{
+  "status": "Diagnostic NTSC otis endurance; collisions bypassed in RAM",
+  "source_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "game_base": 88552,
+  "video_timing": [
+    60,
+    262,
+    200,
+    298,
+    447
+  ],
+  "song_samples": 1750594,
+  "collision_patch": {
+    "address": 105196,
+    "original": "48e7",
+    "replacement": "4e75"
+  },
+  "trials": [
+    {
+      "seconds": 110,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 122,
+      "running": 1
+    },
+    {
+      "seconds": 130,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 587,
+      "running": 1
+    },
+    {
+      "seconds": 150,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 1052,
+      "running": 1
+    },
+    {
+      "seconds": 170,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 1517,
+      "running": 1
+    },
+    {
+      "seconds": 190,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 1982,
+      "running": 1
+    },
+    {
+      "seconds": 210,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 2447,
+      "running": 1
+    },
+    {
+      "seconds": 230,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 2912,
+      "running": 1
+    },
+    {
+      "seconds": 250,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 3377,
+      "running": 1
+    },
+    {
+      "seconds": 265.88283333333334,
+      "track": "otis",
+      "underruns": 0,
+      "blocks": 3746,
+      "running": 1
+    }
+  ],
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/ccp_ntsc_loop_1790230968742979000",
+  "limitations": [
+    "Collision handling bypassed; not an unmodified gameplay endurance test",
+    "No waveform/cue alignment measurement",
+    "No physical hardware validation"
+  ]
+}

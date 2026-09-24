@@ -1,0 +1,18 @@
+{
+  "status": "host only; decoder runtime/code and disk-loading overhead unmeasured",
+  "source_gain": 1.0,
+  "track": "courtesy",
+  "sample_rate": 12000,
+  "reserve_bytes": 2048,
+  "pcm_buffers_bytes": 1536,
+  "encoder": "block-optimal",
+  "trials": [
+    {
+      "budget_kib": 250.0,
+      "dictionary_slices": 176,
+      "accounted_bytes": 253001,
+      "feature_mse": 0.014426846298644585,
+      "preview": "scratchpad/audio/courtesy_pc/rate_test/12000/250k_fibonacci.wav"
+    }
+  ]
+}

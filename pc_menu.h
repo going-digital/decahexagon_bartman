@@ -1,6 +1,6 @@
 #pragma once
 #include "pc_core.h"
-/* Profile index = normal stage + 3 * hyper. Session-only storage. */
+/* Profile index = normal stage + 3 * hyper. Storage-independent records. */
 typedef struct {
     uint32_t best[6];
     uint8_t completed[6];

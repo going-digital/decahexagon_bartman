@@ -1,0 +1,64 @@
+{
+  "status": "Host audition only; experimental disk packages; no Amiga decoder or disk integration",
+  "sample_rate": 12000,
+  "gain": "Game boost applied before Fibonacci/ADPCM encoding; decoded preboost previews are not boosted again",
+  "trials": [
+    {
+      "track": "courtesy",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 176,
+      "disk_bytes": 255838,
+      "decoded_bank_bytes": 490050,
+      "preview": "scratchpad/audio/codec_audition_budget_250_preboost/courtesy_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 19.157857891866943,
+        "relative_spectral_error": 0.08733045923046978
+      },
+      "overall": {
+        "snr_db": 0.5005678734194445,
+        "relative_spectral_error": 0.34806387943293493
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 119,
+      "disk_bytes": 253715,
+      "decoded_bank_bytes": 494246,
+      "preview": "scratchpad/audio/codec_audition_budget_250_preboost/focus_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 16.76901456402968,
+        "relative_spectral_error": 0.11980075228101937
+      },
+      "overall": {
+        "snr_db": 2.294859915576201,
+        "relative_spectral_error": 0.311320506389738
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 91,
+      "disk_bytes": 250610,
+      "decoded_bank_bytes": 490887,
+      "preview": "scratchpad/audio/codec_audition_budget_250_preboost/otis_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 14.046276401550355,
+        "relative_spectral_error": 0.16319333809305495
+      },
+      "overall": {
+        "snr_db": -0.8207557995849366,
+        "relative_spectral_error": 0.33619212893648565
+      }
+    }
+  ],
+  "totals": {
+    "expanded": {
+      "fibonacci": 760163
+    }
+  },
+  "listening_acceptance": "User accepted these pre-encoding-boost auditions on 2026-09-24"
+}

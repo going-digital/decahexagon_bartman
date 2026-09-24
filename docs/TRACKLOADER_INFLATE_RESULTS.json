@@ -1,0 +1,150 @@
+{
+  "status": "Actual 68000 core, disjoint measurement and overlapping replay; no chipset contention/timing",
+  "core_binary_sha256": "256859dd479ee4c52ff6afdc160e871dfd8a6e90266a4ca2e4e4110967fac335",
+  "trials": [
+    {
+      "output_bytes": 33026,
+      "packed_bytes": 34555,
+      "source_offset": 0,
+      "arena_bytes": 34555,
+      "extra_tail_bytes": 1529,
+      "cycles": 7205732,
+      "overlap_matches": true,
+      "name": "control_distance32768.deflate",
+      "sha256": "43345d48278487bbb7a6455958502f405aa3fd3967b93e24a49f9fada684e06d",
+      "cpu_seconds_pal_lower_bound": 1.0157802810627323
+    },
+    {
+      "output_bytes": 400000,
+      "packed_bytes": 200793,
+      "source_offset": 199366,
+      "arena_bytes": 400159,
+      "extra_tail_bytes": 159,
+      "cycles": 11218798,
+      "overlap_matches": true,
+      "name": "control_mixed.deflate",
+      "sha256": "7449cf7dac088de29a355a1be50249d763bd7441b77e01b236d7eea85bcf5ddf",
+      "cpu_seconds_pal_lower_bound": 1.581495646191951
+    },
+    {
+      "output_bytes": 65537,
+      "packed_bytes": 65557,
+      "source_offset": 0,
+      "arena_bytes": 65557,
+      "extra_tail_bytes": 20,
+      "cycles": 1448438,
+      "overlap_matches": true,
+      "name": "control_random.deflate",
+      "sha256": "02ea1e108b45fb055d06ebacfc43cd13d8b20a9314352573ab02f1b0d9b90b6b",
+      "cpu_seconds_pal_lower_bound": 0.2041839411654419
+    },
+    {
+      "output_bytes": 524288,
+      "packed_bytes": 530,
+      "source_offset": 523758,
+      "arena_bytes": 524288,
+      "extra_tail_bytes": 0,
+      "cycles": 10175582,
+      "overlap_matches": true,
+      "name": "control_repeat.deflate",
+      "sha256": "add7452355f9f753ac45f0a897240d6366ad6eb9f02c405a4bdb980ad30c8c48",
+      "cpu_seconds_pal_lower_bound": 1.4344351890879206
+    },
+    {
+      "output_bytes": 65537,
+      "packed_bytes": 65547,
+      "source_offset": 0,
+      "arena_bytes": 65547,
+      "extra_tail_bytes": 10,
+      "cycles": 1447350,
+      "overlap_matches": true,
+      "name": "control_stored.deflate",
+      "sha256": "8cdff319418f581a42b366c328672a62690b05d60571402213686eabafb71568",
+      "cpu_seconds_pal_lower_bound": 0.20403056758094051
+    },
+    {
+      "output_bytes": 1,
+      "packed_bytes": 3,
+      "source_offset": 0,
+      "arena_bytes": 3,
+      "extra_tail_bytes": 2,
+      "cycles": 222840,
+      "overlap_matches": true,
+      "name": "control_tiny.deflate",
+      "sha256": "f5b976feaac71fd875e2850ce8a0f229ad2fe83beab9d1284fe2a75f1e172a56",
+      "cpu_seconds_pal_lower_bound": 0.03141339114916004
+    },
+    {
+      "output_bytes": 249010,
+      "packed_bytes": 233148,
+      "source_offset": 15864,
+      "arena_bytes": 249012,
+      "extra_tail_bytes": 2,
+      "cycles": 50558630,
+      "overlap_matches": true,
+      "name": "courtesy.fibonacci.deflate",
+      "sha256": "10444781c83d74a3ba12ebf0c2aac712d50c268f081eb2af170818d4c9380db4",
+      "cpu_seconds_pal_lower_bound": 7.127167564870119
+    },
+    {
+      "output_bytes": 492057,
+      "packed_bytes": 327016,
+      "source_offset": 165044,
+      "arena_bytes": 492060,
+      "extra_tail_bytes": 3,
+      "cycles": 110994878,
+      "overlap_matches": true,
+      "name": "courtesy.pcm.deflate",
+      "sha256": "796a0ec0ab1e0e2d24e3320fab3dee2c5351f1e956a5993e0b14afd84bc83f29",
+      "cpu_seconds_pal_lower_bound": 15.646766819993262
+    },
+    {
+      "output_bytes": 250065,
+      "packed_bytes": 231763,
+      "source_offset": 18304,
+      "arena_bytes": 250067,
+      "extra_tail_bytes": 2,
+      "cycles": 51825908,
+      "overlap_matches": true,
+      "name": "focus.fibonacci.deflate",
+      "sha256": "487599e8adddeed42c74364dcd88745c92ec2c3b42b3a7e7fa928e02cf87aee9",
+      "cpu_seconds_pal_lower_bound": 7.305813676469137
+    },
+    {
+      "output_bytes": 495799,
+      "packed_bytes": 350905,
+      "source_offset": 144894,
+      "arena_bytes": 495799,
+      "extra_tail_bytes": 0,
+      "cycles": 113938778,
+      "overlap_matches": true,
+      "name": "focus.pcm.deflate",
+      "sha256": "9a8805b3e679c980acb4b2b691259e8d93936e2e63b622c1af0e2e358629fea4",
+      "cpu_seconds_pal_lower_bound": 16.06176359886605
+    },
+    {
+      "output_bytes": 248755,
+      "packed_bytes": 228639,
+      "source_offset": 20118,
+      "arena_bytes": 248757,
+      "extra_tail_bytes": 2,
+      "cycles": 52582318,
+      "overlap_matches": true,
+      "name": "otis.fibonacci.deflate",
+      "sha256": "efd6ac290603114d4c6865a57ab847bdf1bf51bcaa2c45875b15d8d3927849ca",
+      "cpu_seconds_pal_lower_bound": 7.412443559789619
+    },
+    {
+      "output_bytes": 493846,
+      "packed_bytes": 323918,
+      "source_offset": 169930,
+      "arena_bytes": 493848,
+      "extra_tail_bytes": 2,
+      "cycles": 108972396,
+      "overlap_matches": true,
+      "name": "otis.pcm.deflate",
+      "sha256": "37470b49915257c584b102cc8fb8b0ce2155a419e0c14d163f1c0c80d2957369",
+      "cpu_seconds_pal_lower_bound": 15.3616608329257
+    }
+  ]
+}

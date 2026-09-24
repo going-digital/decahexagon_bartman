@@ -4,5 +4,7 @@
 uint16_t pc_pulse_tick(uint16_t envelope,int cue,unsigned stage);
 /* PCM position -> original Courtesy cue, compensating the MP3's 51 ms lead-in. */
 unsigned pc_pulse_cue_index(uint32_t sample);
+/* Per-track lead-in at 12 kHz; PC Otis uses 0, Focus 582, Courtesy 612. */
+unsigned pc_pulse_cue_index_offset(uint32_t sample,uint32_t lead);
 /* Position inside the current 512-byte DMA block; clamp if an IRQ is delayed. */
 uint32_t pc_pcm_position(uint32_t block,uint32_t length,unsigned lines,unsigned period);

@@ -22,6 +22,10 @@
 #include "paula_irq.h"
 #include "render.h"
 #include "hud.h"
+#if TRACKLOADER
+#include "trackloader/game_boot.h"
+#include "trackloader/native_save.h"
+#endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -31,6 +35,26 @@
 UWORD *bitplane_fg1;
 UWORD *bitplane_fg2;
 UWORD *bitplane_fg3;
+
+#if TRACKLOADER
+static GameRunPreparer resident_prepare;
+static int prepare_with_display(UBYTE profile) {
+    /* Retire pending publication and blits before lending display ownership to
+     * the synchronous loader. Its interrupts are masked; copper DMA continues. */
+    blit_wait();
+    WaitDisplayList();
+    custom->dmacon=DMAF_COPPER;
+    custom->cop1lc=(ULONG)hud_loading_copper(bitplane_fg1,0);
+    custom->copjmp1=0;
+    custom->dmacon=DMAF_SETCLR|DMAF_COPPER;
+    int ready=resident_prepare(profile);
+    custom->dmacon=DMAF_COPPER;
+    custom->cop1lc=(ULONG)copper_dispatch;
+    custom->copjmp1=0;
+    custom->dmacon=DMAF_SETCLR|DMAF_COPPER;
+    return ready;
+}
+#endif
 
 static void Wait10() { WaitLine(0x10); }
 static void Wait11() { WaitLine(0x11); }
@@ -79,9 +103,21 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
     TestClass staticClass(4);
 #endif
 
+#if TRACKLOADER
+int trackloader_game_entry(const TrackGameBoot *boot) {
+#else
 int main() {
+#endif
     int exit_status = 0;
 
+#if TRACKLOADER
+    if (!boot || !track_chip_init(boot->chip_heap,boot->chip_bytes)) return 20;
+#if MUSIC_FIB_STREAM
+    if (!boot->prepare) return 20;
+#endif
+    TrackSystemSetVBR(boot->vbr);
+    video_select(boot->pal);
+#else
     SysBase = *((struct ExecBase**)4UL);
 
     // Used for printing
@@ -111,6 +147,7 @@ int main() {
 #endif // BUILD_DEBUG
 
     Delay(50);
+#endif /* DOS startup */
 
 #if BUILD_DEBUG
     warpmode(1); // fast-forward the emulator through precalc
@@ -132,11 +169,11 @@ int main() {
     WaitVbl();
 
     // Allocate bitplanes
-    bitplane_fg1 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
-    bitplane_fg2 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
-    bitplane_fg3 = (UWORD*)AllocMem(BITPLANE_SIZE, MEMF_CHIP | MEMF_CLEAR);
+    bitplane_fg1 = (UWORD*)GameAllocChip(BITPLANE_SIZE);
+    bitplane_fg2 = (UWORD*)GameAllocChip(BITPLANE_SIZE);
+    bitplane_fg3 = (UWORD*)GameAllocChip(BITPLANE_SIZE);
 
-    USHORT* copper1 = (USHORT*)AllocMem(3072, MEMF_CHIP | MEMF_CLEAR);
+    USHORT* copper1 = (USHORT*)GameAllocChip(3072);
     if (!bitplane_fg1 || !bitplane_fg2 || !bitplane_fg3 || !copper1) {
         exit_status = 20;
         goto shutdown;
@@ -205,6 +242,13 @@ int main() {
 
     input_init();
     game_init();
+#if TRACKLOADER
+    if (boot->saved_state) game_restore_save(boot->saved_state);
+    native_save_init(boot);
+    resident_prepare=boot->prepare;
+    game_set_run_preparer(prepare_with_display);
+    __asm volatile("move.w #0x2000,%%sr" : : : "memory","cc");
+#endif
     InputState input;
     UWORD last_frame = (UWORD)frameCounter;
     PcClock simulation_clock = {0};
@@ -250,7 +294,19 @@ int main() {
 #endif
             // Held state persists; one-shot actions belong to only the first tick.
             input.fire_edge = input.back_edge = 0;
+            if (game_take_load_barrier()) {
+                /* Blocking disk/decode time belongs to loading, not the run.
+                 * Also drop pre-load catch-up ticks and fractional clock debt. */
+                simulation_clock = (PcClock){0};
+                last_frame = (UWORD)frameCounter;
+                break;
+            }
         }
+#if TRACKLOADER
+        if (native_save_tick(bitplane_fg1)) {
+            simulation_clock=(PcClock){0};last_frame=(UWORD)frameCounter;
+        }
+#endif
         hud_tick(); // Only the final simulated state is displayed.
 #if BUILD_DEBUG
         custom->color[0] = 0x303; // after input+update
@@ -357,11 +413,12 @@ shutdown:
     FreeSystem();
     hud_free();
     render_free();
-    if (bitplane_fg1) FreeMem(bitplane_fg1, BITPLANE_SIZE);
-    if (bitplane_fg2) FreeMem(bitplane_fg2, BITPLANE_SIZE);
-    if (bitplane_fg3) FreeMem(bitplane_fg3, BITPLANE_SIZE);
-    if (copper1) FreeMem(copper1, 3072);
+    if (bitplane_fg1) GameFreeChip(bitplane_fg1, BITPLANE_SIZE);
+    if (bitplane_fg2) GameFreeChip(bitplane_fg2, BITPLANE_SIZE);
+    if (bitplane_fg3) GameFreeChip(bitplane_fg3, BITPLANE_SIZE);
+    if (copper1) GameFreeChip(copper1, 3072);
 
+    #if !TRACKLOADER
     if (exit_status) {
         static const char message[] = "Not enough Chip RAM for display buffers.\n";
         Write(Output(), (APTR)message, sizeof(message)-1);
@@ -369,5 +426,6 @@ shutdown:
 
     CloseLibrary((struct Library*)DOSBase);
     CloseLibrary((struct Library*)GfxBase);
+    #endif
     return exit_status;
 }

@@ -1,0 +1,22 @@
+{
+  "status": "Cold-boot Focus disk/decode/Paula polling diagnostic passed, audio captured",
+  "sample_rate": 44100,
+  "channels": 2,
+  "capture_seconds": 90.00340136054422,
+  "signal_start_seconds": 3.3153061224489795,
+  "signal_end_seconds": 48.444331065759634,
+  "peak": 0.3687935173511505,
+  "channel_rms": [
+    0.03729864799037988,
+    0.010705434594169205
+  ],
+  "dma_completions_after_priming": 128,
+  "limitations": [
+    "PAL Copperline only",
+    "Diagnostic polling, not game IRQ player",
+    "No perceptual quality claim or waveform reference match",
+    "Focus only; gain applied once before DMA"
+  ],
+  "capture_note": "Earlier activity includes boot/drive sounds; tune excerpt is seconds 43\u201349, following silence from 35\u201342.",
+  "tune_excerpt_rms": 0.09785056429909356
+}

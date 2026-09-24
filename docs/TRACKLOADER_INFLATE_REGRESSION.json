@@ -1,0 +1,12 @@
+{
+  "inflate_unpatched.bin": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "decode mismatch/pass 0 pc=800 cycles=7205718 first=32768 got=165 expected=167\n"
+  },
+  "inflate.bin": {
+    "exit_code": 0,
+    "stdout": "{\"output_bytes\":33026,\"packed_bytes\":34555,\"source_offset\":0,\"arena_bytes\":34555,\"extra_tail_bytes\":1529,\"cycles\":7205732,\"overlap_matches\":true}\n",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "status": "NTSC native image boots, saves and restores on cold reboot",
+  "source_sha256": "fd37804a4aa739736305c710aefe6f049e8745f8efaac6c1e2ecd148d17b12ca",
+  "saved_sha256": "8fce9b675979235417eaeb9e1122a2eee81c7f4564ffb8824b1ac00d649936e1",
+  "emulator": "Copperline NTSC A500OCS, 512K Chip + 512K slow",
+  "changed_sectors": [
+    1738
+  ],
+  "generation": 1,
+  "best_ticks": 191,
+  "stage_bytes": 22375,
+  "reboot_disk_unchanged": true,
+  "screenshots": [
+    "ntsc_save.png",
+    "ntsc_reboot.png"
+  ],
+  "limitations": [
+    "No timed disk removal or physical-drive test",
+    "Screenshot content reviewed separately; artifact association relies on trial procedure"
+  ]
+}

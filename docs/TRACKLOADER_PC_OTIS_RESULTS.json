@@ -1,0 +1,21 @@
+{
+  "status": "PC music2.dat selected for Otis; regenerated and target IRQ playback passed",
+  "source_sha256": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+  "source_time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+  "samples_12000": 1750594,
+  "duration_seconds": 145.88283333333334,
+  "audition_bytes": 251007,
+  "zultra_bytes": 228639,
+  "decoded_arena_bytes": 493846,
+  "courtesy_and_focus_unchanged": true,
+  "emulator": "Copperline PAL A500OCS 512K Chip + 512K slow",
+  "playback_runs": 2,
+  "underruns_each_run": 0,
+  "minimum_completed_blocks_each_run": 65,
+  "adf_free_sectors": 69,
+  "limitations": [
+    "Standalone Otis playback diagnostic, not level-selection integration",
+    "Player cue offset must be generalized before attaching music2.cues; PC Otis needs zero, not Courtesy 612 samples",
+    "No full-song target playback or NTSC validation"
+  ]
+}

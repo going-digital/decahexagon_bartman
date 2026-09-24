@@ -1,0 +1,43 @@
+{
+  "status": "Production cue coverage audited; host C wrap arithmetic passes",
+  "tracks": [
+    {
+      "track": "courtesy",
+      "samples": 2273678,
+      "lead_samples": 0,
+      "cue_bytes": 11441,
+      "no_cue_tail_samples": 0,
+      "no_cue_tail_seconds": 0.0,
+      "unused_cue_extent_samples": 14522,
+      "unused_cue_extent_seconds": 1.2101666666666666,
+      "wrap_cases": 9198
+    },
+    {
+      "track": "otis",
+      "samples": 1750594,
+      "lead_samples": 0,
+      "cue_bytes": 8830,
+      "no_cue_tail_samples": 0,
+      "no_cue_tail_seconds": 0.0,
+      "unused_cue_extent_samples": 15406,
+      "unused_cue_extent_seconds": 1.2838333333333334,
+      "wrap_cases": 9198
+    },
+    {
+      "track": "focus",
+      "samples": 1933426,
+      "lead_samples": 0,
+      "cue_bytes": 9734,
+      "no_cue_tail_samples": 0,
+      "no_cue_tail_seconds": 0.0,
+      "unused_cue_extent_samples": 13374,
+      "unused_cue_extent_seconds": 1.1145,
+      "wrap_cases": 9198
+    }
+  ],
+  "limitations": [
+    "No waveform-to-PC cue alignment measured",
+    "Coverage differences are not automatically defects",
+    "Unsigned cue lookup returns zero beyond table; index resets with song position"
+  ]
+}

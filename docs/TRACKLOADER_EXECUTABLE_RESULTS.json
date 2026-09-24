@@ -1,0 +1,38 @@
+{
+  "status": "Host actual-C relocation equals two independent m68k links",
+  "trials": [
+    {
+      "base": 131072,
+      "independent_link_matches": true,
+      "bss_zero": true,
+      "guards_intact": true
+    },
+    {
+      "base": 262144,
+      "independent_link_matches": true,
+      "bss_zero": true,
+      "guards_intact": true
+    }
+  ],
+  "rejected_without_mutation": [
+    "short_header",
+    "truncated",
+    "trailing",
+    "crc",
+    "magic",
+    "header",
+    "flags",
+    "count",
+    "image",
+    "memory",
+    "entry",
+    "entry_bounds",
+    "odd_fixup",
+    "fixup_bounds",
+    "duplicate",
+    "target_bounds",
+    "capacity",
+    "odd_base",
+    "base_overflow"
+  ]
+}

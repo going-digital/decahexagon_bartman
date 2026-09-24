@@ -1,0 +1,69 @@
+{
+  "status": "Known gap reproduced: seek-cleared change is indistinguishable from no change",
+  "scope": "Original 68000 DiskIO; modeled CIA latch, immediate timers, no valid MFM input",
+  "scenarios": [
+    "no change",
+    "replacement after wrapper check; latch cleared by step",
+    "change latch remains asserted"
+  ],
+  "trials": [
+    {
+      "scenario": 0,
+      "error": -1,
+      "cycles": 1682274,
+      "steps": 471,
+      "dma_starts": 6,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    },
+    {
+      "scenario": 1,
+      "error": -1,
+      "cycles": 1682274,
+      "steps": 471,
+      "dma_starts": 6,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    },
+    {
+      "scenario": 2,
+      "error": 29,
+      "cycles": 151426,
+      "steps": 157,
+      "dma_starts": 0,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    }
+  ],
+  "limitation": "Read DMA reached; replacement-media write not demonstrated. Physical timing untested.",
+  "guarded_trials": [
+    {
+      "scenario": 0,
+      "error": -1,
+      "cycles": 2383722,
+      "steps": 471,
+      "dma_starts": 6,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    },
+    {
+      "scenario": 1,
+      "error": 29,
+      "cycles": 32846,
+      "steps": 0,
+      "dma_starts": 0,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    },
+    {
+      "scenario": 2,
+      "error": 29,
+      "cycles": 32846,
+      "steps": 0,
+      "dma_starts": 0,
+      "destination_unchanged": true,
+      "drive_deselected": true
+    }
+  ],
+  "guarded_scope": "Seek-time model aborts before stepping or DMA; write guards require further MFM/timing validation"
+}

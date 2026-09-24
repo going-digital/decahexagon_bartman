@@ -1,0 +1,17 @@
+{
+  "status": "Actual external-only game player, real VBlank producer and level-4 audio IRQ on Copperline PAL A500 cold boot",
+  "duration_vblanks": 300,
+  "underruns": 0,
+  "completed_blocks_at_least": 130,
+  "stop_and_unbind_passed": true,
+  "stage_bytes": 20644,
+  "audio_rate": 44100,
+  "excerpt_rms": 0.0912470204799048,
+  "limitations": [
+    "Focus only",
+    "No game rendering or level transitions",
+    "No supplied Focus visual cues or retry offsets",
+    "No waveform fidelity comparison",
+    "A500 PAL emulator only"
+  ]
+}

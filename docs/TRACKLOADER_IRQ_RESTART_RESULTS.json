@@ -1,0 +1,25 @@
+{
+  "status": "Copperline PAL A500 boot diagnostic passed: actual player stop/unbind/rebind/restart",
+  "same_bank_reused": true,
+  "active_rebind_and_unbind_rejected": true,
+  "playback_intervals_seconds": [
+    [
+      43.0,
+      46.0
+    ],
+    [
+      47.0,
+      50.0
+    ]
+  ],
+  "underruns_each_run": 0,
+  "minimum_completed_blocks_each_run": 65,
+  "dma_disabled_and_counters_stable_during_idle": true,
+  "retired_dma_buffers_poisoned_before_each_bind": true,
+  "stage_bytes": 20836,
+  "limitations": [
+    "Same Focus bank, no different-track disk reload",
+    "No game rendering",
+    "PAL single emulator only"
+  ]
+}

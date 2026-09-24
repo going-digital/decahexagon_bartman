@@ -1,0 +1,58 @@
+{
+  "status": "Production payload reconstructions match full auditions sample-for-sample",
+  "boundary_seconds": 4,
+  "tracks": [
+    {
+      "track": "courtesy",
+      "samples": 2273678,
+      "payload_sha256": "10444781c83d74a3ba12ebf0c2aac712d50c268f081eb2af170818d4c9380db4",
+      "reference": {
+        "file": "courtesy_reference_wrap.wav",
+        "boundary_jump_8bit": 0,
+        "nearby_max_step_8bit": 0
+      },
+      "disk": {
+        "file": "courtesy_disk_wrap.wav",
+        "boundary_jump_8bit": 0,
+        "nearby_max_step_8bit": 0
+      },
+      "disk_matches_full_audition": true
+    },
+    {
+      "track": "otis",
+      "samples": 1750594,
+      "payload_sha256": "efd6ac290603114d4c6865a57ab847bdf1bf51bcaa2c45875b15d8d3927849ca",
+      "reference": {
+        "file": "otis_reference_wrap.wav",
+        "boundary_jump_8bit": 2,
+        "nearby_max_step_8bit": 60
+      },
+      "disk": {
+        "file": "otis_disk_wrap.wav",
+        "boundary_jump_8bit": 2,
+        "nearby_max_step_8bit": 34
+      },
+      "disk_matches_full_audition": true
+    },
+    {
+      "track": "focus",
+      "samples": 1933426,
+      "payload_sha256": "487599e8adddeed42c74364dcd88745c92ec2c3b42b3a7e7fa928e02cf87aee9",
+      "reference": {
+        "file": "focus_reference_wrap.wav",
+        "boundary_jump_8bit": 0,
+        "nearby_max_step_8bit": 110
+      },
+      "disk": {
+        "file": "focus_disk_wrap.wav",
+        "boundary_jump_8bit": 0,
+        "nearby_max_step_8bit": 34
+      },
+      "disk_matches_full_audition": true
+    }
+  ],
+  "limitations": [
+    "Host PCM only; no Paula filtering or hardware capture",
+    "Boundary step measurements do not establish audible quality"
+  ]
+}

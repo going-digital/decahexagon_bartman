@@ -1,0 +1,26 @@
+{
+  "status": "PAL and NTSC native boot/Courtesy-load smoke tests pass",
+  "source_sha256": "fd37804a4aa739736305c710aefe6f049e8745f8efaac6c1e2ecd148d17b12ca",
+  "trials": [
+    {
+      "standard": "pal",
+      "key_seconds": 60,
+      "capture_seconds": 140,
+      "disk_unchanged": true,
+      "screenshot": "auto_pal.png"
+    },
+    {
+      "standard": "ntsc",
+      "key_seconds": 60,
+      "capture_seconds": 140,
+      "disk_unchanged": true,
+      "screenshot": "auto_ntsc.png"
+    }
+  ],
+  "visual_review": "Both show rendered SAVE ERROR on write-protected disks; NTSC uses shorter display",
+  "limitations": [
+    "Silent runs: audio timing/quality not measured",
+    "NTSC multi-track switching and writable save lifecycle pending",
+    "No physical hardware test"
+  ]
+}

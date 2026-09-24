@@ -1,0 +1,38 @@
+{
+  "status": "Three independent PAL A500 cold boots; real disk and validated C tune preparation, no audio/game yet",
+  "trials": [
+    {
+      "track": "courtesy",
+      "packed_bytes": 229869,
+      "inflated_bytes": 250091,
+      "final_bytes": 494146,
+      "source_offset": 20224,
+      "packed_sha256": "eec065ff3bacca4cb6e16bc0da8eafc6a8435f088dfe194afb2fe15eced46556",
+      "passed": true,
+      "image_unchanged": true,
+      "stage_bytes": 6886
+    },
+    {
+      "track": "focus",
+      "packed_bytes": 242049,
+      "inflated_bytes": 250501,
+      "final_bytes": 496646,
+      "source_offset": 8452,
+      "packed_sha256": "4ddb301f16817d6cd4cfb639803add94661afe922c6aa5228762894ba4e1226a",
+      "passed": true,
+      "image_unchanged": true,
+      "stage_bytes": 6882
+    },
+    {
+      "track": "otis",
+      "packed_bytes": 231646,
+      "inflated_bytes": 248226,
+      "final_bytes": 492699,
+      "source_offset": 16582,
+      "packed_sha256": "1261afe73f5660217133b08b47712c1e17eaf36b339207f831bc2a1480ef61c7",
+      "passed": true,
+      "image_unchanged": true,
+      "stage_bytes": 6882
+    }
+  ]
+}

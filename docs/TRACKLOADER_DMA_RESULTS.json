@@ -1,0 +1,17 @@
+{
+  "emulator": "Copperline A500OCS PAL Kickstart 1.3",
+  "status": "Cold boot, real filesystem and disk DMA read, reserved-sector write/readback pass",
+  "focus_bytes": 242049,
+  "stage_bytes": 3914,
+  "changed_sectors_after_boot_image_construction": [
+    1738
+  ],
+  "persistent_write_verified": true,
+  "disk_sha256": "a710f16ceeac0a511c931c36c6d5849055a1e65dbafea029a4388ca25b374043",
+  "limitations": [
+    "One PAL emulator run",
+    "Focus checked by length and additive byte checksum on target, not full hash",
+    "No disk error injection or power-loss recovery",
+    "Diagnostic bootstrap uses Exec to allocate and read second stage before permanent takeover"
+  ]
+}

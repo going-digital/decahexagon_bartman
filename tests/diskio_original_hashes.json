@@ -1,0 +1,17 @@
+{
+  "DiskIO": {
+    "bytes": 1916,
+    "sha256": "979253aa9c078a3178131dd886b344b771c86ce17e83102333dabf3dfc27fd8a",
+    "original_source_sha256": "931015b6e219299455f50e3e913150657a83512b09aae5a1a1dde593752983a9"
+  },
+  "DosIO": {
+    "bytes": 3570,
+    "sha256": "a50e5fa997b8682e6344b46c08f8d0a651aeb440ff24e0222959d99f55440c60",
+    "original_source_sha256": "cb0e7fc38d25ed6aceb8c550104277ab85cd863f399c735a33ce336af298e17e"
+  },
+  "DosIOR": {
+    "bytes": 2054,
+    "sha256": "5c972067dd837c43251a22cd5b8b1ef131ab6240a5582d96de59993dd3ce1bc2",
+    "original_source_sha256": "11376006c77fd6adfbdec7c8f704a20a9bb727857f4010ed3ade9f116b0c52aa"
+  }
+}

@@ -3,6 +3,7 @@
 // System takeover, raster timing, VBR interrupt handling and raw input.
 
 #include "hw.h"
+#include "config.h"
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <graphics/gfxbase.h>
@@ -50,3 +51,13 @@ __attribute__((always_inline)) inline short MouseRight(void) {
 __attribute__((always_inline)) inline short JoyFire(void) {
     return !(ciaa->ciapra & CIAF_GAMEPORT1);
 }
+
+/* Cleared Chip allocations in either platform; size retained for Exec free. */
+#if TRACKLOADER
+#include "trackloader/chip_arena.h"
+static inline void *GameAllocChip(ULONG bytes) { return track_chip_alloc(bytes); }
+static inline void GameFreeChip(void *p,ULONG bytes) { (void)bytes;track_chip_free(p); }
+#else
+static inline void *GameAllocChip(ULONG bytes) { return AllocMem(bytes,MEMF_CHIP|MEMF_CLEAR); }
+static inline void GameFreeChip(void *p,ULONG bytes) { FreeMem(p,bytes); }
+#endif

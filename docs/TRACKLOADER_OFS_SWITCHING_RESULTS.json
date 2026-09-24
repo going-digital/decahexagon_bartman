@@ -1,0 +1,146 @@
+{
+  "status": "Expected native switching and media-swap serial sequences verified",
+  "adf_sha256": "f7ede2e5fe03a4f4a273503084e2611f9897c49c2c63f97f34f2e4b001aa14c8",
+  "emulator": "Copperline PAL A500OCS, 512K Chip + 512K slow",
+  "scenarios": {
+    "ofs_switching": {
+      "seconds": 340,
+      "keys": [
+        [
+          60,
+          64
+        ],
+        [
+          125,
+          69
+        ],
+        [
+          126,
+          78
+        ],
+        [
+          127,
+          64
+        ],
+        [
+          190,
+          69
+        ],
+        [
+          191,
+          78
+        ],
+        [
+          192,
+          64
+        ],
+        [
+          255,
+          64
+        ],
+        [
+          270,
+          69
+        ],
+        [
+          271,
+          79
+        ],
+        [
+          272,
+          79
+        ],
+        [
+          273,
+          64
+        ]
+      ],
+      "swaps": [],
+      "events": [
+        "DF0:courtesyNATIVE-TUNE-READY",
+        "DF0:otisNATIVE-TUNE-READY",
+        "DF0:focusNATIVE-TUNE-READY",
+        "DF0:courtesyNATIVE-TUNE-READY"
+      ],
+      "log": "scratchpad/trackloader/native_game/ofs_switching.log",
+      "screenshot": "scratchpad/trackloader/native_game/ofs_switching.png"
+    },
+    "ofs_reinsert": {
+      "seconds": 220,
+      "keys": [
+        [
+          60,
+          64
+        ],
+        [
+          125,
+          69
+        ],
+        [
+          126,
+          78
+        ],
+        [
+          127,
+          64
+        ],
+        [
+          155,
+          64
+        ]
+      ],
+      "swaps": [
+        [
+          120,
+          "not_dos.adf"
+        ],
+        [
+          150,
+          "native_menu.adf"
+        ]
+      ],
+      "events": [
+        "DF0:courtesyNATIVE-TUNE-READY",
+        "NATIVE-TUNE-FAIL",
+        "DF0:otisNATIVE-TUNE-READY"
+      ],
+      "log": "scratchpad/trackloader/native_game/ofs_reinsert.log",
+      "screenshot": "scratchpad/trackloader/native_game/ofs_reinsert.png"
+    },
+    "ofs_midread": {
+      "seconds": 170,
+      "keys": [
+        [
+          60,
+          64
+        ],
+        [
+          100,
+          64
+        ]
+      ],
+      "swaps": [
+        [
+          65,
+          "not_dos.adf"
+        ],
+        [
+          95,
+          "native_menu.adf"
+        ]
+      ],
+      "events": [
+        "NATIVE-TUNE-FAIL",
+        "DF0:courtesyNATIVE-TUNE-READY"
+      ],
+      "log": "scratchpad/trackloader/native_game/ofs_midread.log",
+      "screenshot": "scratchpad/trackloader/native_game/ofs_midread.png"
+    }
+  },
+  "limitations": [
+    "Screenshots require separate visual review",
+    "No empty-drive, hardware or NTSC check",
+    "No audio quality or underrun measurement",
+    "Verify-existing assumes logs belong to the recorded image"
+  ]
+}

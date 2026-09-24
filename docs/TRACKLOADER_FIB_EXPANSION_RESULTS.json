@@ -1,0 +1,37 @@
+{
+  "status": "Host execution of actual C decoder; target timing and combined inflate/expand execution remain untested",
+  "trials": [
+    {
+      "name": "courtesy",
+      "input_bytes": 244978,
+      "output_bytes": 488025,
+      "arena_bytes": 488025,
+      "scratch_bytes": 257,
+      "sha256": "11342a380d671f5b1a5ac9127e9848a1ce224d0af8fb69df1a0675fcd41879f8",
+      "metadata_bytes": 4032,
+      "combined_arena_bytes": 492057
+    },
+    {
+      "name": "focus",
+      "input_bytes": 247685,
+      "output_bytes": 493419,
+      "arena_bytes": 493419,
+      "scratch_bytes": 257,
+      "sha256": "eb4059bb221039f4e1fef274ee8498fe74fccc0ae321a31a9da9515634aa477f",
+      "metadata_bytes": 2380,
+      "combined_arena_bytes": 495799
+    },
+    {
+      "name": "otis",
+      "input_bytes": 247039,
+      "output_bytes": 492130,
+      "arena_bytes": 492130,
+      "scratch_bytes": 257,
+      "sha256": "c63714957d8808460cf224d6114644d71d17d8da0992305aaf74ffcff01cad14",
+      "metadata_bytes": 1716,
+      "combined_arena_bytes": 493846
+    }
+  ],
+  "synthetic_lengths": 1031,
+  "malformed_cases": 6
+}

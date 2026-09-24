@@ -1,0 +1,63 @@
+{
+  "status": "Host audition only; experimental disk packages; no Amiga decoder or disk integration",
+  "sample_rate": 12000,
+  "gain": "Game boost applied after decode equally to all previews",
+  "trials": [
+    {
+      "track": "courtesy",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 176,
+      "disk_bytes": 255816,
+      "decoded_bank_bytes": 490050,
+      "preview": "scratchpad/audio/codec_audition_budget_250/courtesy_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 25.11940027155086,
+        "relative_spectral_error": 0.040026268537861454
+      },
+      "overall": {
+        "snr_db": 0.3972133246832772,
+        "relative_spectral_error": 0.3467824591898507
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 119,
+      "disk_bytes": 253693,
+      "decoded_bank_bytes": 494246,
+      "preview": "scratchpad/audio/codec_audition_budget_250/focus_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 23.16902352935458,
+        "relative_spectral_error": 0.05300483348460102
+      },
+      "overall": {
+        "snr_db": 2.251582050244201,
+        "relative_spectral_error": 0.2995090501615293
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 91,
+      "disk_bytes": 250588,
+      "decoded_bank_bytes": 490887,
+      "preview": "scratchpad/audio/codec_audition_budget_250/otis_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 21.18448885372385,
+        "relative_spectral_error": 0.06382539327612559
+      },
+      "overall": {
+        "snr_db": -1.0203757367637287,
+        "relative_spectral_error": 0.3162443467193012
+      }
+    }
+  ],
+  "totals": {
+    "expanded": {
+      "fibonacci": 760097
+    }
+  }
+}

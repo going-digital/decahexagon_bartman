@@ -6,8 +6,11 @@ uint16_t pc_pulse_tick(uint16_t envelope,int cue,unsigned stage) {
     if(target>envelope) return target?target-1:0;
     return envelope>1?envelope-2:0;
 }
+unsigned pc_pulse_cue_index_offset(uint32_t sample,uint32_t lead) {
+    return sample<lead?0:(sample-lead)/200;
+}
 unsigned pc_pulse_cue_index(uint32_t sample) {
-    return sample<612?0:(sample-612)/200;
+    return pc_pulse_cue_index_offset(sample,612);
 }
 uint32_t pc_pcm_position(uint32_t block,uint32_t length,unsigned lines,unsigned period) {
     unsigned offset=lines>700?511:(lines*227u)/period;

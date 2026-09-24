@@ -15,12 +15,16 @@ struct CIA *ciab = (struct CIA*)0xbfd000;
 
 volatile short frameCounter = 0;
 
+#if !TRACKLOADER
 //backup
 static UWORD SystemInts;
 static UWORD SystemDMA;
 static UWORD SystemADKCON;
+#endif
 static volatile APTR VBR = 0;
+#if !TRACKLOADER
 static APTR SystemIrq;
+#endif
 static APTR volatile pending_display;
 
 void QueueDisplayList(APTR list) {
@@ -34,6 +38,7 @@ void WaitDisplayList(void) {
     __asm volatile ("" ::: "memory");
 }
 
+#if !TRACKLOADER
 static struct View *ActiView;
 
 // Sprite pointers + colour registers (17-31 are the sprite colour banks).
@@ -57,6 +62,8 @@ static APTR GetVBR(void) {
     return vbr;
 }
 
+#endif
+
 APTR GetSystemVBR(void) { return (APTR)VBR; }
 
 void SetInterruptHandler(APTR interrupt) {
@@ -70,10 +77,14 @@ APTR GetInterruptHandler(void) {
 // Wait for the next vertical beam wrap. Both PAL and NTSC reach line256;
 // a PAL-only wait for line311 deadlocks before startup on an NTSC machine.
 void WaitVbl(void) {
+#if BUILD_DEBUG
     debug_start_idle();
+#endif
     while ((*(volatile ULONG*)&custom->vposr & 0x1ff00) < (256UL << 8)) {}
     while ((*(volatile ULONG*)&custom->vposr & 0x1ff00) >= (256UL << 8)) {}
+#if BUILD_DEBUG
     debug_stop_idle();
+#endif
 }
 
 void WaitLine(USHORT line) {
@@ -95,6 +106,23 @@ static void StopFloppyMotors(void) {
     __asm__ volatile ("nop" ::: "memory");
 }
 
+#if TRACKLOADER
+void TrackSystemSetVBR(void *vbr) { VBR=vbr; }
+void TakeSystem(void) {
+    __asm volatile("move.w #0x2700,%%sr" : : : "memory","cc");
+    custom->intena=0x7fff;custom->intreq=0x7fff;
+    custom->dmacon=0x7fff;pending_display=0;frameCounter=0;
+    StopFloppyMotors();
+    *(volatile UWORD *)0xdff106=0;custom->fmode=0;
+    for(unsigned i=0;i<32;i++)custom->color[i]=0;
+}
+void FreeSystem(void) {
+    __asm volatile("move.w #0x2700,%%sr" : : : "memory","cc");
+    WaitBlt();
+    custom->intena=0x7fff;custom->intreq=0x7fff;
+    custom->dmacon=0x7fff;pending_display=0;
+}
+#else
 void TakeSystem(void) {
     Forbid();
     //Save current interrupts and DMA settings so we can restore them upon exit.
@@ -178,6 +206,8 @@ void FreeSystem(void) {
 
     Permit();
 }
+
+#endif
 
 __attribute__((interrupt)) void interruptHandler(void) {
     custom->intreq = INTF_VERTB;

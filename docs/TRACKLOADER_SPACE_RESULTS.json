@@ -1,0 +1,101 @@
+{
+  "before": {
+    "boot": {
+      "status": "Native three-track diagnostic built; not yet boot verified",
+      "stage_bytes": 22517,
+      "chip_block_bytes": 360448,
+      "image_offset": 65536,
+      "image_capacity": 196608,
+      "heap_offset": 278528,
+      "heap_bytes": 81920,
+      "cue_offset": 262144,
+      "cue_capacity": 16384,
+      "free_disk_sectors": 64,
+      "adf_sha256": "220c2eee20f1f365652d50cbf3c83215fe4efdac0733866dc730230e24a19e59",
+      "limitations": [
+        "PAL A500 only",
+        "All profiles mapped; Hyper unlock rules unchanged",
+        "Native saving requires writable disposable media; hardware validation pending"
+      ]
+    },
+    "game": {
+      "elf_sha256": "9460e246964efef929db8886201ca587e3875981feaf335d9416dd5640417dff",
+      "package_bytes": 180081,
+      "packed_bytes": 86559,
+      "image_bytes": 175077,
+      "memory_bytes": 196504,
+      "relocations": 1243,
+      "sha256": "41fa3df7ec2689ae728679c39be693ac19e24e21f890100e941fc1b1b77858c3",
+      "packed_sha256": "0585d0b9e891bdd24bed8b04cfb2bbdd3f6e27f03e0cdec00e48509e7b7f0062"
+    }
+  },
+  "after": {
+    "boot": {
+      "status": "Native three-track diagnostic built; not yet boot verified",
+      "stage_bytes": 22169,
+      "chip_block_bytes": 360448,
+      "image_offset": 65536,
+      "image_capacity": 196608,
+      "heap_offset": 278528,
+      "heap_bytes": 81920,
+      "cue_offset": 262144,
+      "cue_capacity": 16384,
+      "free_disk_sectors": 64,
+      "adf_sha256": "51d52808029be2537356a4f0bc0dbe0662ae7c87e2b93bffc0251e687a5f2743",
+      "limitations": [
+        "PAL A500 only",
+        "All profiles mapped; Hyper unlock rules unchanged",
+        "Native saving requires writable disposable media; hardware validation pending"
+      ]
+    },
+    "game": {
+      "elf_sha256": "46b31c09616e22539231a19a0207087bbf3f4f671786274fc43b9b51cc076bae",
+      "package_bytes": 179681,
+      "packed_bytes": 86486,
+      "image_bytes": 174653,
+      "memory_bytes": 194036,
+      "relocations": 1249,
+      "sha256": "b070c426e389f61912643fbbbc31083259de92cf8363b3336b848f3e42c87c22",
+      "packed_sha256": "ded767d70debb243534c86451cc4d899a0a2c387db37f884845fb7187f63937f"
+    }
+  },
+  "status": "Space reclaimed; PAL A500 load/save/switch/save and cold-boot recovery pass",
+  "slots": [
+    {
+      "generation": 1,
+      "best_ticks": [
+        359,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "generation": 2,
+      "best_ticks": [
+        359,
+        181,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "changed_sectors": [
+    1738,
+    1749
+  ],
+  "artifacts": [
+    "scratchpad/trackloader/native_game/space_save.log",
+    "scratchpad/trackloader/native_game/space_save.png",
+    "scratchpad/trackloader/native_game/space_reboot.log",
+    "scratchpad/trackloader/native_game/space_reboot.png"
+  ],
+  "limitations": [
+    "No loading-time/FPS comparison measured",
+    "No physical hardware, NTSC or mid-write removal tests"
+  ]
+}

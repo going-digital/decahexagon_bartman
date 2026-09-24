@@ -1,0 +1,81 @@
+{
+  "otis_source": {
+    "source": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music/music2.dat",
+    "sha256": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+    "pc_track": 2,
+    "decoded": "scratchpad/audio/otis_pc/decoded.wav",
+    "time_origin": "First ffmpeg decoded PCM sample; no manual trim, shift or speed change",
+    "cue_asset": "assets/music2.cues",
+    "cue_offset_seconds": 0,
+    "compression_grid": {
+      "bpm": 67.50899999999962,
+      "phase_seconds": 0.434163089365844,
+      "reviewed": false,
+      "downbeat_known": false,
+      "variable_tempo_checked": false
+    },
+    "grid_note": "Approximate beat phase transferred for dictionary slicing only; does not shift playback or PC cues.",
+    "previous_source": "assets/Chipzel - Otis [1413220136].mp3"
+  },
+  "status": "Host audition only; experimental disk packages; no Amiga decoder or disk integration",
+  "sample_rate": 12000,
+  "gain": "Game boost applied before Fibonacci/ADPCM encoding; decoded preboost previews are not boosted again",
+  "trials": [
+    {
+      "track": "courtesy",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 176,
+      "disk_bytes": 255838,
+      "decoded_bank_bytes": 490050,
+      "preview": "scratchpad/audio/codec_audition_budget_250_preboost_pc_otis/courtesy_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 19.157857891866943,
+        "relative_spectral_error": 0.08733045923046978
+      },
+      "overall": {
+        "snr_db": 0.5005678734194445,
+        "relative_spectral_error": 0.34806387943293493
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 119,
+      "disk_bytes": 253715,
+      "decoded_bank_bytes": 494246,
+      "preview": "scratchpad/audio/codec_audition_budget_250_preboost_pc_otis/focus_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 16.76901456402968,
+        "relative_spectral_error": 0.11980075228101937
+      },
+      "overall": {
+        "snr_db": 2.294859915576201,
+        "relative_spectral_error": 0.311320506389738
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "expanded",
+      "codec": "fibonacci",
+      "dictionary_slices": 91,
+      "disk_bytes": 251007,
+      "decoded_bank_bytes": 492130,
+      "preview": "scratchpad/audio/codec_audition_budget_250_preboost_pc_otis/otis_expanded_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 15.097497061659844,
+        "relative_spectral_error": 0.1448485618823926
+      },
+      "overall": {
+        "snr_db": -1.0997340819938204,
+        "relative_spectral_error": 0.3218590583405476
+      }
+    }
+  ],
+  "totals": {
+    "expanded": {
+      "fibonacci": 760560
+    }
+  }
+}

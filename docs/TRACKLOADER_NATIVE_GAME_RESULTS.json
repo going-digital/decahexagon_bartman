@@ -1,0 +1,13 @@
+{
+  "status": "Native game links without OS base symbols or undefined imports; not boot tested",
+  "entry": "trackloader_game_entry",
+  "music": "external-only",
+  "sound_effects": true,
+  "sections": "\n/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/game.elf:     file format elf32-m68k\n\nSections:\nIdx Name          Size      VMA       LMA       File off  Algn\n  0 .text         000080b8  00000000  00000000  00002000  2**1\n                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE\n  1 .rodata       00006458  000080b8  000080b8  0000a0b8  2**2\n                  CONTENTS, ALLOC, LOAD, READONLY, DATA\n  2 .MEMF_CHIP    00000018  0000e510  0000e510  00010510  2**1\n                  CONTENTS, ALLOC, LOAD, READONLY, DATA\n  3 .data         00000012  00010528  00010528  00010528  2**1\n                  CONTENTS, ALLOC, LOAD, RELOC, DATA\n  4 .INCBIN.MEMF_CHIP 0001a503  0001053a  0001053a  0001053a  2**1\n                  CONTENTS, ALLOC, LOAD, DATA\n  5 .bss          00004bb4  0002aa40  0002aa40  0002aa3d  2**2\n                  ALLOC\n  6 .comment      00000012  00000000  00000000  0002aa3d  2**0\n                  CONTENTS, READONLY\n  7 .debug_frame  000000cc  00000000  00000000  0002aa50  2**2\n                  CONTENTS, RELOC, READONLY, DEBUGGING, OCTETS\n",
+  "limitations": [
+    "No resident executable load/relocation yet",
+    "Static DMA sections require Chip placement",
+    "No native target boot or gameplay validation",
+    "68000 only"
+  ]
+}

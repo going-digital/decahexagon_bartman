@@ -1,0 +1,103 @@
+{
+  "video": "PAL",
+  "observations": [
+    {
+      "seconds": 115,
+      "dirty": 1,
+      "best_ticks": [
+        191,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "seconds": 140,
+      "dirty": 1,
+      "best_ticks": [
+        191,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "seconds": 145,
+      "dirty": 1,
+      "best_ticks": [
+        191,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "seconds": 153,
+      "dirty": 1,
+      "best_ticks": [
+        191,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "seconds": 225,
+      "dirty": 0,
+      "best_ticks": [
+        237,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "status": "Writable reinsertion produced valid save data; screenshots require visual review",
+  "source_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "changed_sectors": [
+    1738,
+    1749
+  ],
+  "slots": [
+    {
+      "sector": 1738,
+      "generation": 1,
+      "best_ticks": [
+        191,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sector": 1749,
+      "generation": 2,
+      "best_ticks": [
+        237,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "foreign_unchanged": true,
+  "evidence": "/Users/peterknight/dev/decahexagon_bartman/scratchpad/trackloader/native_game/ccp_writable_retry_1790232496408433000",
+  "limitations": [
+    "Swap phase within SAVE transaction not instrumented",
+    "No physical drive test"
+  ]
+}

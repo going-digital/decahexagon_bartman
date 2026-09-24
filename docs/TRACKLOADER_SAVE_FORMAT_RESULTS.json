@@ -1,0 +1,16 @@
+{
+  "status": "Exact endian layout and CRC match independent Python encoder; valid-CRC malformed records rejected",
+  "slot_bytes": 512,
+  "crc32": "1a1c7ee1",
+  "rejected": [
+    "magic",
+    "old_version",
+    "future_version",
+    "size",
+    "completion_bits",
+    "reserved"
+  ],
+  "limitations": [
+    "RAM codec only; no native disk writes or cold-boot persistence"
+  ]
+}

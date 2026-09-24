@@ -43,3 +43,25 @@ UWORD game_live_failure(void);
 
 UBYTE game_selected_profile(void);
 UBYTE game_selection_locked(void);
+
+/* Optional resident-platform hook, called synchronously before starting a run.
+ * Return nonzero only with the selected profile's audio ready. Failure leaves
+ * selection/death state intact. Called on retries too; platform may reuse a bank.
+ * Install after game_init. Never call game_update from the hook. */
+typedef int (*GameRunPreparer)(UBYTE profile);
+void game_set_run_preparer(GameRunPreparer prepare);
+/* Consume after game_update: discard accumulated ticks and rebase frame time
+ * whenever preparation ran, including failed loads. */
+UBYTE game_take_load_barrier(void);
+
+/* Retained until a successful retry, selection change or return to the menu. */
+UBYTE game_load_failed(void);
+
+/* Storage boundary: restore immediately after game_init, before game_update.
+ * Snapshot only at menu/results; caller must stop audio before disk I/O.
+ * Commit acknowledgement is allowed ONLY after verified disk readback. */
+#include "trackloader/save.h"
+int game_restore_save(const TrackSave *state);
+int game_save_snapshot(TrackSave *state);
+int game_save_committed(const TrackSave *state);
+UBYTE game_save_dirty(void);

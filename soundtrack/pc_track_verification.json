@@ -1,0 +1,176 @@
+{
+  "source_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "pc_audio_sha256": {
+    "1": "5dd58d3d1bc58d8b8102ef75804a669cd61df501da48cf371a75013adc72907c",
+    "2": "744c90ee11d991b5f99cace0b97cf70221e866fcbbb5da7bf445d0a1a7ee1258",
+    "3": "9dfbc0345761b43ea58850f28544ed709099ffd6bf30d1d010e1f9081a1faa99"
+  },
+  "method": "Five independent 3-second windows; normalized waveform correlation at 2 kHz across all three PC recordings",
+  "tracks": [
+    {
+      "soundtrack": "courtesy",
+      "matches": [
+        {
+          "pc_track": 1,
+          "pc_seconds": 9.949,
+          "correlation": 0.8588270795672239,
+          "source_seconds": 10
+        },
+        {
+          "pc_track": 1,
+          "pc_seconds": 29.949,
+          "correlation": 0.9591664804153663,
+          "source_seconds": 30
+        },
+        {
+          "pc_track": 1,
+          "pc_seconds": 59.949,
+          "correlation": 0.9646316114137844,
+          "source_seconds": 60
+        },
+        {
+          "pc_track": 1,
+          "pc_seconds": 89.949,
+          "correlation": 0.9258060286881583,
+          "source_seconds": 90
+        },
+        {
+          "pc_track": 1,
+          "pc_seconds": 119.949,
+          "correlation": 0.9102535106096666,
+          "source_seconds": 120
+        }
+      ],
+      "waveform_identity_confirmed": true,
+      "fixed_timeline_offset_seconds": -0.051000000000000864
+    },
+    {
+      "soundtrack": "focus",
+      "matches": [
+        {
+          "pc_track": 3,
+          "pc_seconds": 9.9515,
+          "correlation": 0.9711639304807062,
+          "source_seconds": 10
+        },
+        {
+          "pc_track": 3,
+          "pc_seconds": 29.9515,
+          "correlation": 0.9586060720435977,
+          "source_seconds": 30
+        },
+        {
+          "pc_track": 3,
+          "pc_seconds": 59.9515,
+          "correlation": 0.9556687650401957,
+          "source_seconds": 60
+        },
+        {
+          "pc_track": 3,
+          "pc_seconds": 89.9515,
+          "correlation": 0.931167932487377,
+          "source_seconds": 90
+        },
+        {
+          "pc_track": 3,
+          "pc_seconds": 119.9515,
+          "correlation": 0.9562214001039187,
+          "source_seconds": 120
+        }
+      ],
+      "waveform_identity_confirmed": true,
+      "fixed_timeline_offset_seconds": -0.04850000000000136
+    },
+    {
+      "soundtrack": "otis",
+      "matches": [
+        {
+          "pc_track": 2,
+          "pc_seconds": 79.3285,
+          "correlation": 0.22905439606330874,
+          "source_seconds": 10
+        },
+        {
+          "pc_track": 2,
+          "pc_seconds": 71.3255,
+          "correlation": 0.25679096899523746,
+          "source_seconds": 30
+        },
+        {
+          "pc_track": 2,
+          "pc_seconds": 44.4165,
+          "correlation": 0.20206129417732208,
+          "source_seconds": 60
+        },
+        {
+          "pc_track": 2,
+          "pc_seconds": 136.6705,
+          "correlation": 0.20799125444881733,
+          "source_seconds": 90
+        },
+        {
+          "pc_track": 2,
+          "pc_seconds": 116.897,
+          "correlation": 0.2502956954104415,
+          "source_seconds": 120
+        }
+      ],
+      "waveform_identity_confirmed": false,
+      "fixed_timeline_offset_seconds": null,
+      "source_duration_seconds": 156.4445,
+      "pc_track2_duration_seconds": 145.883,
+      "envelope_matches": [
+        {
+          "source_seconds": 10,
+          "pc_seconds": 16.64,
+          "correlation": 0.9210067157045592
+        },
+        {
+          "source_seconds": 30,
+          "pc_seconds": 23.32,
+          "correlation": 0.8681831625821508
+        },
+        {
+          "source_seconds": 60,
+          "pc_seconds": 53.32,
+          "correlation": 0.8597385432423286
+        },
+        {
+          "source_seconds": 90,
+          "pc_seconds": 83.34,
+          "correlation": 0.8446489268617803
+        },
+        {
+          "source_seconds": 120,
+          "pc_seconds": 126.68,
+          "correlation": 0.7998920994176955
+        }
+      ],
+      "cue_alignment_verified": false,
+      "note": "Repeated passages and different durations: do not infer a single cue offset from envelope matches."
+    }
+  ],
+  "cues": [
+    {
+      "track_id": 1,
+      "literal_address": "0x100176f92",
+      "entries": 11441,
+      "sha256": "2f943408b38dd8a335a6e75c3da8c24768d8339c03065e440b5d064722c0fcf4",
+      "scale": 1
+    },
+    {
+      "track_id": 2,
+      "literal_address": "0x100182027",
+      "entries": 8830,
+      "sha256": "17615c04081551ae07835b45052fb91c115196fda544688ea240ccd21cf4b9d5",
+      "scale": 0.6
+    },
+    {
+      "track_id": 3,
+      "literal_address": "0x10018a8b6",
+      "entries": 9734,
+      "sha256": "bffd3ae08525bd944cc5eda42fa0a4fcfaf014982e08b3bacdbecb8825292344",
+      "scale": 1
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "status": "Visible loading banner, successful game resume, and error display verified",
+  "stage_bytes": 22099,
+  "chip_block_bytes": 360448,
+  "image_offset": 65536,
+  "image_capacity": 196608,
+  "heap_offset": 278528,
+  "heap_bytes": 81920,
+  "cue_offset": 262144,
+  "cue_capacity": 16384,
+  "free_disk_sectors": 69,
+  "adf_sha256": "71770028d8e04aedcf7649520c12ae90e584ab2eef43f0942e248bfec55e42d5",
+  "limitations": [
+    "Initial boot remains blank",
+    "No full no-media or wrong-disk validation",
+    "No physical-hardware or NTSC validation",
+    "No native persistence"
+  ],
+  "emulator": "Copperline A500OCS PAL, 512K Chip + 512K slow",
+  "tests": [
+    {
+      "screenshot": "scratchpad/trackloader/native_game/loading_visible.png",
+      "seconds": 70,
+      "result": "LOAD TRACK visible during disk read"
+    },
+    {
+      "screenshot": "scratchpad/trackloader/native_game/loading_success.png",
+      "seconds": 96,
+      "result": "Courtesy ready and gameplay displayed"
+    },
+    {
+      "screenshot": "scratchpad/trackloader/native_game/loading_error.png",
+      "seconds": 96,
+      "result": "Damaged Courtesy rejected, LOAD ERROR displayed"
+    }
+  ]
+}

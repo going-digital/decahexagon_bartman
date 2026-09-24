@@ -1,0 +1,42 @@
+{
+  "status": "Expected native switching and media-swap serial sequences verified",
+  "adf_sha256": "823eafb45c162c2cf0d4f23b20852238bf41286cd7cccc189b22e39ec42fedd3",
+  "emulator": "Copperline NTSC A500OCS, 512K Chip + 512K slow",
+  "scenarios": {
+    "ofs_midread": {
+      "seconds": 170,
+      "keys": [
+        [
+          60,
+          64
+        ],
+        [
+          100,
+          64
+        ]
+      ],
+      "swaps": [
+        [
+          65,
+          "not_dos.adf"
+        ],
+        [
+          95,
+          "native_menu.adf"
+        ]
+      ],
+      "events": [
+        "NATIVE-TUNE-FAIL",
+        "DF0:courtesyNATIVE-TUNE-READY"
+      ],
+      "log": "scratchpad/trackloader/native_game/ofs_midread_ntsc.log",
+      "screenshot": "scratchpad/trackloader/native_game/ofs_midread_ntsc.png"
+    }
+  },
+  "limitations": [
+    "Screenshots require separate visual review",
+    "No empty-drive or physical hardware check",
+    "No audio quality or underrun measurement",
+    "Verify-existing assumes logs belong to the recorded image"
+  ]
+}

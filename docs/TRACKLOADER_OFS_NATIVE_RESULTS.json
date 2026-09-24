@@ -1,0 +1,42 @@
+{
+  "status": "Bounded OFS native executable and Courtesy load passed; oversized header rejected",
+  "stage_bytes": 21851,
+  "chip_block_bytes": 360448,
+  "image_offset": 65536,
+  "image_capacity": 196608,
+  "heap_offset": 278528,
+  "heap_bytes": 81920,
+  "cue_offset": 262144,
+  "cue_capacity": 16384,
+  "free_disk_sectors": 69,
+  "adf_sha256": "f7ede2e5fe03a4f4a273503084e2611f9897c49c2c63f97f34f2e4b001aa14c8",
+  "limitations": [
+    "No complete three-track switching rerun on this reader yet",
+    "No real-hardware/NTSC or mid-read media removal validation",
+    "Host malformed-block suite complements the target oversized-header test",
+    "Failure may leave a validated prefix; no failed load is published",
+    "Read-only; no native persistence"
+  ],
+  "emulator": "Copperline PAL A500OCS, 512K Chip + 512K slow",
+  "oversize_fixture_sha256": "48be6b0bd5a8ec3d2d7db152622291df80f3ce7e474462f54c4fe4a17582a46e",
+  "artifacts": [
+    "scratchpad/trackloader/native_game/ofs_game.log",
+    "scratchpad/trackloader/native_game/ofs_game.png",
+    "scratchpad/trackloader/native_game/ofs_oversize.log",
+    "scratchpad/trackloader/native_game/ofs_oversize.png"
+  ],
+  "memory": {
+    "diskio_workspace": [
+      24000,
+      37056
+    ],
+    "track_cache": [
+      38000,
+      43632
+    ],
+    "ofs_scratch": [
+      54000,
+      55244
+    ]
+  }
+}

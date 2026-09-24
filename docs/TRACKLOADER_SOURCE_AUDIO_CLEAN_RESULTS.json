@@ -1,0 +1,16 @@
+{
+  "status": "All three PC banks regenerated and match the accepted byte hashes",
+  "python": "3.14.7",
+  "numpy": "2.4.2",
+  "scipy": "1.17.1",
+  "ffmpeg": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "music_dir": "/Users/peterknight/Library/Application Support/Steam/steamapps/common/Super Hexagon/Super Hexagon.app/Contents/Resources/data/music",
+  "limitations": [
+    "Requires the matching licensed PC recordings and repository analysis metadata",
+    "Audio banks only; payload packaging and ADF build are separate commands"
+  ],
+  "isolated_workspace": "scratchpad/audio/pc_audio_clean_vvuecdp7",
+  "initial_audio_cache_empty": true,
+  "legacy_auditions_absent": true,
+  "pc_executable_provenance_cache_absent": true
+}

@@ -7,13 +7,28 @@
 #include "../paula_irq.h"
 #include "../sfx.h"
 #include "../pc_pulse.h"
+#ifndef PCM_EXTERNAL_ONLY
+#define PCM_EXTERNAL_ONLY 0
+#endif
+#if !PCM_EXTERNAL_ONLY
 INCBIN(CourtesyCues, "assets/music1.cues");
+#endif
 static PcmLifecycle lifecycle;
 static UWORD music_rng;
 static UBYTE music_started;
+#if !PCM_EXTERNAL_ONLY
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
+#endif
 static PcmSong song;
+static PcmSong loaded_song;
+static unsigned loaded_samples, loaded_cue_bytes;
+static const UBYTE *loaded_cues;
+static UBYTE *loaded_buffers;
+static UWORD external_bank;
+static const UBYTE *active_cues;
+static unsigned active_cue_bytes;
+static unsigned loaded_cue_lead,active_cue_lead;
 #define FIB_BUFFERS 4
 static UBYTE *buffers;
 static volatile UWORD state[FIB_BUFFERS]; /* 0 free, 1 decoded, 2 owned by DMA */
@@ -25,6 +40,32 @@ static UWORD started, rendered, display_frames;
 static ULONG sample_length, fill_position, positions[FIB_BUFFERS];
 static volatile ULONG audible_position;
 static volatile UWORD audio_frame, audio_line, audio_epoch;
+
+/* No DMA/IRQ may own the bank while its storage is being replaced. */
+int fib_stream_bind(const PcmSong *source,unsigned samples,
+                    const unsigned char *cues,unsigned cue_bytes,
+                    unsigned char *chip_buffers) {
+    if(running || buffers || !source || !source->seq_count || !source->sequence ||
+       !source->offsets || !source->bank || samples<512 || !chip_buffers ||
+       ((ULONG)chip_buffers&1) || (cue_bytes && !cues)) return 0;
+    loaded_song=*source;
+    loaded_song.seq_index=loaded_song.output_left=0;loaded_song.raw=0;
+    loaded_samples=samples;loaded_cues=cues;loaded_cue_bytes=cue_bytes;
+    loaded_buffers=chip_buffers;external_bank=1;loaded_cue_lead=612;
+    lifecycle=(PcmLifecycle){0};
+    return 1;
+}
+int fib_stream_set_cue_lead(unsigned samples) {
+    if(running || buffers || !external_bank) return 0;
+    loaded_cue_lead=samples;return 1;
+}
+int fib_stream_unbind(void) {
+    if(running || buffers) return 0;
+    loaded_song=(PcmSong){0};loaded_buffers=0;loaded_cues=0;
+    loaded_samples=loaded_cue_bytes=loaded_cue_lead=0;external_bank=0;
+    active_cues=0;active_cue_bytes=0;lifecycle=(PcmLifecycle){0};
+    return 1;
+}
 
 /* VBlank can be pending when the higher-priority audio IRQ runs. Include it
  * in the timestamp without changing the system's frame counter. */
@@ -50,8 +91,8 @@ unsigned fib_stream_cue(void) {
     int lines=(UWORD)(frame-af)*video_timing.lines+(int)line-al;
     if(lines<0) lines=0;
     position=pc_pcm_position(position,sample_length,(unsigned)lines,video_timing.music_period);
-    unsigned index=pc_pulse_cue_index(position);
-    return index<11441?((const UBYTE*)CourtesyCues)[index]:0;
+    unsigned index=pc_pulse_cue_index_offset(position,active_cue_lead);
+    return index<active_cue_bytes?active_cues[index]:0;
 }
 void fib_stream_frame(unsigned elapsed) {++rendered;display_frames+=elapsed;}
 
@@ -93,7 +134,16 @@ static void fill_one(void) {
     fill_slot=(fill_slot+1)%FIB_BUFFERS;
 }
 void fib_stream_start(void) {
+    if(running || buffers) return;
     underruns=blocks=0;
+    if(external_bank) {
+        song=loaded_song;sample_length=loaded_samples;buffers=loaded_buffers;
+        active_cues=loaded_cues;active_cue_bytes=loaded_cue_bytes;
+        active_cue_lead=loaded_cue_lead;
+    } else {
+#if PCM_EXTERNAL_ONLY
+        underruns=999; return; /* Loader must bind a bank before starting. */
+#else
     unsigned bytes=(ULONG)&incbin_FibSongData_end-(ULONG)FibSongData;
     if(!fib_pcm_init_split(&song,FibSongData,bytes,FibSongTail,
         (ULONG)&incbin_FibSongTail_end-(ULONG)FibSongTail)) {
@@ -103,6 +153,9 @@ void fib_stream_start(void) {
     if(!buffers) { underruns=999; return; }
     const UBYTE *header=(const UBYTE*)FibSongData;
     sample_length=((ULONG)header[4]<<24)|((ULONG)header[5]<<16)|((ULONG)header[6]<<8)|header[7];
+    active_cues=(const UBYTE*)CourtesyCues;active_cue_bytes=11441;active_cue_lead=612;
+#endif
+    }
     /* Keep music randomness independent of wall-pattern RNG. */
     if(!music_started) music_rng=((UWORD)frameCounter^0xa361u)|1u;
     else {
@@ -111,7 +164,7 @@ void fib_stream_start(void) {
         music_rng^=music_rng<<8;
     }
     /* Embedded PCM uses a 12 kHz timeline on both PAL and NTSC. */
-    ULONG start_position=(ULONG)pcm_start_offset_ms(music_started,music_rng)*12;
+    ULONG start_position=external_bank?0:(ULONG)pcm_start_offset_ms(music_started,music_rng)*12;
     if(!fib_song_seek(&song,start_position)) start_position=0;
     fill_position=start_position;fill_slot=0;
     music_started=1;
@@ -134,6 +187,9 @@ void fib_stream_start(void) {
     custom->intena=INTF_SETCLR|INTF_INTEN|INTF_AUD0;
     custom->dmacon=DMAF_SETCLR|DMAF_MASTER|DMAF_AUD0;
 }
+void fib_stream_status(unsigned *underrun_count,unsigned *completed_blocks) {
+    *underrun_count=underruns;*completed_blocks=blocks;
+}
 void fib_stream_fill(void) {
     if(!running) return;
 #if FIB_TRIAL_STALL
@@ -154,7 +210,9 @@ void fib_stream_stop(void) {
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;
     paula_irq_set(0,0);
-    FreeMem(buffers,512*FIB_BUFFERS);
+#if !PCM_EXTERNAL_ONLY
+    if(!external_bank) FreeMem(buffers,512*FIB_BUFFERS);
+#endif
     buffers=0;
 }
 void fib_stream_tick(unsigned playing,unsigned menu) {

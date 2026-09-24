@@ -1,0 +1,23 @@
+[
+  {
+    "track": "courtesy",
+    "samples": 2320000,
+    "arena_bytes": 494146,
+    "loop_seek_and_guards": true,
+    "rejected_inputs": 14
+  },
+  {
+    "track": "focus",
+    "samples": 1946667,
+    "arena_bytes": 496646,
+    "loop_seek_and_guards": true,
+    "rejected_inputs": 14
+  },
+  {
+    "track": "otis",
+    "samples": 1750594,
+    "arena_bytes": 493846,
+    "loop_seek_and_guards": true,
+    "rejected_inputs": 14
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "status": "Guarded native boot, Courtesy playback and first save passed",
+  "source_sha256": "422eb4578d0b9bdf32d2c304313640029db323419ad2d94f8ec9b2a8acf12329",
+  "changed_sectors": [
+    1738
+  ],
+  "generation": 1,
+  "best_ticks": 359,
+  "emulator": "Copperline PAL A500OCS 512K Chip + 512K slow",
+  "limitations": [
+    "No timed removal during write",
+    "No cold reboot in this trial",
+    "Seek guard tested separately; write guard fault injection pending"
+  ]
+}

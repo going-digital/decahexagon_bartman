@@ -1,0 +1,221 @@
+{
+  "status": "Host audition only; experimental disk packages; no Amiga decoder or disk integration",
+  "sample_rate": 12000,
+  "gain": "Game boost applied after decode equally to all previews",
+  "trials": [
+    {
+      "track": "courtesy",
+      "quality": "compact",
+      "codec": "fibonacci",
+      "dictionary_slices": 96,
+      "disk_bytes": 143778,
+      "decoded_bank_bytes": 268530,
+      "preview": "scratchpad/audio/codec_audition/courtesy_compact_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 25.26431235772175,
+        "relative_spectral_error": 0.03930451172713018
+      },
+      "overall": {
+        "snr_db": -0.33044900304710917,
+        "relative_spectral_error": 0.3972390251612036
+      }
+    },
+    {
+      "track": "courtesy",
+      "quality": "compact",
+      "codec": "ima_adpcm",
+      "dictionary_slices": 96,
+      "disk_bytes": 144238,
+      "decoded_bank_bytes": 268530,
+      "preview": "scratchpad/audio/codec_audition/courtesy_compact_ima_adpcm.wav",
+      "codec_only": {
+        "snr_db": 21.36996915493265,
+        "relative_spectral_error": 0.057497760946968055
+      },
+      "overall": {
+        "snr_db": -0.33497990247055964,
+        "relative_spectral_error": 0.39826732069104537
+      }
+    },
+    {
+      "track": "courtesy",
+      "quality": "fuller",
+      "codec": "fibonacci",
+      "dictionary_slices": 134,
+      "disk_bytes": 196997,
+      "decoded_bank_bytes": 373752,
+      "preview": "scratchpad/audio/codec_audition/courtesy_fuller_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 25.15502004631894,
+        "relative_spectral_error": 0.039837944082868
+      },
+      "overall": {
+        "snr_db": -0.016973259813305712,
+        "relative_spectral_error": 0.36991411631097443
+      }
+    },
+    {
+      "track": "courtesy",
+      "quality": "fuller",
+      "codec": "ima_adpcm",
+      "dictionary_slices": 134,
+      "disk_bytes": 197889,
+      "decoded_bank_bytes": 373752,
+      "preview": "scratchpad/audio/codec_audition/courtesy_fuller_ima_adpcm.wav",
+      "codec_only": {
+        "snr_db": 21.355216478642124,
+        "relative_spectral_error": 0.057724543200395106
+      },
+      "overall": {
+        "snr_db": -0.02227575611721119,
+        "relative_spectral_error": 0.37109302365624586
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "compact",
+      "codec": "fibonacci",
+      "dictionary_slices": 64,
+      "disk_bytes": 138955,
+      "decoded_bank_bytes": 266601,
+      "preview": "scratchpad/audio/codec_audition/focus_compact_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 23.422176740871773,
+        "relative_spectral_error": 0.05136618993988462
+      },
+      "overall": {
+        "snr_db": 0.8580120085369768,
+        "relative_spectral_error": 0.3765476325031226
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "compact",
+      "codec": "ima_adpcm",
+      "dictionary_slices": 64,
+      "disk_bytes": 139360,
+      "decoded_bank_bytes": 266601,
+      "preview": "scratchpad/audio/codec_audition/focus_compact_ima_adpcm.wav",
+      "codec_only": {
+        "snr_db": 21.961099144599906,
+        "relative_spectral_error": 0.05367226927387209
+      },
+      "overall": {
+        "snr_db": 0.8194813126382223,
+        "relative_spectral_error": 0.3778078722352836
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "fuller",
+      "codec": "fibonacci",
+      "dictionary_slices": 91,
+      "disk_bytes": 195274,
+      "decoded_bank_bytes": 378354,
+      "preview": "scratchpad/audio/codec_audition/focus_fuller_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 23.14584873635173,
+        "relative_spectral_error": 0.05310779451300387
+      },
+      "overall": {
+        "snr_db": 1.6536957057241546,
+        "relative_spectral_error": 0.3301328629074729
+      }
+    },
+    {
+      "track": "focus",
+      "quality": "fuller",
+      "codec": "ima_adpcm",
+      "dictionary_slices": 91,
+      "disk_bytes": 195904,
+      "decoded_bank_bytes": 378354,
+      "preview": "scratchpad/audio/codec_audition/focus_fuller_ima_adpcm.wav",
+      "codec_only": {
+        "snr_db": 21.908537438717246,
+        "relative_spectral_error": 0.054152443642867004
+      },
+      "overall": {
+        "snr_db": 1.6064743784517104,
+        "relative_spectral_error": 0.3316131438356655
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "compact",
+      "codec": "fibonacci",
+      "dictionary_slices": 49,
+      "disk_bytes": 137807,
+      "decoded_bank_bytes": 266901,
+      "preview": "scratchpad/audio/codec_audition/otis_compact_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 21.330964215406475,
+        "relative_spectral_error": 0.06259026856624236
+      },
+      "overall": {
+        "snr_db": -1.6487007451267455,
+        "relative_spectral_error": 0.3978336332935042
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "compact",
+      "codec": "ima_adpcm",
+      "dictionary_slices": 49,
+      "disk_bytes": 138061,
+      "decoded_bank_bytes": 266901,
+      "preview": "scratchpad/audio/codec_audition/otis_compact_ima_adpcm.wav",
+      "codec_only": {
+        "snr_db": 16.878777632390467,
+        "relative_spectral_error": 0.09208051018660933
+      },
+      "overall": {
+        "snr_db": -1.661594500876054,
+        "relative_spectral_error": 0.402210870302679
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "fuller",
+      "codec": "fibonacci",
+      "dictionary_slices": 69,
+      "disk_bytes": 191495,
+      "decoded_bank_bytes": 373561,
+      "preview": "scratchpad/audio/codec_audition/otis_fuller_fibonacci.wav",
+      "codec_only": {
+        "snr_db": 21.23237051832013,
+        "relative_spectral_error": 0.06348768503180936
+      },
+      "overall": {
+        "snr_db": -1.4367826401509989,
+        "relative_spectral_error": 0.35512733396428564
+      }
+    },
+    {
+      "track": "otis",
+      "quality": "fuller",
+      "codec": "ima_adpcm",
+      "dictionary_slices": 69,
+      "disk_bytes": 192483,
+      "decoded_bank_bytes": 373561,
+      "preview": "scratchpad/audio/codec_audition/otis_fuller_ima_adpcm.wav",
+      "codec_only": {
+        "snr_db": 16.881673925447284,
+        "relative_spectral_error": 0.09182011039405198
+      },
+      "overall": {
+        "snr_db": -1.4552929797763838,
+        "relative_spectral_error": 0.3603280334838673
+      }
+    }
+  ],
+  "totals": {
+    "compact": {
+      "fibonacci": 420540,
+      "ima_adpcm": 421659
+    },
+    "fuller": {
+      "fibonacci": 583766,
+      "ima_adpcm": 586276
+    }
+  }
+}

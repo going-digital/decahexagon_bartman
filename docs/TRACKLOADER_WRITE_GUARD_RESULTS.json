@@ -1,0 +1,131 @@
+{
+  "status": "Pre-write, retry and active-DMA guards pass with disabled-guard controls",
+  "faults": [
+    "none",
+    "write entry",
+    "immediately before DMA setup",
+    "first retry",
+    "active DMA with timeout",
+    "active DMA with completion",
+    "normal completion"
+  ],
+  "trials": [
+    {
+      "guarded": 0,
+      "fault": 0,
+      "error": -1,
+      "dma_arm_writes": 6,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 0,
+      "fault": 1,
+      "error": -1,
+      "dma_arm_writes": 6,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 0,
+      "fault": 2,
+      "error": -1,
+      "dma_arm_writes": 6,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 0,
+      "fault": 3,
+      "error": -1,
+      "dma_arm_writes": 6,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 0,
+      "fault": 4,
+      "error": -1,
+      "dma_arm_writes": 6,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 0,
+      "fault": 5,
+      "error": 0,
+      "dma_arm_writes": 2,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 0,
+      "fault": 6,
+      "error": 0,
+      "dma_arm_writes": 2,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 0,
+      "error": -1,
+      "dma_arm_writes": 6,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 1,
+      "error": 29,
+      "dma_arm_writes": 0,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 2,
+      "error": 29,
+      "dma_arm_writes": 0,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 3,
+      "error": 29,
+      "dma_arm_writes": 2,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 4,
+      "error": 29,
+      "dma_arm_writes": 2,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 5,
+      "error": 29,
+      "dma_arm_writes": 2,
+      "stack_restored": true,
+      "drive_deselected": true
+    },
+    {
+      "guarded": 1,
+      "fault": 6,
+      "error": 0,
+      "dma_arm_writes": 2,
+      "stack_restored": true,
+      "drive_deselected": true
+    }
+  ],
+  "scope": "Actual 68000 write path; preceding MFM read stubbed successful; DMA timeout/completion signals modeled; timers expire immediately",
+  "limitations": [
+    "No real MFM media; completion is a mocked register signal",
+    "No removal during active physical write"
+  ]
+}

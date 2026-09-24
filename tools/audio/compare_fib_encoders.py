@@ -8,6 +8,7 @@ from codec_experiment import ROOT,DELTA,fib_encode,fib_decode,metric
 
 def load_encoder():
     library=ROOT/'out/fib_optimal.dylib'
+    library.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(['cc','-O3','-shared','-fPIC',str(ROOT/'tools/audio/fib_optimal.c'),'-o',str(library)],check=True)
     lib=ctypes.CDLL(str(library)); fn=lib.fib_optimal
     fn.argtypes=[ctypes.POINTER(ctypes.c_int8),ctypes.c_int,ctypes.POINTER(ctypes.c_uint8)]
