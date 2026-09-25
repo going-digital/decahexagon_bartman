@@ -1,0 +1,10 @@
+{
+  "status": "Ending spawn/exit gate matches original PC gamelogic",
+  "cases": 56,
+  "binary_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "fixture_sha256": "e20188387ed9fe6c1c422c36520f4ad9d06c15d569c6965ff564cc422e81d324",
+  "limitations": [
+    "Phase effects and wave generation intercepted/isolated in native probe",
+    "Full renderer and game integration pending"
+  ]
+}

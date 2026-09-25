@@ -1,16 +1,46 @@
 # PC accuracy implementation progress
 
-Updated 2026-09-19. See [the implementation plan](PC_ACCURACY_PLAN.md).
+Updated 2026-09-24. See [the implementation plan](PC_ACCURACY_PLAN.md).
 
-Current milestone: PC-unit walls, collision, exact waves, all six normal/hyper
-launch profiles and both automatic stage handoffs are connected to playable
-builds. The 193,479 saved wave/selector cases, 21,900 palette ticks and 2,048
-opening/handoff ticks pass. Runtime six-profile selection, session unlocks and
-per-mode records now have 1,992 native reference cases. Disk persistence,
-scripted ending and remaining presentation fidelity are still unfinished.
-Immediate starts, angle-preserving retries and the death/retry gate now match
-1,698 native snapshots. Death wall movement and polygon restoration now match
-17,280 native ticks; camera, flash and audio presentation remain unfinished.
+## Current status
+
+All six normal/Hyper profiles, both automatic stage handoffs, level selection,
+unlocks and per-profile records are implemented. Ordinary death/retry geometry,
+PC-derived wave scheduling, palettes and soundtrack cue-driven radial pulse
+have reference tests. All three PC soundtrack recordings are integrated, with
+random retry starts restored for disk-loaded banks.
+
+The native ADF boots without retaining AmigaOS and uses the boot drive for
+loading, saving and write-protect detection. DF0 and DF1 emulator tests pass;
+the external Gotek fix was also confirmed by the user. Saves are deferred to
+level selection so retries remain uninterrupted. The loading/saving bar no
+longer exposes the previous playfield. WHDLoad and the combined `Hexagon.zip`
+distribution are implemented; the package still contains three WHDLoad memory
+variants (consolidation has been discussed but not implemented).
+
+Records and unlocks persist. The save format preserves achievement bits, but
+**achievement awarding and its UI are not implemented**; preserving a field is
+not a completed achievement system.
+
+Still missing: normal and secret ending sequences, tutorial, settings and
+leaderboard screens, and remaining camera/perspective and ending presentation
+parity. Ending entry has native PC reference tests, and the non-audio phase controller
+is implemented with boundary tests. The ending wall selector now matches 27,200
+native PC cases. The spawn/exit gate matches 56 native cases, and ending palette
+transitions match 1,000 native ticks, including the previously missing palette
+200. Integral 60 Hz camera controls match 1,936 native cases; projection and
+scene construction remains pending. A fixed-point stage-4 projection matches
+351 non-singular native cases at pixel level; clipping and profiling remain.
+These ending components are not wired into gameplay yet. See
+[ending investigation](docs/ENDING_SEQUENCES.md).
+
+## Historical milestones
+
+Everything below records the state at its original milestone. Statements such
+as “persistence pending”, “other soundtracks outstanding”, or “embedded music”
+are historical and are superseded by the current status above and the current
+[trackloader notes](docs/TRACKLOADER_FEASIBILITY.md). Historical measurements
+remain evidence for their specific builds, not the latest release.
 
 ## First batch completed (historical)
 

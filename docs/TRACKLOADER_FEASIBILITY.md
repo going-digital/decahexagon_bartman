@@ -1,5 +1,13 @@
 # Trackloader feasibility: first measurements
 
+> Current status (2026-09-24): the native trackloader and WHDLoad packages are
+> implemented. All three PC soundtracks, decoded-bank caching, disk/file saves,
+> boot-drive selection and the combined `Hexagon.zip` distribution are present.
+> Retry music offsets are restored; saving happens at level selection.
+> Later sections are a chronological engineering log: earlier “pending” claims
+> describe their original builds. Endings and achievement awarding are separate
+> unfinished gameplay work; see [current progress](../PC_ACCURACY_PROGRESS.md).
+
 Measured using the local execram Zultra vendor library; independent Python zlib raw-DEFLATE decoding reproduced all six inputs byte-for-byte. Source revision and hashes are recorded in TRACKLOADER_PAYLOAD_MEASUREMENTS.json.
 
 | Tune | Fibonacci + zultra | PCM + zultra | Decoded sample bank |

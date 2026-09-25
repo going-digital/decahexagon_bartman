@@ -71,3 +71,73 @@ void fib_song_read(PcmSong *s,unsigned char *out,unsigned samples) {
         s->raw+=n;out+=n;samples-=n;s->output_left-=n;
     }
 }
+
+int fib_stretch_init(PcmStretch *s,const PcmSong *source,unsigned source_samples,
+                     const unsigned *offsets,unsigned count,unsigned total) {
+    if(!s || !source || !source->seq_count || !source->sequence ||
+       !source->offsets || !source->bank || !offsets || !total || source_samples<512 ||
+       count!=total/256+(total%256!=0)) return 0;
+    for(unsigned i=0;i<count;++i)if(offsets[i]>source_samples-512)return 0;
+    s->source=*source;s->offsets=offsets;s->count=count;
+    s->total=total;s->position=0;
+    return 1;
+}
+void fib_stretch_read(PcmStretch *s,unsigned char *out,unsigned samples) {
+    while(samples--) {
+        if(s->position>=s->total) {*out++=0;continue;}
+        unsigned phase=s->position&255;
+        if(!phase) {
+            unsigned index=s->position>>8;
+            fib_song_seek(&s->source,s->offsets[index]);
+            fib_song_read(&s->source,(unsigned char*)s->grain,512);
+            for(unsigned i=0;i<256;++i) {
+                /* Difference form is one signed 16x16 multiply on 68000.
+                 * Biased numerator is nonnegative: portable floor rounding. */
+                int a=index?s->previous[i]:0,b=s->grain[i];
+                int product;
+#ifdef __m68k__
+                /* Both operands fit signed 16 bits. Do not emit __mulsi3
+                 * hundreds of times per audio block on a stock 68000. */
+                product=b-a;
+                __asm__("muls.w %1,%0" : "+d"(product) : "d"((short)i) : "cc");
+#else
+                product=(b-a)*(int)i;
+#endif
+                s->output[i]=index ? a+((product+65536+128)>>8)-256 : b;
+                s->previous[i]=s->grain[i+256];
+            }
+        }
+        *out++=(unsigned char)s->output[phase];++s->position;
+    }
+}
+
+void fib_stretch_channels(PcmStretch *s,unsigned char *a,unsigned char *b) {
+    unsigned index=s->position>>8;
+    if(s->position>=s->total) {
+        for(unsigned i=0;i<256;++i)a[i]=b[i]=0;
+        return;
+    }
+    fib_song_seek(&s->source,s->offsets[index]);
+    fib_song_read(&s->source,(unsigned char*)s->grain,512);
+    for(unsigned i=0;i<256;++i) {
+        if(s->position+i<s->total) {
+            a[i]=index?(unsigned char)s->previous[i]:(unsigned char)s->grain[i];
+            b[i]=index?(unsigned char)s->grain[i]:0;
+        } else a[i]=b[i]=0;
+        s->previous[i]=s->grain[i+256];
+    }
+    s->position+=256;
+}
+
+void fib_song_read_reverse(PcmSong *s,unsigned *remaining,unsigned char *out,unsigned samples) {
+    unsigned n=*remaining<samples?*remaining:samples;
+    if(n) {
+        *remaining-=n;
+        fib_song_seek(s,*remaining);
+        fib_song_read(s,out,n);
+        for(unsigned i=0;i<n/2;++i) {
+            unsigned char t=out[i];out[i]=out[n-1-i];out[n-1-i]=t;
+        }
+    }
+    for(unsigned i=n;i<samples;++i)out[i]=0;
+}

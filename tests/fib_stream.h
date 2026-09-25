@@ -24,3 +24,14 @@ void fib_stream_status(unsigned *underrun_count,unsigned *completed_blocks);
 /* Set after successful bind, before starting. Bind defaults to Courtesy 612.
  * Use 0 for PC Otis, 582 for the verified Focus source. Stops do not reset it. */
 int fib_stream_set_cue_lead(unsigned samples);
+
+/* Bind the shipped Focus bank first. Plays the normal-ending stretch once,
+ * then silence; menu/retry cancels. Secret ending must not call this. */
+int fib_stream_start_ending_focus(void);
+/* Same producer for the playable Hexagonest bonus, stopped on death/menu. */
+int fib_stream_start_bonus_focus(void);
+/* Unmixed grain segments are copied in the main loop, never VBlank. */
+void fib_stream_fill_main(void);
+
+/* Secret ending: bound Focus backwards, original sample rate, once then silence. */
+int fib_stream_start_reverse_focus(void);

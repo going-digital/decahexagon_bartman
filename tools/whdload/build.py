@@ -13,7 +13,7 @@ data.mkdir(parents=True,exist_ok=True)
 native=root/'scratchpad/trackloader/native_game';packed=root/'scratchpad/trackloader'
 assert (native/'executable_pic.bin').exists(),'Build make trackloader-adf first'
 subprocess.run([sys.executable,str(root/'tools/trackloader/check_native_game.py'),'--whdload'],check=True)
-raw=package(work/'game.elf');assert len(raw)<=196608 and struct.unpack_from('>I',raw,12)[0]<=196608
+raw=package(work/'game.elf');assert len(raw)<=221184 and struct.unpack_from('>I',raw,12)[0]<=221184
 (data/'game').write_bytes(raw)
 # Uncompressed EXE1 eliminates an unnecessary second decompression path on HD.
 # Audio keeps the exact proven Zultra/Fibonacci assets and overlap offsets.
@@ -55,7 +55,7 @@ for slots,exp in [(1,524288),(2,1048576),(3,1572864)]:
 shutil.copyfile(root/'whdload/README.md',dest/'README.md')
 for slots in (1,2,3):
  (dest/f'Hexagon-{slots}.info').write_bytes(launcher_icon(slots))
- (dest/f'Run-{slots}').write_text(f'WHDLoad SLAVE=Hexagon-{slots}.slave PRELOAD NOWRITECACHE\n')
+ (dest/f'Run-{slots}').write_text(f'WHDLoad SLAVE=Hexagon-{slots}.slave PRELOAD NOWRITECACHE QUITKEY=89\n')
 names=['README.md']+[f'Hexagon-{i}.{ext}' for i in (1,2,3) for ext in ('slave','info')]+[f'Run-{i}' for i in (1,2,3)]+['data/'+name for name in ('game','courtesy','otis','focus')]
 files={name:dict(bytes=(dest/name).stat().st_size,sha256=hashlib.sha256((dest/name).read_bytes()).hexdigest()) for name in sorted(names)}
 report=dict(status='Built; runtime evidence is recorded separately in docs/WHDLOAD_RESULTS.json',chip_bytes=524288,game_memory_bytes=struct.unpack_from('>I',raw,12)[0],files=files)

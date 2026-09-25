@@ -1,0 +1,32 @@
+{
+  "coordinate_generator": "incremental",
+  "scope": "68000 instruction cycles, projection only; no DMA, clipping, drawing or game update",
+  "compiler_flags": "-m68000 -O2; affine setup once; no LTO",
+  "trials": [
+    {
+      "vertices": 0,
+      "cycles": 8586,
+      "milliseconds_at_7mhz": 1.2265714285714286
+    },
+    {
+      "vertices": 4,
+      "cycles": 11962,
+      "milliseconds_at_7mhz": 1.7088571428571429
+    },
+    {
+      "vertices": 40,
+      "cycles": 41192,
+      "milliseconds_at_7mhz": 5.884571428571428
+    },
+    {
+      "vertices": 100,
+      "cycles": 89640,
+      "milliseconds_at_7mhz": 12.805714285714286
+    },
+    {
+      "vertices": 200,
+      "cycles": 170364,
+      "milliseconds_at_7mhz": 24.337714285714284
+    }
+  ]
+}

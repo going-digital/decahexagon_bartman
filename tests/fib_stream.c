@@ -20,6 +20,13 @@ static UBYTE music_started;
 INCBIN(FibSongData, PCM_BANK_FIRST);
 INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
 #endif
+static PcmStretch stretch;
+static unsigned stretch_mode;
+static unsigned reverse_mode,reverse_remaining;
+static unsigned stretch_gameplay;
+static const unsigned ending_focus_offsets[]={
+#include "../assets/ending_focus_offsets.inc"
+};
 static PcmSong song;
 static PcmSong loaded_song;
 static unsigned loaded_samples, loaded_cue_bytes;
@@ -34,6 +41,7 @@ static UBYTE *buffers;
 static volatile UWORD state[FIB_BUFFERS]; /* 0 free, 1 decoded, 2 owned by DMA */
 static volatile UWORD underruns, blocks;
 static UWORD playing, pending, next_queue, first_irq;
+static UWORD grain_step,pending_step;
 static unsigned fill_slot;
 static volatile UWORD running;
 static UWORD started, rendered, display_frames;
@@ -80,7 +88,7 @@ static void beam_stamp(UWORD *frame,UWORD *line) {
     *frame=after+(pending?1:0);
 }
 unsigned fib_stream_cue(void) {
-    if(!running) return 0;
+    if(!running || stretch_mode || reverse_mode) return 0;
     UWORD epoch,frame,line,af,al;
     ULONG position;
     do {
@@ -100,10 +108,39 @@ static void queue(unsigned slot) {
     *(volatile ULONG *)&custom->aud[0].ac_ptr=(ULONG)(buffers+slot*512);
     custom->aud[0].ac_len=256;
 }
+/* Both channels reload together. Each block is 16 samples; channel 0 drives
+ * the envelope/queue IRQ. Pointer writes always describe the next reload. */
+static void queue_grain(unsigned slot,unsigned step) {
+    *(volatile ULONG*)&custom->aud[0].ac_ptr=(ULONG)(buffers+slot*512+step*16);
+    *(volatile ULONG*)&custom->aud[3].ac_ptr=(ULONG)(buffers+slot*512+256+step*16);
+    custom->aud[0].ac_len=custom->aud[3].ac_len=8;
+}
+static void grain_irq(void) {
+    if(first_irq)first_irq=0;
+    else {
+        if(playing!=pending)state[playing]=0;
+        playing=pending;grain_step=pending_step;
+        if(!grain_step)++blocks;
+    }
+    unsigned volume=positions[playing]?grain_step*4:0;
+    custom->aud[0].ac_vol=64-volume;
+    custom->aud[3].ac_vol=volume;
+    custom->intreq=INTF_AUD3;custom->intreq=INTF_AUD3;
+    pending=playing;pending_step=grain_step+1;
+    if(pending_step==16) {
+        pending_step=0;
+        if(state[next_queue]==1) {
+            pending=next_queue;state[pending]=2;
+            next_queue=(next_queue+1)%FIB_BUFFERS;
+        } else if(underruns<999)++underruns;
+    }
+    queue_grain(pending,pending_step);
+}
 static void audio_irq(unsigned channel) {
     (void)channel;
     custom->intreq=INTF_AUD0;
     custom->intreq=INTF_AUD0;
+    if(stretch_mode) {grain_irq();return;}
     if(first_irq) first_irq=0; /* initial DMA fetch has started buffer zero */
     else {
         if(playing!=pending) state[playing]=0;
@@ -126,9 +163,11 @@ static void audio_irq(unsigned channel) {
 }
 static void fill_one(void) {
     positions[fill_slot]=fill_position;
-    fib_song_read(&song,buffers+fill_slot*512,512);
-    fill_position+=512;
-    if(fill_position>=sample_length) fill_position-=sample_length;
+    if(stretch_mode) fib_stretch_channels(&stretch,buffers+fill_slot*512,buffers+fill_slot*512+256);
+    else if(reverse_mode)fib_song_read_reverse(&song,&reverse_remaining,buffers+fill_slot*512,512);
+    else fib_song_read(&song,buffers+fill_slot*512,512);
+    fill_position+=stretch_mode?256:512;
+    if(!stretch_mode && fill_position>=sample_length) fill_position-=sample_length;
     __asm volatile ("" ::: "memory");
     state[fill_slot]=1;
     fill_slot=(fill_slot+1)%FIB_BUFFERS;
@@ -166,16 +205,27 @@ void fib_stream_start(void) {
     /* Embedded and disk-loaded banks share the 12 kHz timeline on PAL/NTSC.
      * Bank ownership must not suppress randomized retry starts. */
     ULONG start_position=(ULONG)pcm_start_offset_ms(music_started,music_rng)*12;
-    if(!fib_song_seek(&song,start_position)) start_position=0;
+    if(stretch_mode) {
+        start_position=0;sample_length=932885;active_cue_bytes=0;
+    } else if(reverse_mode) {
+        start_position=0;reverse_remaining=loaded_samples;active_cue_bytes=0;
+    } else if(!fib_song_seek(&song,start_position)) start_position=0;
     fill_position=start_position;fill_slot=0;
     music_started=1;
     for(unsigned i=0;i<FIB_BUFFERS;++i) fill_one();
-    playing=pending=0;next_queue=1;first_irq=1;state[0]=2;
+    playing=pending=grain_step=pending_step=0;next_queue=1;first_irq=1;state[0]=2;
+    if(stretch_mode)sfx_music_pair(1);
     custom->intena=INTF_AUD0;
     custom->dmacon=DMAF_AUD0;
     paula_irq_set(0,audio_irq);
     custom->adkcon=0x00ff; /* no volume/period attachment */
-    queue(0);
+    if(stretch_mode) {
+        custom->intena=INTF_AUD3;custom->dmacon=DMAF_AUD3;
+        custom->aud[3].ac_vol=0;
+        custom->aud[3].ac_per=video_timing.music_period;
+        custom->intreq=INTF_AUD3;custom->intreq=INTF_AUD3;
+        queue_grain(0,0);
+    } else queue(0);
     custom->aud[0].ac_per=video_timing.music_period;
     custom->aud[0].ac_vol=0;
     custom->intreq=INTF_AUD0;
@@ -186,13 +236,16 @@ void fib_stream_start(void) {
     running=1;
     __asm volatile ("" ::: "memory");
     custom->intena=INTF_SETCLR|INTF_INTEN|INTF_AUD0;
-    custom->dmacon=DMAF_SETCLR|DMAF_MASTER|DMAF_AUD0;
+    custom->dmacon=DMAF_SETCLR|DMAF_MASTER|DMAF_AUD0|(stretch_mode?DMAF_AUD3:0);
 }
 void fib_stream_status(unsigned *underrun_count,unsigned *completed_blocks) {
     *underrun_count=underruns;*completed_blocks=blocks;
 }
 void fib_stream_fill(void) {
     if(!running) return;
+#if !FIB_TRIAL_MAINLOOP
+    if(stretch_mode || reverse_mode) return; /* Keep synthesis out of the VBlank interrupt. */
+#endif
 #if FIB_TRIAL_STALL
     UWORD age=(UWORD)((UWORD)frameCounter-started);
     if(age>=250 && age<265) return; /* deliberate producer starvation */
@@ -200,9 +253,24 @@ void fib_stream_fill(void) {
     /* One PCM copy per VBlank. Level-4 audio IRQ can preempt safely. */
     if(state[fill_slot]==0) fill_one();
 }
+void fib_stream_fill_main(void) {
+#if !FIB_TRIAL_MAINLOOP
+    if(running && (stretch_mode || reverse_mode))
+        for(unsigned n=0;n<FIB_BUFFERS && state[fill_slot]==0;++n)fill_one();
+#endif
+}
 
 void fib_stream_stop(void) {
+    unsigned was_stretch=stretch_mode;
     running=0;
+    /* Mask both voices before publishing the transport-mode change. */
+    if(was_stretch) {
+        custom->intena=INTF_AUD0|INTF_AUD3;
+        custom->dmacon=DMAF_AUD0|DMAF_AUD3;
+        custom->aud[0].ac_vol=custom->aud[3].ac_vol=0;
+        sfx_music_pair(0);
+    }
+    stretch_mode=0;stretch_gameplay=0;reverse_mode=0;
     __asm volatile ("" ::: "memory");
     if(!buffers) return;
     custom->intena=INTF_AUD0;
@@ -216,7 +284,36 @@ void fib_stream_stop(void) {
 #endif
     buffers=0;
 }
+int fib_stream_start_ending_focus(void) {
+    /* Caller must bind Focus first, after stopping any existing playback. */
+    if(running || buffers || !external_bank) return 0;
+    if(!fib_stretch_init(&stretch,&loaded_song,loaded_samples,ending_focus_offsets,
+        sizeof(ending_focus_offsets)/sizeof(ending_focus_offsets[0]),932885)) return 0;
+    stretch_mode=1;fib_stream_start();
+    if(!running) {stretch_mode=0;return 0;}
+    return 1; /* Initial fetch IRQ enables the first grain volume. */
+}
+int fib_stream_start_bonus_focus(void) {
+    if(!fib_stream_start_ending_focus())return 0;
+    stretch_gameplay=1;return 1;
+}
+int fib_stream_start_reverse_focus(void) {
+    if(running || buffers || !external_bank)return 0;
+    reverse_mode=1;fib_stream_start();
+    if(!running) {reverse_mode=0;return 0;}
+    custom->aud[0].ac_vol=64;return 1;
+}
 void fib_stream_tick(unsigned playing,unsigned menu) {
+    if(reverse_mode) {
+        if(menu || playing)fib_stream_stop();
+        else return;
+    }
+
+    if(stretch_mode) {
+        if(menu || (stretch_gameplay ? !playing:playing)) fib_stream_stop();
+        else return; /* Ending owns playback; do not apply death fade. */
+    }
+
     unsigned action=pcm_lifecycle_tick(&lifecycle,playing,menu);
     if(action&PCM_STOP) fib_stream_stop();
     if(action&PCM_START) fib_stream_start();

@@ -30,3 +30,5 @@ void hud_loading_end(void);
 
 /* 0 clear, 1 save error, 2 disk write protected. */
 void hud_save_failed(UBYTE failed);
+
+void hud_draw_completion(void *plane);

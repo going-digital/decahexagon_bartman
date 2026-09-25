@@ -20,7 +20,7 @@ typedef unsigned char UBYTE;
 typedef struct { UBYTE held,fire,fire_edge,back_edge,cheat_held; } InputState;
 typedef int (*GameRunPreparer)(UBYTE);
 static GameRunPreparer run_preparer;
-static UBYTE load_barrier,load_retry_wait,load_failed,selected_profile;
+static UBYTE load_barrier,load_retry_wait,load_failed,selected_profile,test_run;
 static unsigned starts,resets,updates,requests,allow,mode;
 static unsigned sound_events,game_palette;
 static struct {unsigned best[6],completed[6];} records;

@@ -20,6 +20,8 @@ typedef struct sInputState {
     WORD  turn;        // -1 = anticlockwise (left), +1 = clockwise (right), 0
     UBYTE fire;        // 1 while select/confirm (space, return or joy fire) is held
     UBYTE fire_edge;   // 1 only on the tick select goes 0 -> 1
+    UBYTE test_level; // F1-F7 edge: six profiles, then Hexagonest bonus
+    UBYTE ending_edge; // F8: developer secret-ending audition
     UBYTE back_edge;   // 1 only on the tick Escape goes 0 -> 1
 } InputState;
 

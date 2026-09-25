@@ -1,0 +1,31 @@
+{
+  "scope": "68000 instruction cycles, projection only; no DMA, clipping, drawing or game update",
+  "compiler_flags": "-m68000 -O2; benchmark shift/add and restoring-division helpers; no LTO",
+  "trials": [
+    {
+      "vertices": 0,
+      "cycles": 412,
+      "milliseconds_at_7mhz": 0.05885714285714286
+    },
+    {
+      "vertices": 4,
+      "cycles": 425276,
+      "milliseconds_at_7mhz": 60.75371428571429
+    },
+    {
+      "vertices": 40,
+      "cycles": 3902492,
+      "milliseconds_at_7mhz": 557.4988571428571
+    },
+    {
+      "vertices": 100,
+      "cycles": 9592498,
+      "milliseconds_at_7mhz": 1370.356857142857
+    },
+    {
+      "vertices": 200,
+      "cycles": 19012496,
+      "milliseconds_at_7mhz": 2716.070857142857
+    }
+  ]
+}

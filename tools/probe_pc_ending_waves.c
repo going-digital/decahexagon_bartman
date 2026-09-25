@@ -1,0 +1,111 @@
+// Execute only selected pure routines from the owned x86_64 Mach-O.
+// No app startup, Steam, audio, rendering, or game filesystem routines run.
+// capture_pc_progression.py checks the executable hash before invoking this.
+// The original file is never modified; ofRandom is replaced in private memory.
+#include <mach-o/loader.h>
+#include <sys/mman.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <errno.h>
+#include <math.h>
+
+static int draws, seed;
+static uintptr_t slide;
+static uintptr_t relay_space;
+static int scripted,script_len,script_values[128];
+static float controlled_random(float maximum) {
+    if(scripted){assert(draws<script_len);int v=script_values[draws++];assert(v>=0 && v<(int)maximum);return v+0.25f;}
+    // Same 32-bit arithmetic for both the native and decompile probes.
+    uint32_t x = (uint32_t)seed + (uint32_t)(++draws) * 0x9e3779b9u;
+    x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15;
+    return (float)(x % (uint32_t)maximum) + 0.25f;
+}
+static void patch(uintptr_t addr, void *fn) {
+    unsigned char op[12] = {0x48,0xb8,0,0,0,0,0,0,0,0,0xff,0xe0};
+    memcpy(op + 2, &fn, 8); memcpy((void *)addr, op, sizeof(op));
+}
+static void load(const char *path) {
+    FILE *f = fopen(path, "rb"); assert(f);
+    struct mach_header_64 h; assert(fread(&h,sizeof(h),1,f)==1);
+    assert(h.magic==MH_MAGIC_64 && h.cputype==CPU_TYPE_X86_64);
+    unsigned char *cmds=malloc(h.sizeofcmds); assert(fread(cmds,h.sizeofcmds,1,f)==1);
+    unsigned char *p=cmds;
+    uint64_t low=UINT64_MAX,high=0;
+    for(unsigned i=0;i<h.ncmds;i++) {
+        struct load_command *lc=(void*)p;
+        if(lc->cmd==LC_SEGMENT_64) {
+            struct segment_command_64 *s=(void*)p;
+            if(strcmp(s->segname,"__PAGEZERO") && s->vmsize) {
+                if(s->vmaddr<low)low=s->vmaddr;
+                if(s->vmaddr+s->vmsize>high)high=s->vmaddr+s->vmsize;
+            }
+        }
+        p+=lc->cmdsize;
+    }
+    void *region=mmap(NULL,high-low+4096,PROT_READ|PROT_WRITE|PROT_EXEC,MAP_PRIVATE|MAP_ANON,-1,0);
+    if(region==MAP_FAILED){perror("mmap");exit(2);}
+    slide=(uintptr_t)region-low;
+    relay_space=(uintptr_t)region+(high-low);
+    p=cmds;
+    for(unsigned i=0;i<h.ncmds;i++) {
+        struct load_command *lc=(void*)p;
+        if(lc->cmd==LC_SEGMENT_64) {
+            struct segment_command_64 *s=(void*)p;
+            if(strcmp(s->segname,"__PAGEZERO") && s->vmsize) {
+                void *got=(void*)(uintptr_t)(s->vmaddr+slide);
+                if(s->filesize) { fseek(f,s->fileoff,SEEK_SET); assert(fread(got,s->filesize,1,f)==1); }
+            }
+        }
+        p+=lc->cmdsize;
+    }
+    fclose(f); free(cmds); patch(0x100075a40+slide,controlled_random);
+}
+static uint32_t rd32(unsigned char *p,int o) { uint32_t n;memcpy(&n,p+o,4);return n; }
+static float rdf(unsigned char *p,int o) {float n;memcpy(&n,p+o,4);return n;}
+static void wr32(unsigned char *p,int o,uint32_t n) {memcpy(p+o,&n,4);}
+static void wrf(unsigned char *p,int o,float n) {memcpy(p+o,&n,4);}
+static void wrd(unsigned char *p,int o,double n) {memcpy(p+o,&n,8);}
+static void no_effect(void) {}
+static int chosen[16],nchosen;
+static void capture_generate(void *state,int wave) {
+    assert(nchosen<16);chosen[nchosen++]=wave;
+    (void)state;
+}
+static void install_hooks(void) {
+    uintptr_t hooks[]={0x100051000,0x10005fef0,0x10005d370,0x10005dc30,
+                      0x10004c8b0,0x10004dab0,0x10004f1a0,0x10005d6b0};
+    for(unsigned i=0;i<sizeof(hooks)/sizeof(*hooks);i++)patch(hooks[i]+slide,no_effect);
+    // Six-byte import stubs are adjacent: use a five-byte relative jump to a
+    // private nearby relay, rather than overwriting the following stub.
+    uintptr_t relay=relay_space;
+    patch(relay,fmod);patch(relay+16,floor);
+    uintptr_t imports[]={0x100175132+slide,0x100175126+slide};
+    for(int i=0;i<2;i++) {
+        int32_t delta=(int32_t)((relay+i*16)-(imports[i]+5));
+        *(unsigned char*)imports[i]=0xe9;memcpy((void*)(imports[i]+1),&delta,4);
+    }
+}
+static void init_state(unsigned char *s) {
+    memset(s,0,0x50000); wrd(s,0x2960,1.0);wr32(s,0x1a4,6);
+    wr32(s,0x2994,7);wr32(s,0x298c,30);wr32(s,0x2990,30);
+    wr32(s,0x40828,-1);wr32(s,0x19c,40);wrf(s,0x2978,22);
+    wrf(s,0x296c,100000);wr32(s,0x29a8,100000);
+    for(int i=0;i<6;i++)wr32(s,0x5538+i*4,100000);
+    wr32(s,0x57bc,-1);wr32(s,0x57c4,-1);
+}
+
+int main(int argc,char**argv){
+ assert(argc==2);load(argv[1]);install_hooks();patch(0x10000d0d0+slide,capture_generate);
+ unsigned char *s=calloc(1,0x50000);
+ unsigned times[]={0,24499,24500,35499,35500,46499,46500,68599,68600,96199,96200,139999,140000,151299,151300,163499,163500};
+ for(unsigned t=0;t<sizeof(times)/sizeof(*times);t++)for(unsigned score=0;score<5;score++)for(unsigned shape=2;shape<=6;shape++)for(unsigned shrink=0;shrink<2;shrink++)for(unsigned fast=0;fast<2;fast++)for(int k=0;k<16;k++){
+ const unsigned scores[]={0,3599,3600,7199,7200};
+ init_state(s);wr32(s,0x54c4,4);wr32(s,0x57f8,15);wrf(s,0x296c,0);
+ wr32(s,0x41180,times[t]);wr32(s,0x5808,0);wrf(s,0x2934,scores[score]);wr32(s,0x1a4,shape);wr32(s,0x210,shrink);wrf(s,0x2978,fast?40:22);
+ seed=k;draws=nchosen=0;((void(*)(void*))(0x100056f50+slide))(s);
+ printf("%u %d %.0f %u %u %.0f %d %d\n",times[t],k,rdf(s,0x2934),rd32(s,0x1a4),rd32(s,0x210),rdf(s,0x2978),nchosen?chosen[0]:-1,draws);
+ }free(s);return 0;
+}

@@ -18,7 +18,7 @@ enum {MODE_ATTRACT,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER};
 static int mode;
 static PcRecords records;
 static uint32_t save_generation,save_achievements;
-static UBYTE save_dirty,save_restore_open,selected_profile,new_record;
+static UBYTE save_dirty,save_restore_open,selected_profile,new_record,test_run;
 static struct {UWORD time_seconds,time_subsecond_frames,record_seconds,record_subsecond_frames;} gamestate;
 '''
 code+='\n'.join(function(n) for n in ['load_record','game_save_dirty','game_restore_save','game_save_snapshot','game_save_committed','record_time'])
@@ -31,6 +31,10 @@ int main(void) {
  assert(gamestate.record_seconds==60 && gamestate.record_subsecond_frames==1);
  assert(pc_profile_unlocked(&records,3) && !pc_profile_unlocked(&records,4));
  assert(!game_save_dirty() && !game_save_snapshot(&snapshot));
+ test_run=1;selected_profile=5;gamestate.time_seconds=200;
+ record_time();assert(!save_dirty && !records.best[5] && !records.completed[5]);
+ assert(gamestate.record_seconds==0 && gamestate.record_subsecond_frames==0);
+ test_run=0;selected_profile=0;
  gamestate.time_seconds=60;gamestate.time_subsecond_frames=2;
  record_time();assert(game_save_dirty() && new_record);
  mode=MODE_PLAYING;assert(!game_save_snapshot(&snapshot));

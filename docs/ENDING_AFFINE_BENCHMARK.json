@@ -1,0 +1,31 @@
+{
+  "scope": "68000 instruction cycles; affine setup, point transforms and synthetic coordinate generation; no DMA, clipping, drawing or game update",
+  "compiler_flags": "-m68000 -O2; affine setup once; no LTO",
+  "trials": [
+    {
+      "vertices": 0,
+      "cycles": 8602,
+      "milliseconds_at_7mhz": 1.2288571428571429
+    },
+    {
+      "vertices": 4,
+      "cycles": 19030,
+      "milliseconds_at_7mhz": 2.7185714285714284
+    },
+    {
+      "vertices": 40,
+      "cycles": 111602,
+      "milliseconds_at_7mhz": 15.943142857142858
+    },
+    {
+      "vertices": 100,
+      "cycles": 265614,
+      "milliseconds_at_7mhz": 37.944857142857146
+    },
+    {
+      "vertices": 200,
+      "cycles": 522284,
+      "milliseconds_at_7mhz": 74.612
+    }
+  ]
+}

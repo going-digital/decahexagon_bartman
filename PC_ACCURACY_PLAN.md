@@ -3,7 +3,7 @@
 Current follow-up tasks and requested features are collected in the
 [game backlog](BACKLOG.md).
 
-Status: all six launch profiles and two automatic stage handoffs implemented, 2026-09-19. Runtime selection, session unlocks and per-mode records are implemented. Immediate starts, retry gates and ordinary death geometry are verified; disk persistence, exact transition presentation and the scripted ending remain pending. See [progress and verification](PC_ACCURACY_PROGRESS.md). The phases below remain the acceptance plan; an initial implementation batch is not completion of the full specification.
+Status (2026-09-24): all six profiles, stage handoffs, runtime selection, saved unlocks/records, three PC soundtracks, native trackloader and WHDLoad distribution are implemented. Scripted endings, tutorial, settings/leaderboards, achievement awarding and remaining camera/presentation parity are outstanding. See [current progress](PC_ACCURACY_PROGRESS.md) and [ending investigation](docs/ENDING_SEQUENCES.md). The phases below remain the acceptance plan, not a claim that every item is finished.
 
 ## Target and definition of accuracy
 
@@ -183,3 +183,36 @@ Start renderer feasibility tests during phases 2–4; finish visual integration 
 6. Audio assets, cue/palette synchronization, memory/performance tuning and target release verification.
 
 Rendering feasibility, memory measurement and unresolved reference probes run early enough to change implementation choices before they become expensive. Each batch should be reviewable and leave the target build runnable; an intermediate renderer adapter must be labelled as such rather than presented as completed fidelity.
+
+## Ending renderer performance gate (2026-09-24)
+
+Pause live integration of the current 64-bit projection. Object compilation did
+not catch missing freestanding arithmetic helpers. A runnable reference using
+benchmark-only helpers costs 60.75 ms for four vertices at 7 MHz in Musashi,
+before clipping/drawing. This is not a viable stock-68000 frame path. Implement
+and benchmark bounded 16/32-bit projection and per-frame camera coefficients
+before resuming scene construction. See docs/ENDING_PROJECTION_BENCHMARK.json
+and docs/ENDING_SEQUENCES.md for workload and measurement limitations.
+
+### Affine path follow-up
+
+The planar affine alternative now includes wall, hub and player adapters and a
+successful freestanding 68000 link with the real blitter and existing support
+routines. `make test-ending-affine-target` guards against accidentally linking
+the slow perspective/64-bit helpers. Live frame execution and aggregate timing
+remain the next validation gate; this does not complete ending integration.
+
+### Accepted ending camera presentation
+
+Keep tilt=0 and Otis=0, as requested. Retain ordinary in-plane field rotation,
+scale and translation. The presentation camera/cache enforce the flat policy;
+general affine/perspective routines remain comparison references. Do not resume
+implementing 3D camera tilt as a requirement for ending integration.
+
+### First live ending hookup (2026-09-25)
+
+The secret ending now has a game mode, death-gated entry, isolated clock, phase/
+flip/palette/wave updates, and normal-renderer output. Its current exit reuses
+results/retry. Normal-ending and special final-scene presentation, replay access,
+ending audio and end-to-end emulator validation remain open. Do not describe
+component reference tests as a verified complete ending or publish this as final.

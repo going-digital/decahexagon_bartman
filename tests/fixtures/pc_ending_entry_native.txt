@@ -1,0 +1,13 @@
+completion 0 0 1
+completion 0 1 0
+completion 1 0 1
+completion 1 1 0
+completion 2 0 2
+completion 2 1 0
+completion 3 0 1
+completion 3 1 0
+completion 4 0 1
+completion 4 1 0
+completion 5 0 3
+completion 5 1 0
+secret_entry stage=4 sides=6 extent=0 timer=0 music=5 effect=3 palette=30 speed_mode=8 clear=1 detach=1

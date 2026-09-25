@@ -22,6 +22,7 @@ static UBYTE k_left, k_right, k_space, k_return, k_esc;
 // Edge flags, set by kbd_scan, consumed (cleared) by input_poll.
 static UBYTE k_select_edge, k_esc_edge;
 
+static UBYTE ending_edge,test_level;
 static UBYTE prev_fire;
 
 // Hold the keyboard handshake line low for ~2 scanlines (~130us, over the
@@ -59,10 +60,13 @@ static void kbd_scan(void) {
         UBYTE code = (UBYTE)((n >> 1) | (n << 7));
         UBYTE up = code & 0x80;
 
+        if(!up && (code&0x7f)>=0x50 && (code&0x7f)<=0x56)
+            test_level=(code&0x7f)-0x50+1;
         switch (code & 0x7f) {
 #if CHEAT_MODE
         case KEY_CHEAT: k_cheat = !up; break;
 #endif
+        case 0x57: if(!up) ending_edge=1; break; /* F8 */
         case KEY_LEFT:  k_left  = !up; break;
         case KEY_RIGHT: k_right = !up; break;
         case KEY_SPACE: k_space = !up; if (!up) k_select_edge = 1; break;
@@ -78,7 +82,7 @@ void input_init(void) {
     custom->potgo = 0xff00;
     // Make sure the keyboard serial port is in input mode.
     ciaa->ciacra &= (UBYTE)~CIACRAF_SPMODE;
-    prev_fire = 0;
+    prev_fire = 0;ending_edge=test_level=0;
 #if CHEAT_MODE
     k_cheat = 0;
 #endif
@@ -112,6 +116,8 @@ void input_poll(InputState* in) {
     in->fire_edge = (k_select_edge || (fire && !prev_fire)) ? 1 : 0;
     prev_fire = fire;
 
+    in->test_level=test_level;test_level=0;
+    in->ending_edge=ending_edge;ending_edge=0;
     in->back_edge = k_esc_edge;
 
     k_select_edge = 0;

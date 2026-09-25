@@ -1,0 +1,30 @@
+{
+  "status": "Actual affine scene and blitter path links for 68000; not executed",
+  "required_symbols": [
+    "render_ending_flat_frame",
+    "render_ending_affine_walls",
+    "render_ending_affine_hub",
+    "render_ending_affine_player",
+    "blit_cls",
+    "blit_fill_reset",
+    "blit_line_mode",
+    "blit_fill"
+  ],
+  "undefined_symbols": [],
+  "sources": [
+    "pc_ending_affine.c",
+    "pc_ending_wall.c",
+    "pc_ending_scene.c",
+    "pc_projection.c",
+    "player_shape.c",
+    "render_ending_affine.c",
+    "blitter.c",
+    "render_clip.c"
+  ],
+  "sizes": "\n/Users/peterknight/dev/decahexagon_bartman/scratchpad/ending_affine_target/ending.elf:     file format elf32-m68k\n\nSections:\nIdx Name          Size      VMA       LMA       File off  Algn\n  0 .text         000015ca  00001000  00001000  00001000  2**1\n                  CONTENTS, ALLOC, LOAD, READONLY, CODE\n  1 .data         00000004  000045ca  000045ca  000025ca  2**1\n                  CONTENTS, ALLOC, LOAD, DATA\n  2 .bss          00000006  000045ce  000045ce  000025ce  2**1\n                  ALLOC\n  3 .comment      00000012  00000000  00000000  000025ce  2**0\n                  CONTENTS, READONLY\n  4 .debug_frame  000000cc  00000000  00000000  000025e0  2**2\n                  CONTENTS, READONLY, DEBUGGING, OCTETS\n",
+  "limitations": [
+    "No emulator/hardware frame execution",
+    "No complete-frame cycle measurement",
+    "Game loop and ending lifecycle not connected"
+  ]
+}

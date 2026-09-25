@@ -1,8 +1,12 @@
 # Hexagon WHDLoad development build
 
+Requires WHDLoad 17 or newer. The declared minimum is based on an API audit;
+recorded emulator runtime checks currently use WHDLoad 20. Older versions still
+need startup, save/load and quit testing.
+
 Copy this directory to an Amiga hard disk with WHDLoad installed. From its Shell:
 
-    WHDLoad SLAVE=Hexagon-3.slave PRELOAD NOWRITECACHE
+    WHDLoad SLAVE=Hexagon-3.slave PRELOAD NOWRITECACHE QUITKEY=89
 
 Double-click Hexagon-1, -2 or -3 in Workbench, or execute Run-1, Run-2 or
 Run-3 from the Shell. All variants request 512 KiB Chip
@@ -12,6 +16,9 @@ for AmigaOS, WHDLoad and PRELOAD. There is no automatic memory fallback.
 
 Courtesy loads first; additional slots preload Otis and Focus. The decoded cache
 retains most recently used tracks. PRELOAD is a separate packed-file cache.
+The supplied icons/scripts explicitly select F10 (QUITKEY=89), overriding a
+global Escape quit key which would bypass saving. When updating, replace the
+launcher icons/scripts too, while retaining existing save files.
 Escape from the title exits normally; F10 is the WHDLoad quit key where supported.
 Normal exit retries pending saves and reports failure if they cannot be written;
 forced quit may discard unsaved progress.

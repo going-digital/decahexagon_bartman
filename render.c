@@ -14,6 +14,7 @@
 #define PLAYER_HALF_ANG  1500   // half the triangle's angular width
 
 static WORD  ox, oy;  // camera shake offset applied this frame
+static RenderScene scene;
 static UWORD zoom;    // Q8 camera zoom applied this frame (ZOOM_ONE = 1.0)
 
 // radius * zoom, as a single 16x16->32 mulu.w (not the __mulsi3 that
@@ -48,9 +49,9 @@ static void poly(const WORD* xs, const WORD* ys, WORD n, void* buf) {
 }
 
 static void draw_hub(void* buf) {
-    WORD xs[MAX_NUM_SIDES], ys[MAX_NUM_SIDES]; // capacity; gamestate.num_sides (runtime) says how many are used
-    WORD rr = zscale(HUB_RADIUS + gamestate.pulse);
-    UBYTE n = gamestate.num_sides;
+    WORD xs[MAX_NUM_SIDES], ys[MAX_NUM_SIDES]; // capacity; scene.num_sides (runtime) says how many are used
+    WORD rr = zscale(HUB_RADIUS + scene.pulse);
+    UBYTE n = scene.num_sides;
     for (WORD i = 0; i < n; i++) {
         slot_pt(i, rr, &xs[i], &ys[i]);
     }
@@ -124,7 +125,7 @@ static unsigned player_use_pose(UWORD a) {
     // Keep orbit and pulse at their original angular resolution. Only the
     // tiny triangle's orientation is quantised, not its screen position.
     pt(a,(PLAYER_RADIUS*GAMEPLAY_ZOOM)>>8,&x,&y);
-    polar_to_cartesian(a,(UWORD)zscale(gamestate.pulse),&dx,&dy);
+    polar_to_cartesian(a,(UWORD)zscale(scene.pulse),&dx,&dy);
     x+=dx+player_pose_bounds[pose].x;
     y+=dy+player_pose_bounds[pose].y;
     if (x<0 || y<PLAYER_SPRITE_MIN_Y ||
@@ -136,13 +137,14 @@ static unsigned player_use_pose(UWORD a) {
 }
 
 void render_player(void* buf) {
-    UWORD a = gamestate.field_angle + gamestate.player_angle;
+    UWORD a = scene.field_angle + scene.player_angle;
     player_sprite_slot = player_sprite_slot==2?0:player_sprite_slot+1;
     player_cached_pixels=0;
     if (player_sprites) for (unsigned ch=0;ch<2;++ch) {
         player_sprites[player_sprite_slot][ch][0]=0;
         player_sprites[player_sprite_slot][ch][1]=0;
     }
+    if(game_mode()==MODE_ENDING || game_ending_complete())return;
     if (player_use_pose(a)) return;
     WORD rt = zscale(PLAYER_RADIUS + PLAYER_TIP_LEN);
     WORD rb = zscale(PLAYER_RADIUS);
@@ -153,7 +155,7 @@ void render_player(void* buf) {
     /* PC moves the player's centre with the pulse; its triangle does not
      * widen as the orbit expands. Translate every vertex by one vector. */
     WORD dx,dy;
-    polar_to_cartesian(a,(UWORD)zscale(gamestate.pulse),&dx,&dy);
+    polar_to_cartesian(a,(UWORD)zscale(scene.pulse),&dx,&dy);
     for(unsigned i=0;i<3;++i) {xs[i]+=dx;ys[i]+=dy;}
     PlayerShape shape;
     if (!player_shape_build(&shape,xs,ys)) return;
@@ -198,9 +200,9 @@ static UBYTE shared_edges[PC_WALL_CAPACITY];
 //    identical edge - those cancel under XOR anyway.
 // A closed ring of 5 walls near spawn: ~2 culled, the rest 12 edges not 20.
 static void draw_wall(const PcSpan* w, UBYTE shared, void* buf) {
-    UWORD next = w->slot+1==gamestate.num_sides ? 0 : w->slot+1;
-    WORD r0 = zscale(w->inner + gamestate.pulse);
-    WORD r1 = zscale(w->outer + gamestate.pulse);
+    UWORD next = w->slot+1==scene.num_sides ? 0 : w->slot+1;
+    WORD r0 = zscale(w->inner + scene.pulse);
+    WORD r1 = zscale(w->outer + scene.pulse);
     WORD x00, y00, x10, y10, x11, y11, x01, y01;
     slot_pt(w->slot, r0, &x00, &y00);
     slot_pt(next, r0, &x10, &y10);
@@ -254,9 +256,9 @@ void render_init(void) {
 void render_spokes(void* buf) {
     blit_line_mode(); // re-arm line-mode registers after the fill
 
-    WORD inner = zscale(HUB_RADIUS + gamestate.pulse);
-    UWORD a = gamestate.field_angle;
-    for (WORD i = 0; i < gamestate.num_sides; i++) {
+    WORD inner = zscale(HUB_RADIUS + scene.pulse);
+    UWORD a = scene.field_angle;
+    for (WORD i = 0; i < scene.num_sides; i++) {
         WORD sx, sy, ex, ey;
         slot_pt(i, inner, &sx, &sy);
         if (ox || oy) {
@@ -270,31 +272,30 @@ void render_spokes(void* buf) {
         // outside the viewport has no visible outward spoke.
         if (sx >= 0 && sx <= XMAX && sy >= 0 && sy <= YMAX)
             blit_line((UWORD)sx, (UWORD)sy, (UWORD)ex, (UWORD)ey, buf);
-        a -= gamestate.segment_angle;
+        a -= scene.segment_angle;
     }
 }
 
-void render_game(void* buf) {
-    ox = game_shake_x();
-    oy = game_shake_y();
-    zoom = gamestate.draw_distance;
+void render_scene(void* buf,const RenderScene *input,const PcWorld *world) {
+    scene=*input;
+    ox = scene.shake_x;
+    oy = scene.shake_y;
+    zoom = scene.draw_distance;
     if (zoom < 64) zoom = 64; // guard against a collapsed view
-    UWORD angle = gamestate.field_angle;
-    for (UWORD i=0;i<gamestate.num_sides;++i) {
+    UWORD angle = scene.field_angle;
+    for (UWORD i=0;i<scene.num_sides;++i) {
         UWORD index = angle >> 6;
         frame_sin[i] = sin_table[index];
         frame_cos[i] = cos_table[index];
-        angle -= gamestate.segment_angle;
+        angle -= scene.segment_angle;
     }
 
     blit_line_mode();
     blit_fill_reset();
 
-    GameMode m = game_mode();
-
-    if (m == MODE_PLAYING || m == MODE_DEAD || m == MODE_GAMEOVER) {
-        n_active=pc_project_spans(&game_world,gamestate.num_sides,spans);
-        pc_span_shared_edges(spans,n_active,gamestate.num_sides,shared_edges);
+    if (world) {
+        n_active=pc_project_spans(world,scene.num_sides,spans);
+        pc_span_shared_edges(spans,n_active,scene.num_sides,shared_edges);
         for (UWORD k=0;k<n_active;++k) draw_wall(&spans[k],shared_edges[k],buf);
     }
 #if BUILD_DEBUG
@@ -303,4 +304,15 @@ void render_game(void* buf) {
 
     draw_hub(buf);
 
+}
+
+/* Ordinary gameplay and endings share the same renderer. Only scene inputs
+ * and wall scheduling differ; sprite/fill/display ownership stays unchanged. */
+void render_game(void *buf) {
+    RenderScene input={gamestate.field_angle,gamestate.segment_angle,
+        gamestate.player_angle,gamestate.draw_distance,gamestate.pulse,
+        gamestate.num_sides,game_shake_x(),game_shake_y()};
+    GameMode m=game_mode();
+    const PcWorld *world=(m==MODE_PLAYING || m==MODE_DEAD || m==MODE_GAMEOVER || m==MODE_ENDING) ? &game_world:0;
+    render_scene(buf,&input,world);
 }

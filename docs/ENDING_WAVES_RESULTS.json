@@ -1,0 +1,19 @@
+{
+  "status": "Portable ending-wave selector matches original PC choices and RNG draw counts",
+  "cases": 27200,
+  "binary_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "fixture_text_sha256": "200954405bed5487b26dedeefe36a80892b32d69980a596e3f7532af251a9272",
+  "coverage": {
+    "time_points": 17,
+    "score_values": 5,
+    "polygon_sizes": 5,
+    "shrink_states": 2,
+    "speeds": 2,
+    "seeds": 16
+  },
+  "limitations": [
+    "Wave generation is intercepted; geometry uses the existing separately tested generator",
+    "Phase controller and renderer are not included in this selector comparison",
+    "Not yet integrated into the release game"
+  ]
+}

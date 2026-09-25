@@ -1,0 +1,557 @@
+{
+  "status": "Comparison only; no exact reconstruction established",
+  "assets_sha256": {
+    "music1.dat": "5dd58d3d1bc58d8b8102ef75804a669cd61df501da48cf371a75013adc72907c",
+    "music4.dat": "dbdb9574862589ff51979a46a028d7bd7e5e4ef770de9c95a110e412337a2a52",
+    "music5.dat": "4d0694531da838d02651148448bc68803ea3995f20bb0532ead03e3b437a7b02"
+  },
+  "bank_sha256": "3b0a78e7ddc56fb9973499d71b8e7bd1b3544fb2075e403bef40377a8f884dc1",
+  "analysis_rate": 4000,
+  "results": [
+    {
+      "pc_asset": "music4.dat",
+      "decoded_seconds": 77.7405,
+      "candidates": [
+        {
+          "reverse": true,
+          "speed": 0.75,
+          "mean_absolute_correlation": 0.07859956503427684,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 32.92675,
+              "correlation": 0.09081422507439528
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 164.76125,
+              "correlation": 0.06506345584014617
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 201.64425,
+              "correlation": -0.07992101418828908
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.75,
+          "mean_absolute_correlation": 0.07226621732393652,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 191.56025,
+              "correlation": 0.0757138167713652
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 213.2235,
+              "correlation": -0.07684661161859993
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 227.70175,
+              "correlation": -0.06423822358184442
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 1.0,
+          "mean_absolute_correlation": 0.0719842625789529,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 138.52625,
+              "correlation": -0.07446394451924944
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 160.71,
+              "correlation": -0.0723623208523295
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 132.4025,
+              "correlation": 0.06912652236527977
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.8,
+          "mean_absolute_correlation": 0.07183458291289622,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 26.188,
+              "correlation": -0.07020541881364309
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 208.90525,
+              "correlation": 0.07216611626695049
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 49.6125,
+              "correlation": 0.07313221365809507
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 0.8,
+          "mean_absolute_correlation": 0.06978712862031877,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 166.99475,
+              "correlation": -0.06670793642672625
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 157.178,
+              "correlation": -0.07731285463408095
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 16.139,
+              "correlation": -0.06534059480014912
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 1.0,
+          "mean_absolute_correlation": 0.06919126948984167,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 26.8335,
+              "correlation": -0.07005224262101156
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 174.57325,
+              "correlation": -0.07599589309687896
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 161.514,
+              "correlation": 0.061525672751634494
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.6666666666666666,
+          "mean_absolute_correlation": 0.06915695927182008,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 137.74825,
+              "correlation": -0.05782931544100899
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 80.11625,
+              "correlation": 0.08580627159765135
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 261.07675,
+              "correlation": 0.06383529077679992
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 0.6666666666666666,
+          "mean_absolute_correlation": 0.06558867862375392,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 21.45725,
+              "correlation": 0.0576207884237848
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 255.9645,
+              "correlation": 0.07568395472191362
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 3.3645,
+              "correlation": -0.06346129272556333
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 1.25,
+          "mean_absolute_correlation": 0.06486337508281748,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 12.91775,
+              "correlation": -0.06842488376183026
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 108.05325,
+              "correlation": 0.06346530046759355
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 115.28025,
+              "correlation": -0.06269994101902863
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.5,
+          "mean_absolute_correlation": 0.06349620325367479,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 9.6585,
+              "correlation": -0.059751044428304874
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 45.2595,
+              "correlation": -0.07568604128243903
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 331.7255,
+              "correlation": 0.0550515240502805
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 1.25,
+          "mean_absolute_correlation": 0.06106912099293638,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 128.553,
+              "correlation": 0.06845957356516338
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 56.32875,
+              "correlation": 0.05940077094846305
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 139.37575,
+              "correlation": -0.05534701846518272
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 0.5,
+          "mean_absolute_correlation": 0.05555377958213284,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 349.4495,
+              "correlation": -0.05159184416231166
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 25.11675,
+              "correlation": 0.0643582927260141
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 344.73375,
+              "correlation": 0.05071120185807277
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pc_asset": "music5.dat",
+      "decoded_seconds": 162.4295,
+      "candidates": [
+        {
+          "reverse": true,
+          "speed": 0.6666666666666666,
+          "mean_absolute_correlation": 0.07052398396914795,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 72.6385,
+              "correlation": -0.05751904397046951
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 58.72075,
+              "correlation": 0.0724881687312662
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 43.67025,
+              "correlation": 0.08156473920570814
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 1.0,
+          "mean_absolute_correlation": 0.06512639536104411,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 96.72375,
+              "correlation": 0.039452629715203975
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 14.9675,
+              "correlation": 0.08032675825900114
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 140.44575,
+              "correlation": 0.07559979810892722
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 0.5,
+          "mean_absolute_correlation": 0.05984417099238232,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 95.21625,
+              "correlation": 0.04342907620396513
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 277.43525,
+              "correlation": 0.08509605322253068
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 357.13675,
+              "correlation": -0.05100738355065116
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.6666666666666666,
+          "mean_absolute_correlation": 0.05867199751227784,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 199.7905,
+              "correlation": -0.052154167897327436
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 219.96425,
+              "correlation": 0.06836126372917212
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 247.60325,
+              "correlation": 0.055500560910333965
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.5,
+          "mean_absolute_correlation": 0.05779162717082358,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 91.971,
+              "correlation": -0.051826711390122855
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 93.4235,
+              "correlation": -0.06387819597914215
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 12.554,
+              "correlation": 0.05766997414320573
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 1.25,
+          "mean_absolute_correlation": 0.05364865766858256,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 73.481,
+              "correlation": -0.02754402037174117
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 139.83475,
+              "correlation": 0.07116545266300425
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 137.37025,
+              "correlation": 0.06223649997100225
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 1.0,
+          "mean_absolute_correlation": 0.053299749858333766,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 44.088,
+              "correlation": 0.03846221881269619
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 66.5625,
+              "correlation": 0.06510029741422146
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 125.1525,
+              "correlation": 0.05633673334808365
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 0.75,
+          "mean_absolute_correlation": 0.0520553035818555,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 69.51,
+              "correlation": -0.04609659752049859
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 97.81675,
+              "correlation": -0.0604579458950536
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 75.672,
+              "correlation": -0.04961136733001429
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.75,
+          "mean_absolute_correlation": 0.05043990833015156,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 180.70325,
+              "correlation": 0.04667191321786805
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 239.7945,
+              "correlation": -0.05762077354751889
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 180.43975,
+              "correlation": 0.047027038225067735
+            }
+          ]
+        },
+        {
+          "reverse": false,
+          "speed": 0.8,
+          "mean_absolute_correlation": 0.050190336534512346,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 169.39875,
+              "correlation": 0.039795132102721634
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 21.09775,
+              "correlation": -0.06083568022877839
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 210.8475,
+              "correlation": -0.049940197272036996
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 0.8,
+          "mean_absolute_correlation": 0.04922562011518805,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 172.92075,
+              "correlation": -0.037217067071284755
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 154.44775,
+              "correlation": 0.058294201905462285
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 162.75775,
+              "correlation": 0.05216559136881711
+            }
+          ]
+        },
+        {
+          "reverse": true,
+          "speed": 1.25,
+          "mean_absolute_correlation": 0.048598522175086416,
+          "windows": [
+            {
+              "target_seconds": 5,
+              "transformed_source_seconds": 107.2025,
+              "correlation": -0.02790680057516156
+            },
+            {
+              "target_seconds": 30,
+              "transformed_source_seconds": 113.79325,
+              "correlation": 0.0568418366354475
+            },
+            {
+              "target_seconds": 60,
+              "transformed_source_seconds": 137.188,
+              "correlation": -0.06104692931465018
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Candidate rates only; not an exhaustive speed search",
+    "Lossy coding, edits, effects and pitch-preserving stretch can reduce correlation",
+    "Audition candidates are full-bank transforms without ending-specific edits or synchronization"
+  ]
+}

@@ -17,3 +17,8 @@ void pc_palette_start(PcPalette *p,uint8_t stage,uint8_t hyper);
 void pc_palette_enter(PcPalette *p,uint8_t stage,uint8_t hyper);
 void pc_palette_tick(PcPalette *p, uint32_t score);
 uint16_t pc_palette_colour(const PcPalette *p, uint8_t foreground);
+
+/* Ending entry starts in black/white. Tick with score zero, then apply
+ * phase palette requests so the fade begins on the following tick. */
+void pc_palette_ending_start(PcPalette *p);
+void pc_palette_request(PcPalette *p,uint16_t id);

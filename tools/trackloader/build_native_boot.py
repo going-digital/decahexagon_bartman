@@ -17,7 +17,7 @@ raw=(native/'game.exe1').read_bytes();packed=(native/'game.deflate').read_bytes(
 assert zlib.decompress(packed,-15)==raw
 proof=json.loads((root/'docs/TRACKLOADER_EXECUTABLE_TARGET_RESULTS.json').read_text())['inflate']
 assert proof['packed_sha256']==hashlib.sha256(packed).hexdigest() and proof['overlap_matches']
-assert proof['arena_bytes']<=196608 and struct.unpack_from('>I',raw,12)[0]<=196608
+assert proof['arena_bytes']<=221184 and struct.unpack_from('>I',raw,12)[0]<=221184
 entry=native/'executable_pic.s';entry.write_text('.text\n.global _start\n_start: bra.w track_executable_prepare\n bra.w resident_tune_prepare\n bra.w track_ofs_load\n')
 # Keep sample expansion/decoding at O2; shrink validation and boot-only glue.
 pic_objects=[]
@@ -28,7 +28,7 @@ for source in ['trackloader/ofs.c','trackloader/executable.c','trackloader/tests
  pic_objects.append(str(obj))
 subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-mpcrel','-Wa,--register-prefix-optional','-nostdlib','-Wl,-Ttext=0',str(entry),*pic_objects,'-o',str(native/'executable_pic.elf')],check=True)
 subprocess.run([str(sdk.parent/'m68k-amiga-elf/bin/objcopy'),'-O','binary',str(native/'executable_pic.elf'),str(native/'executable_pic.bin')],check=True)
-boot_source=(root/'trackloader/tests/load_boot.s').read_text().replace('move.l #65536,d0','move.l #360448,d0')
+boot_source=(root/'trackloader/tests/load_boot.s').read_text().replace('move.l #65536,d0','move.l #385024,d0')
 (native/'native_boot.s').write_text(boot_source)
 defines=['-DNATIVE_CACHE=1']+[f'-D{k}={v}' for k,v in dict(GAME_SOURCE_OFFSET=proof['source_offset'],GAME_PACKED_BYTES=len(packed),GAME_PACKED_SUM=sum(packed),GAME_PACKAGE_BYTES=len(raw)).items()]
 descriptors=[]
@@ -95,7 +95,7 @@ assert zlib.decompress((native/'save_anchors.deflate').read_bytes(),-15)==anchor
 data[1661*512:1661*512+len(stage)]=stage
 (native/'native_menu.adf').write_bytes(data)
 (native/'native_menu.toml').write_text(f'[emulation]\npacing_budget = "cycles"\n[floppy.df0]\npath = "{native/"native_menu.adf"}"\nwrite_protected = true\n')
-report=dict(status='Native three-track diagnostic built; not yet boot verified',stage_bytes=len(stage),chip_block_bytes=360448,image_offset=65536,image_capacity=196608,heap_offset=278528,heap_bytes=81920,cue_offset=262144,cue_capacity=16384,free_disk_sectors=layout['free_sectors'],adf_sha256=hashlib.sha256(data).hexdigest(),limitations=['A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending','All profiles mapped; Hyper unlock rules unchanged','Native saving requires writable disposable media; hardware validation pending'])
+report=dict(status='Native three-track diagnostic built; not yet boot verified',stage_bytes=len(stage),chip_block_bytes=385024,image_offset=65536,image_capacity=221184,heap_offset=303104,heap_bytes=81920,cue_offset=286720,cue_capacity=16384,free_disk_sectors=layout['free_sectors'],adf_sha256=hashlib.sha256(data).hexdigest(),limitations=['A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending','All profiles mapped; Hyper unlock rules unchanged','Native saving requires writable disposable media; hardware validation pending'])
 (root/'docs/TRACKLOADER_NATIVE_BOOT_RESULTS.json').write_text(json.dumps(report,indent=2)+'\n');print(report)
 
 subprocess.run([sys.executable,str(root/"tools/trackloader/make_save_manifest.py")],check=True)

@@ -11,7 +11,7 @@ import tempfile
 root = Path(__file__).resolve().parents[1]
 source = (root / 'system.c').read_text()
 queue = source[source.index('static APTR volatile pending_display;'):
-               source.index('static struct View *ActiView;')]
+               source.rfind('#if !TRACKLOADER', 0, source.index('static struct View *ActiView;'))]
 irq = source[source.index('__attribute__((interrupt)) void interruptHandler'):]
 irq = irq.replace('__attribute__((interrupt)) ', '')
 header = r'''

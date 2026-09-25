@@ -127,7 +127,10 @@ validate Workbench restoration or WHDLoad filesystem persistence.
 
 `make whdload` produces `out/whdload/Decahexagon.zip`, containing the three
 slaves, original project icons, Shell launch scripts, payloads and manifest.
-The minimum slave version is WHDLoad 20. The poll-based keyboard uses NoKbd;
+The minimum slave version is now WHDLoad 17: the unused version-20 memory
+configuration header field was removed. Used resload calls and NoKbd predate
+17; the retained configuration header is version 17. Runtime evidence below
+still applies to WHDLoad 20, not to untested older installations. The poll-based keyboard uses NoKbd;
 launchers use NOWRITECACHE so safe-point saves reach the host filesystem.
 Normal exit retries pending writes and reports failure without acknowledging
 an unsaved snapshot. Saves use a stable WHDLoad schema identity, separate from

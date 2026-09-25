@@ -18,6 +18,8 @@ static const struct { uint16_t id; uint8_t start[6], end[6]; } schemes[] = {
     {14, {82,0,78,249,16,215}, {82,0,78,249,16,215}},
     {15, {82,76,0,242,249,16}, {82,76,0,242,249,16}},
     {30, {0,0,0,255,255,255}, {0,0,0,255,255,255}},
+    /* Ending ID 200 uses the PC setpal default yellow-to-red endpoints. */
+    {200, {32,32,0,255,255,0}, {32,0,0,255,0,0}},
 };
 
 static void set_scheme(PcPalette *p, uint16_t id) {
@@ -49,7 +51,10 @@ void pc_palette_enter(PcPalette *p,uint8_t stage,uint8_t hyper) {
 void pc_palette_start(PcPalette *p,uint8_t stage,uint8_t hyper) {
     pc_palette_reset(p,stage);pc_palette_enter(p,stage,hyper);interpolate(p);
 }
-static void request(PcPalette *p,uint16_t id) {
+void pc_palette_ending_start(PcPalette *p) {
+    pc_palette_reset(p,4);set_scheme(p,30);interpolate(p);
+}
+void pc_palette_request(PcPalette *p,uint16_t id) {
     p->target=id;p->change=1;
 }
 void pc_palette_tick(PcPalette *p, uint32_t score) {
@@ -80,18 +85,18 @@ void pc_palette_tick(PcPalette *p, uint32_t score) {
         }
     }
     if (p->stage==0) {
-        if (score>7200 && score<=10800 && p->scheme==3 && !p->change) request(p,1);
-        else if (score>3600 && score<=7200 && p->scheme==0 && !p->change) request(p,3);
+        if (score>7200 && score<=10800 && p->scheme==3 && !p->change) pc_palette_request(p,1);
+        else if (score>3600 && score<=7200 && p->scheme==0 && !p->change) pc_palette_request(p,3);
     } else if (p->stage==1) {
-        if (score>7200 && score<=10800 && p->scheme==6 && !p->change) request(p,7);
-        else if (score>3600 && score<=7200 && p->scheme==5 && !p->change) request(p,6);
+        if (score>7200 && score<=10800 && p->scheme==6 && !p->change) pc_palette_request(p,7);
+        else if (score>3600 && score<=7200 && p->scheme==5 && !p->change) pc_palette_request(p,6);
     } else {
         if (score>7200) {
-            if (p->scheme!=30 && !p->change) request(p,30);
+            if (p->scheme!=30 && !p->change) pc_palette_request(p,30);
         } else if (score>3600) {
-            if (p->scheme>9 && !p->change) request(p,9);
+            if (p->scheme>9 && !p->change) pc_palette_request(p,9);
         } else if (score && score%120==0) {
-            request(p,(uint16_t)(p->scheme+1-((p->scheme-9)/6)*6));
+            pc_palette_request(p,(uint16_t)(p->scheme+1-((p->scheme-9)/6)*6));
         }
     }
 }

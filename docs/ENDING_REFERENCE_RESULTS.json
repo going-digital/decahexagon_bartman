@@ -1,0 +1,8 @@
+{
+  "status": "Original PC completion and secret-ending entry routines executed with side-effect hooks",
+  "binary_sha256": "91f10469fbbefffed3248c583306e1aef442b4dea55a400e79df09aff2cfaf88",
+  "completion_cases": 12,
+  "secret_entry_cases": 1,
+  "fixture_sha256": "13911e67cc1dbeae7a0a3845648dd07a5332a416486fdeb11a48ce3781a8c45c",
+  "scope": "Entry state and dispatched music/palette calls only; not ending timeline, visuals or audio equivalence"
+}

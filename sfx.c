@@ -7,6 +7,7 @@ static const UWORD silence[2] __attribute__((section(".MEMF_CHIP"),aligned(2)))=
 static volatile UWORD busy[4], first[4];
 static volatile unsigned begun,retired;
 static unsigned serial, age[4], clip_id[4];
+static unsigned music_pair;
 static void stop(unsigned ch) {
     unsigned mask=INTF_AUD0<<ch;
     custom->intena=mask;custom->dmacon=1u<<ch;
@@ -40,10 +41,10 @@ static void play(unsigned id) {
     if(!sfx_samples[id].words) return; /* omitted, currently unused clip */
     unsigned ch=0;
     /* Replaying the same effect retriggers it, as PC playef does. Otherwise
-     * use a free voice, then steal the oldest of the three hardware voices. */
-    for(unsigned i=1;i<4;++i) if(busy[i] && clip_id[i]==id) {ch=i;break;}
-    if(!ch) for(unsigned i=1;i<4;++i) if(!busy[i]) {ch=i;break;}
-    if(!ch) {ch=1;for(unsigned i=2;i<4;++i) if(age[i]<age[ch]) ch=i;}
+     * use a free voice, then steal the oldest available hardware voice. */
+    for(unsigned i=1;i<(music_pair?3u:4u);++i) if(busy[i] && clip_id[i]==id) {ch=i;break;}
+    if(!ch) for(unsigned i=1;i<(music_pair?3u:4u);++i) if(!busy[i]) {ch=i;break;}
+    if(!ch) {ch=1;for(unsigned i=2;i<(music_pair?3u:4u);++i) if(age[i]<age[ch]) ch=i;}
     stop(ch);
     /* Allow a prior DMA request to settle before programming a new sample. */
     settle_dma();
@@ -75,4 +76,10 @@ void sfx_shutdown(void) {for(unsigned ch=1;ch<4;++ch) {stop(ch);paula_irq_set(ch
 void sfx_status(unsigned *b,unsigned *r,unsigned *a) {
     *b=begun%1000;*r=retired%1000;*a=0;
     for(unsigned ch=1;ch<4;++ch) if(busy[ch]) *a|=1u<<(ch-1);
+}
+
+/* Music owns channel 3 while overlapping grains; effects keep channels 1/2. */
+void sfx_music_pair(unsigned enabled) {
+    stop(3);music_pair=enabled;
+    paula_irq_set(3,enabled?0:done);
 }

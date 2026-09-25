@@ -32,15 +32,20 @@ header=r'''
 #define MEMF_CLEAR 2
 #define CX 160
 #define CY 100
-typedef uint8_t UBYTE;
+#define MODE_ENDING 99
+static unsigned mode,complete;
+static unsigned game_mode(void){return mode;}
+static unsigned game_ending_complete(void){return complete;}
 static UWORD zoom=128;
 static WORD ox,oy;
-static struct {UWORD field_angle,player_angle,pulse;} gamestate;
+static RenderScene scene;
 static unsigned polar_calls,alloc_fail,allocations;
 static void *AllocMem(unsigned size,unsigned flags) {
  (void)flags;if(alloc_fail)return 0;++allocations;return calloc(1,size);
 }
 static void FreeMem(void *p,unsigned size){(void)size;assert(allocations);--allocations;free(p);}
+static void *GameAllocChip(unsigned size){return AllocMem(size,MEMF_CHIP|MEMF_CLEAR);}
+static void GameFreeChip(void *p,unsigned size){FreeMem(p,size);}
 static void blit_wait(void){}
 static WORD zscale(WORD r){return ((unsigned)r*zoom)>>8;}
 static void polar_to_cartesian(UWORD a,UWORD r,WORD *x,WORD *y){
@@ -57,7 +62,7 @@ int main(void){
  player_prerender();assert(player_poses);
  UWORD snapshot[PLAYER_POSES][PLAYER_POSE_WORDS];memcpy(snapshot,player_poses,sizeof(snapshot));
  for(unsigned i=0;i<128;++i) {
-  gamestate.field_angle=i<<9;gamestate.pulse=i%48;polar_calls=0;
+  scene.field_angle=i<<9;scene.pulse=i%48;polar_calls=0;
   render_player(plane);assert(player_cached_pixels==player_poses[i]);assert(polar_calls==2);
   UWORD header[2]={render_player_sprite(0)[0],render_player_sprite(0)[1]};
   UWORD pixels[PLAYER_POSE_WORDS];memcpy(pixels,render_player_pixels(0),sizeof(pixels));
@@ -68,9 +73,18 @@ int main(void){
   assert(!memcmp(pixels,render_player_pixels(0),words*sizeof(UWORD)));
   player_poses=saved;
  }
- gamestate.pulse=0;
+ for(unsigned state=0;state<2;++state) {
+  mode=state?0:MODE_ENDING;complete=state;
+  for(unsigned frame=0;frame<4;++frame) {
+   render_player(plane);assert(!player_cached_pixels);
+   for(unsigned sprite=0;sprite<2;++sprite)
+    assert(!render_player_sprite(sprite)[0] && !render_player_sprite(sprite)[1]);
+  }
+ }
+ mode=0;complete=0;render_player(plane);assert(player_cached_pixels);
+ scene.pulse=0;
  for(unsigned a=0;a<65536;++a) {
-  gamestate.field_angle=a;render_player(plane);
+  scene.field_angle=a;render_player(plane);
   assert(player_cached_pixels==player_poses[((UWORD)(a+256))>>9]);
   assert(!render_player_sprite(1)[0] && !render_player_sprite(1)[1]);
  }
@@ -84,7 +98,7 @@ int main(void){
 }
 '''
 with tempfile.TemporaryDirectory() as tmp:
- p=Path(tmp);(p/'exec').mkdir();(p/'exec/types.h').write_text('typedef unsigned short UWORD; typedef short WORD;\n')
+ p=Path(tmp);(p/'exec').mkdir();(p/'exec/types.h').write_text('typedef unsigned short UWORD; typedef short WORD; typedef unsigned char UBYTE;\n')
  (p/'check.c').write_text(header+s+footer)
  subprocess.run([os.environ.get('HOST_CC','cc'),'-std=c99','-O2','-Wall','-Wextra','-Werror','-I'+str(p),'-I'+str(root),str(p/'check.c'),str(root/'player_shape.c'),'-lm','-o',str(p/'check')],check=True)
  subprocess.run([str(p/'check')],check=True,timeout=15)

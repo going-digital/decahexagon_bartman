@@ -21,5 +21,5 @@ def launcher_icon(slots):
     def string(s):
         b=s.encode('ascii')+b'\0'
         return struct.pack('>I',len(b))+b
-    types=[f'SLAVE=Hexagon-{slots}.slave','PRELOAD','NOWRITECACHE']
+    types=[f'SLAVE=Hexagon-{slots}.slave','PRELOAD','NOWRITECACHE','QUITKEY=89']
     return bytes(header)+image+b''.join(pixels)+string('WHDLoad')+struct.pack('>I',4*(len(types)+1))+b''.join(string(s) for s in types)

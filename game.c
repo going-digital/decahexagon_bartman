@@ -5,6 +5,8 @@
 #include "pc_menu.h"
 #include "pc_lifecycle.h"
 #include "pc_death.h"
+#include "pc_ending.h"
+#include "pc_ending_flip.h"
 #include "sfx.h"
 static PcSfx sound_events;
 #if CHEAT_MODE
@@ -28,6 +30,9 @@ static uint32_t save_generation,save_achievements;
 static UBYTE save_dirty,save_restore_open;
 static PcLifecycle lifecycle;
 static UBYTE selected_profile;
+static UBYTE test_run;
+static UBYTE ending_complete;
+UBYTE game_ending_complete(void) {return ending_complete;}
 static GameRunPreparer run_preparer;
 static UBYTE load_barrier;
 static UBYTE load_failed;
@@ -72,6 +77,9 @@ UBYTE game_new_record(void) { return new_record; }
 static void update_ambient(void) {
     zoom_base += ((WORD)gamestate.draw_distance_target - (WORD)zoom_base) >> 3;
     gamestate.draw_distance = zoom_base;
+    /* Endings still need camera easing after entry from the title. Only the
+     * gameplay music pulse is suppressed, not the camera update. */
+    if(mode==MODE_ENDING) {gamestate.pulse=0;return;}
     int cue=0;
 #if MUSIC_FIB_STREAM
     cue=fib_stream_cue();
@@ -114,6 +122,7 @@ int game_save_committed(const TrackSave *state) {
 }
 
 static void reset_run(void) {
+    ending_complete=0;
 #if CHEAT_MODE
     cheat_reset();
 #endif
@@ -129,7 +138,7 @@ static void reset_run(void) {
 void game_init(void) {
     records=(PcRecords){0};save_generation=save_achievements=0;
     save_dirty=0;save_restore_open=1;
-    run_preparer=0;load_barrier=0;load_retry_wait=0;load_failed=0;
+    test_run=0;run_preparer=0;load_barrier=0;load_retry_wait=0;load_failed=0;
     pc_lifecycle_init(&lifecycle);
     pc_sfx_init(&sound_events);
     player.angle=player.previous_angle=30;
@@ -138,6 +147,7 @@ void game_init(void) {
 }
 
 static void record_time(void) {
+    if(test_run) {load_record();return;}
     uint32_t elapsed=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
     UBYTE completed=records.completed[selected_profile];
     if (pc_record_tick(&records,selected_profile,elapsed)) { new_record=1;save_dirty=1; }
@@ -170,6 +180,16 @@ static void update_playing(const InputState *in) {
     }
     pc_world_move(&game_world);
     patterns_tick();
+#if MUSIC_FIB_STREAM && TRACKLOADER
+    if(patterns_bonus_started()) {
+        /* Stage 2 can also be reached through another profile's handoff.
+         * Bind Focus explicitly; the selected profile still owns records. */
+        fib_stream_stop();load_barrier=1;
+        if(run_preparer && run_preparer(2)) {
+            if(!fib_stream_start_bonus_focus())load_failed=1;
+        } else load_failed=1;
+    }
+#endif
     if(patterns_rotation_cue()) gamestate.pulse=12;
     if (patterns_transitioned()) {
         sfx_emit(SFX_BIT(SFX_AWESOME)|SFX_BIT(SFX_START));
@@ -190,7 +210,82 @@ static void update_playing(const InputState *in) {
     /* Temporary planar rotation response. The scheduler consumes the exact
      * source RNG draws; 3D tilt/cue effects remain outstanding. */
     static const WORD rotations[]={182,-182,364,-364,546,-546,728,-728,910,-910};
-    gamestate.field_rotation=rotations[patterns_rotation_mode()];
+    gamestate.field_rotation=(patterns_stage()==2 &&
+        patterns_effective_score(lifecycle.elapsed)>7200) ? 0:
+        rotations[patterns_rotation_mode()];
+}
+
+static PcEnding ending;
+static PcEndingFlip ending_flip;
+static uint32_t ending_score;
+static int16_t ending_angle;
+static uint16_t ending_random(void *unused,uint16_t bound) {
+    (void)unused;
+    uint16_t limit=(uint16_t)(65535u-(65535u%bound)),r;
+    do {r=(uint16_t)(rng()-1);}while(r>=limit);
+    return r%bound;
+}
+static void start_ending(void) {
+    ending_complete=0;
+    ending_score=lifecycle.elapsed;
+    pc_ending_init(&ending);ending_flip=(PcEndingFlip){0};
+    pc_world_reset(&game_world);game_world.speed=0;
+    pc_morph_reset(&morph);player.hit=player.blocked=0;project_state();
+    pc_palette_ending_start(&game_palette);
+    ending_angle=(int16_t)(((uint32_t)gamestate.field_angle*720u)>>16);
+    gamestate.field_rotation=0;gamestate.pulse=0;
+    gamestate.draw_distance_target=STARTING_ZOOM_TARGET;
+    shake_x=shake_y=0;
+#if MUSIC_FIB_STREAM
+    fib_stream_stop();
+#if TRACKLOADER
+    load_barrier=1;
+    if(run_preparer && run_preparer(2)) {
+        load_failed=!fib_stream_start_reverse_focus();
+    } else load_failed=1;
+#endif
+#endif
+    set_mode(MODE_ENDING);
+}
+static void update_ending(const InputState *in) {
+    unsigned flipping=ending_flip.phase;
+    int16_t delta=pc_ending_flip_tick(&ending_flip,ending.wave_mode);
+    if(!flipping) {
+        if(ending.wave_mode<8)delta=(int16_t)(2*(ending.wave_mode/2+1))*(ending.wave_mode&1?1:-1);
+        else if(ending_angle<60)delta=60-ending_angle<8?60-ending_angle:8;
+        else if(ending_angle>60)delta=ending_angle-60<8?60-ending_angle:-8;
+    }
+    ending_angle=(ending_angle+delta+720)%720;
+    gamestate.field_angle=(UWORD)(((uint32_t)ending_angle*65536u)/720u);
+    pc_morph_tick(&morph,&game_world);
+    player.angle=pc_turn(player.angle,in->held,9);project_state();
+    unsigned events=pc_ending_tick(&ending,ending_flip.phase,game_palette.change);
+#if MUSIC_FIB_STREAM
+    if(events&PC_END_STOP_MUSIC)fib_stream_stop();
+#endif
+    if(events&PC_END_PALETTE)pc_palette_request(&game_palette,ending.palette);
+    if(events&PC_END_FLIP)pc_ending_flip_request(&ending_flip);
+    /* This event selects a 3D camera effect in the PC, not a wall mode.
+     * Keep its RNG draw with the accepted flat-camera presentation. */
+    if(events&PC_END_RANDOM_ROTATION)(void)ending_random(0,2);
+    game_world.speed=ending.speed;
+    pc_world_move(&game_world);
+    uint32_t ms=ending.ticks/60*1000+ending.ticks%60*1000/60;
+    pc_ending_spawn(&ending,&game_world,ms,ending_score,morph.sides,ending_random,0);
+    if(ending.phase==255 || game_world.overflow) {
+#if MUSIC_FIB_STREAM
+        fib_stream_stop();
+#endif
+        pc_world_reset(&game_world);pc_morph_reset(&morph);project_state();
+        lifecycle.extent=320;lifecycle.death=100;sound_events.completion=2;
+        ending_complete=ending.phase==255;
+        if(ending_complete) {
+            sfx_emit(SFX_BIT(SFX_WONDERFUL));
+            pc_palette_ending_start(&game_palette);
+        }
+        else pc_palette_start(&game_palette,2,1);
+        set_mode(MODE_GAMEOVER);
+    }
 }
 
 static void start_playing(const InputState *in) {
@@ -206,7 +301,7 @@ static void start_playing(const InputState *in) {
     first.cheat_held=0;
 #endif
     sfx_emit(pc_sfx_begin(&sound_events,records.best[selected_profile],
-        records.completed[selected_profile],selected_profile));
+        test_run?0:records.completed[selected_profile],selected_profile));
     reset_run();set_mode(MODE_PLAYING);
     pc_palette_tick(&game_palette,patterns_effective_score(1));
     update_playing(&first);
@@ -224,7 +319,7 @@ void game_update(const InputState* in) {
     // Escape abandons a run / backs out to the title. From the title itself
     // main.c turns Escape into a quit.
     if (in->back_edge && mode != MODE_ATTRACT) {
-        load_failed=0;
+        test_run=0;load_failed=0;
         sfx_emit(SFX_BIT(SFX_RANKUP));
         reset_run();
         pc_menu_reset(&menu,selected_profile);
@@ -234,6 +329,26 @@ void game_update(const InputState* in) {
         return;
     }
 
+    /* Secret-ending preview with unshifted, reversed Focus. */
+    if(in->ending_edge && mode==MODE_ATTRACT) {
+        test_run=1;load_failed=0;
+        start_ending();return;
+    }
+    if(in->test_level && in->test_level<=7 && mode==MODE_ATTRACT) {
+        UBYTE old_profile=selected_profile;
+        selected_profile=in->test_level==7?2:in->test_level-1;
+        test_run=1;load_retry_wait=0;load_record();
+        start_playing(in);
+        if(mode!=MODE_PLAYING) {
+            selected_profile=old_profile;test_run=0;load_record();
+        } else if(in->test_level==7) {
+            /* Entry snapshot, not a simulation of the preceding two minutes. */
+            patterns_test_bonus();lifecycle.elapsed=7200;
+            gamestate.time_seconds=120;gamestate.time_subsecond_frames=0;
+            gamestate.field_rotation=0;
+        }
+        return;
+    }
     switch (mode) {
     case MODE_ATTRACT:
         // Keep the menu pointer visible; ease to gameplay zoom on confirmation.
@@ -250,10 +365,15 @@ void game_update(const InputState* in) {
         }
         player.angle=player.previous_angle=menu.angle;project_state();
         if (in->fire_edge && !game_selection_locked()) {
+            test_run=0;
             rng_state ^= (UWORD)frameCounter | 1u;
             if (!rng_state) rng_state=0x2545;
             start_playing(in);
         }
+        break;
+
+    case MODE_ENDING:
+        update_ending(in);
         break;
 
     case MODE_PLAYING:
@@ -271,6 +391,9 @@ void game_update(const InputState* in) {
             pc_death_tick(&lifecycle,&game_world,&morph,patterns_stage(),selected_profile%3);
             sfx_emit(pc_sfx_death(&sound_events,lifecycle.death,old_extent,lifecycle.extent));
             project_state();
+            if(pc_ending_death_entry(sound_events.completion,lifecycle.death,lifecycle.extent,0)) {
+                start_ending();break;
+            }
             if (mode==MODE_DEAD && pc_lifecycle_can_start(&lifecycle))
                 set_mode(MODE_GAMEOVER);
         }

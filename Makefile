@@ -11,7 +11,7 @@ endif
 VPATH = support
 cpp_sources :=
 cpp_objects :=
-c_sources := main.c system.c video.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c player_shape.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
+c_sources := pc_ending.c pc_ending_waves.c pc_ending_flip.c main.c system.c video.c coplist.c blitter.c trig.c input.c game.c patterns.c render.c hud.c player_shape.c pc_core.c pc_world.c pc_waves.c pc_schedule.c pc_progress.c pc_menu.c pc_pulse.c pc_sfx.c pc_lifecycle.c pc_death.c pc_morph.c pc_projection.c pc_palette.c render_clip.c support/gcc8_c_support.c
 # Default release behavior: omit the entire steering-assist translation unit.
 CHEAT_MODE ?= 0
 ifneq ($(CHEAT_MODE),0)
@@ -427,3 +427,85 @@ dist:
 	@test -n "$(EXECRAM_SOURCE)" || { echo 'Set EXECRAM_SOURCE to your local execram checkout'; exit 1; }
 	python3 tools/build_distribution.py --execram-source "$(EXECRAM_SOURCE)" --whdload-sdk "$(WHDLOAD_SDK)"
 release: dist
+
+.PHONY: test-ending-completion
+test-ending-completion:
+	python3 tests/ending_completion_test.py
+
+.PHONY: test-ending-timeline
+test-ending-timeline:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending.c tests/ending_timeline_test.c -o out/ending_timeline_test
+	out/ending_timeline_test
+
+.PHONY: test-ending-waves
+test-ending-waves:
+	python3 tests/ending_waves_test.py
+
+.PHONY: test-ending-projection
+test-ending-projection:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_projection.c tests/ending_projection_test.c -o out/ending_projection_test
+	out/ending_projection_test tests/fixtures/pc_ending_projection_native.txt
+
+.PHONY: test-ending-projection-reference
+test-ending-projection-reference:
+	python3 tests/ending_projection_reference_test.py
+
+.PHONY: test-ending-camera
+test-ending-camera:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_camera.c tests/ending_camera_test.c -o out/ending_camera_test
+	out/ending_camera_test tests/fixtures/pc_ending_camera_native.txt
+
+.PHONY: test-ending-palette
+test-ending-palette:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_palette.c tests/ending_palette_test.c -o out/ending_palette_test
+	out/ending_palette_test tests/fixtures/pc_ending_palette_native.txt
+
+.PHONY: test-ending-gate
+test-ending-gate:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending.c tests/ending_gate_test.c -o out/ending_gate_test
+	out/ending_gate_test tests/fixtures/pc_ending_gate_native.txt
+
+.PHONY: test-ending-clip
+test-ending-clip:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_clip.c pc_ending_projection.c tests/ending_clip_test.c -o out/ending_clip_test
+	out/ending_clip_test
+
+.PHONY: test-ending-polygon
+test-ending-polygon:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_polygon.c pc_ending_clip.c pc_ending_projection.c tests/ending_polygon_test.c -o out/ending_polygon_test
+	out/ending_polygon_test
+
+.PHONY: test-ending-affine
+test-ending-affine:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_affine.c tests/ending_affine_test.c -lm -o out/ending_affine_test
+	out/ending_affine_test
+
+.PHONY: test-ending-wall
+test-ending-wall:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_wall.c pc_ending_affine.c tests/ending_wall_test.c -o out/ending_wall_test
+	out/ending_wall_test
+
+.PHONY: test-ending-scene
+test-ending-scene:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_scene.c pc_ending_wall.c pc_ending_affine.c pc_projection.c player_shape.c tests/ending_scene_test.c -o out/ending_scene_test
+	out/ending_scene_test
+
+.PHONY: test-ending-affine-target
+test-ending-affine-target:
+	python3 tools/check_ending_affine_target.py
+
+.PHONY: test-ending-flip
+test-ending-flip:
+	@mkdir -p out
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_flip.c tests/ending_flip_test.c -o out/ending_flip_test
+	out/ending_flip_test

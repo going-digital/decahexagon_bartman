@@ -283,6 +283,7 @@ int main() {
         UWORD missed = elapsed_frames - 1;
 #if MUSIC_FIB_STREAM
         fib_stream_frame(elapsed_frames);
+        fib_stream_fill_main();
 #endif
         last_frame = now;
 #if BUILD_DEBUG
@@ -294,7 +295,11 @@ int main() {
 #endif
         // --- poll -> update -------------------------------------------------
         input_poll(&input);
-        if (input.back_edge && game_mode() == MODE_ATTRACT) break; // Escape from title quits
+#if !TRACKLOADER || WHDLOAD
+        /* Native floppy boot has no OS return path. Its resident caller owns
+         * startup-failure handling, not a desktop to return to on Escape. */
+        if (input.back_edge && game_mode() == MODE_ATTRACT) break;
+#endif
         ULONG ticks = pc_clock_advance(&simulation_clock, elapsed_frames, DISPLAY_RATE);
         while (ticks--) {
             game_update(&input);
@@ -302,7 +307,7 @@ int main() {
             fib_stream_tick(game_mode()==MODE_PLAYING,game_mode()==MODE_ATTRACT);
 #endif
             // Held state persists; one-shot actions belong to only the first tick.
-            input.fire_edge = input.back_edge = 0;
+            input.fire_edge = input.back_edge = input.ending_edge = input.test_level = 0;
             if (game_take_load_barrier()) {
                 /* Blocking disk/decode time belongs to loading, not the run.
                  * Also drop pre-load catch-up ticks and fractional clock debt. */
@@ -336,7 +341,8 @@ int main() {
         custom->color[0] = 0x003;
 #endif
         render_spokes(bitplane_fg2); // radial slot lines, drawn over the fill
-        render_player(bitplane_fg2); // solid sprite overlay, independently of fill
+        render_player(bitplane_fg2); // also retires stale player sprite pointers
+        if(game_ending_complete()) {blit_wait();hud_draw_completion(bitplane_fg2);}
 #if BUILD_DEBUG
         custom->color[0] = 0x300;
 #endif

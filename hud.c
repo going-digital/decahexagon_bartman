@@ -161,7 +161,7 @@ static const UBYTE font[GLYPH_COUNT][HUD_GLYPH_H] = {
 // font. Only the letters actually needed by title_str_*[] below are
 // authored (not a full alphabet) - add more here as more banners want them.
 enum {
-    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P, TF_L, TF_C, TF_K, TF_D, TF_W, TF_I,
+    TF_H, TF_E, TF_X, TF_A, TF_G, TF_O, TF_N, TF_M, TF_V, TF_R, TF_SPACE, TF_S, TF_T, TF_Y, TF_P, TF_L, TF_C, TF_K, TF_D, TF_W, TF_I, TF_U,
     TITLE_GLYPH_COUNT
 };
 static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
@@ -319,6 +319,7 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     },
     /* W */ {9,9,9,15,15,9},
     /* I */ {15,6,6,6,6,15},
+    /* U */ {9,9,9,9,9,6},
 };
 
 static const UBYTE title_names[6][16] = {
@@ -371,7 +372,11 @@ static UWORD* loading_buf[SPRITE_CHANNELS],*saving_buf[SPRITE_CHANNELS],*save_er
 static UWORD *loading_sprite_pointers;
 static UWORD *write_protected_buf[SPRITE_CHANNELS];
 static UBYTE save_failed;
-void hud_save_failed(UBYTE failed) { save_failed=failed; }
+static UWORD save_failed_at;
+void hud_save_failed(UBYTE failed) {
+    save_failed=failed;
+    save_failed_at=game_mode_timer();
+}
 /* The native executable, including BSS, resides entirely in Chip RAM. */
 static UWORD loading_copper[256];
 static volatile UWORD *busy_waits[6];
@@ -688,9 +693,16 @@ typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED, BANN
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
 static Banner banner_active(GameMode m) {
+    if(game_ending_complete())return BANNER_NONE;
     if (game_load_failed()) return BANNER_LOAD_ERROR;
 #if TRACKLOADER
-    if (save_failed && m!=MODE_PLAYING) return BANNER_SAVE_ERROR;
+    /* A failed save is a temporary notice, not a replacement menu. Keep
+     * persistence/retry state in native_save; hiding this does not mark saved. */
+    if (save_failed && m==MODE_ATTRACT) {
+        if ((UWORD)(game_mode_timer()-save_failed_at)<3*PC_TICK_RATE)
+            return BANNER_SAVE_ERROR;
+        save_failed=0;
+    }
 #endif
     UWORD t = game_mode_timer();
     if (m == MODE_ATTRACT) {
@@ -701,6 +713,7 @@ static Banner banner_active(GameMode m) {
 }
 
 UBYTE hud_flash_now(void) {
+    if(game_ending_complete())return 0;
     UWORD t = game_mode_timer();
     switch (game_mode()) {
     case MODE_GAMEOVER:
@@ -716,7 +729,7 @@ void hud_tick(void) {
 
     // Current (or just-finished) run while there's one to show, otherwise
     // the best time on record.
-    if (m == MODE_PLAYING || m == MODE_DEAD || m == MODE_GAMEOVER) {
+    if (m == MODE_PLAYING || m == MODE_DEAD || m == MODE_GAMEOVER || m == MODE_ENDING) {
         secs = gamestate.time_seconds;
         frames = gamestate.time_subsecond_frames;
     } else {
@@ -748,7 +761,7 @@ void hud_tick(void) {
 USHORT* hud_emit_copper(USHORT* copPtr) {
     GameMode mode=game_mode();
     Banner banner = banner_active(mode);
-    UBYTE show_timer=mode==MODE_ATTRACT || banner==BANNER_NONE;
+    UBYTE show_timer=!game_ending_complete() && (mode==MODE_ATTRACT || banner==BANNER_NONE);
     UWORD **banner_buf=0;
     if (banner==BANNER_HEXAGON) banner_buf=title_buf[game_selected_profile()];
     else if (banner==BANNER_LOCKED) banner_buf=locked_buf;
@@ -765,7 +778,7 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
     // reasoning as the sprite loops below. Banks stay solid black-on-white
     // any time this isn't true, i.e. every frame outside a fresh GAMEOVER.
     UBYTE flash_on = (UBYTE)(banner == BANNER_NONE && mode == MODE_GAMEOVER
-        && game_new_record()
+        && !game_ending_complete() && game_new_record()
         && (game_mode_timer() & RECORD_FLASH_PERIOD));
     UWORD fg = flash_on ? 0xfff : 0x000, bg = flash_on ? 0x000 : 0xfff;
     for (WORD i = 0; i < 3; i++) {
@@ -813,4 +826,30 @@ USHORT* hud_emit_copper(USHORT* copPtr) {
         copPtr=copWrite(copPtr,offsetof(struct Custom,spr[ch+6].ctl),sprite[1]);
     }
     return copPtr;
+}
+
+/* Draw after fill/lines finish into the unpublished foreground buffer. */
+void hud_draw_completion(void *buffer) {
+    if(!game_ending_complete())return;
+    static const UBYTE congratulations[]={TF_C,TF_O,TF_N,TF_G,TF_R,TF_A,TF_T,TF_U,TF_L,TF_A,TF_T,TF_I,TF_O,TF_N,TF_S};
+    static const UBYTE complete[]={TF_G,TF_A,TF_M,TF_E,TF_SPACE,TF_C,TF_O,TF_M,TF_P,TF_L,TF_E,TF_T,TF_E};
+    UBYTE *plane=buffer;
+    const UBYTE *lines[]={congratulations,complete};
+    const unsigned lengths[]={sizeof(congratulations),sizeof(complete)};
+    unsigned top=SCREEN_HEIGHT/2-18;
+    for(unsigned y=top-4;y<top+36;++y)
+        for(unsigned x=0;x<SCREEN_WIDTH_BYTES;++x)plane[y*SCREEN_WIDTH_BYTES+x]=0;
+    for(unsigned line=0;line<2;++line) {
+        unsigned left=(SCREEN_WIDTH-(lengths[line]*10-2))/2;
+        for(unsigned ch=0;ch<lengths[line];++ch)
+            for(unsigned y=0;y<HUD_GLYPH_H;++y)
+                for(unsigned x=0;x<4;++x)
+                    if(title_font[lines[line][ch]][y]&(8>>x))
+                        for(unsigned dy=0;dy<2;++dy)
+                            for(unsigned dx=0;dx<2;++dx) {
+                                unsigned px=left+ch*10+x*2+dx;
+                                unsigned py=top+line*20+y*2+dy;
+                                plane[py*SCREEN_WIDTH_BYTES+px/8]|=128>>(px&7);
+                            }
+    }
 }
