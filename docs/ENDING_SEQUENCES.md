@@ -1,5 +1,11 @@
 # Ending sequences
 
+Direction correction: ending walls now project outward from the hub, reflecting
+the normal 4000-unit spawn horizon. Simulation countdowns and marker events
+remain unchanged. Regression checks cover emergence, outward motion and marker
+timing. User playtesting confirmed the corrected direction looks very close
+to the PC version.
+
 Latest preview: F8 runs the secret ending with Focus played backwards at its
 normal pitch. The player is hidden throughout the animation and completion
 screen. Successful completion stops the music, triggers WONDERFUL once, and

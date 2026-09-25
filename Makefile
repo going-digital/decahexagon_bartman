@@ -509,3 +509,8 @@ test-ending-flip:
 	@mkdir -p out
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror pc_ending_flip.c tests/ending_flip_test.c -o out/ending_flip_test
 	out/ending_flip_test
+
+.PHONY: test-ending-direction
+test-ending-direction:
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I. pc_core.c pc_world.c pc_projection.c tests/ending_direction_test.c -o out/ending_direction_test
+	out/ending_direction_test

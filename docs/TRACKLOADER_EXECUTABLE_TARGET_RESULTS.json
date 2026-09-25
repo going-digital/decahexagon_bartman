@@ -5,23 +5,23 @@
       "base": 131072,
       "matches": true,
       "corrupt_rejected": true,
-      "cycles": 56802064
+      "cycles": 56895456
     },
     {
       "base": 262144,
       "matches": true,
       "corrupt_rejected": true,
-      "cycles": 56802064
+      "cycles": 56895456
     }
   ],
   "inflate": {
-    "output_bytes": 204779,
-    "packed_bytes": 97703,
-    "source_offset": 107078,
-    "arena_bytes": 204781,
-    "extra_tail_bytes": 2,
-    "cycles": 35831246,
+    "output_bytes": 205107,
+    "packed_bytes": 97930,
+    "source_offset": 107180,
+    "arena_bytes": 205110,
+    "extra_tail_bytes": 3,
+    "cycles": 35844808,
     "overlap_matches": true,
-    "packed_sha256": "7581ea24b661a3608cb0b6f8ece3405b99565d1aae6f2024a78cd2722bc73975"
+    "packed_sha256": "abf94148976f5b8d3b0d6198b52c2d090b173528e94d5173015064bebb48b423"
   }
 }

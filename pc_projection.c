@@ -40,7 +40,7 @@ void pc_span_shared_edges(const PcSpan *spans,uint16_t count,uint8_t sides,uint8
     }
 }
 
-uint16_t pc_project_spans(const PcWorld *world,uint8_t sides,PcSpan *spans) {
+static uint16_t project_spans(const PcWorld *world,uint8_t sides,PcSpan *spans,unsigned outward) {
     uint16_t count=0;
     for (uint16_t i=0;i<world->count;++i) {
         const PcWall *w=&world->walls[i];
@@ -48,8 +48,19 @@ uint16_t pc_project_spans(const PcWorld *world,uint8_t sides,PcSpan *spans) {
         PcSpan p;
         p.slot=w->slot;
         /* Desktop truncates distance and width separately before addition. */
-        p.inner=(int16_t)(40+project_div5(w->distance));
-        p.outer=(int16_t)(p.inner+project_div5(w->width));
+        if(outward) {
+            /* Ending walls emerge at the hub as the ordinary 4000-unit
+             * spawn horizon counts down. Keep simulation marker timing. */
+            int32_t outer=4000-w->distance;
+            int32_t inner=outer-w->width;
+            if(outer<=0)continue;
+            if(inner<0)inner=0;
+            p.inner=(int16_t)(40+project_div5(inner));
+            p.outer=(int16_t)(40+project_div5(outer));
+        } else {
+            p.inner=(int16_t)(40+project_div5(w->distance));
+            p.outer=(int16_t)(p.inner+project_div5(w->width));
+        }
         uint16_t j=count;
         while (j && (spans[j-1].slot>p.slot ||
                (spans[j-1].slot==p.slot && spans[j-1].inner>p.inner))) {
@@ -65,4 +76,11 @@ uint16_t pc_project_spans(const PcWorld *world,uint8_t sides,PcSpan *spans) {
         } else spans[merged++]=p;
     }
     return merged;
+}
+
+uint16_t pc_project_spans(const PcWorld *world,uint8_t sides,PcSpan *spans) {
+    return project_spans(world,sides,spans,0);
+}
+uint16_t pc_project_ending_spans(const PcWorld *world,uint8_t sides,PcSpan *spans) {
+    return project_spans(world,sides,spans,1);
 }

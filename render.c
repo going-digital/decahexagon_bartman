@@ -294,7 +294,9 @@ void render_scene(void* buf,const RenderScene *input,const PcWorld *world) {
     blit_fill_reset();
 
     if (world) {
-        n_active=pc_project_spans(world,scene.num_sides,spans);
+        n_active=game_mode()==MODE_ENDING ?
+            pc_project_ending_spans(world,scene.num_sides,spans):
+            pc_project_spans(world,scene.num_sides,spans);
         pc_span_shared_edges(spans,n_active,scene.num_sides,shared_edges);
         for (UWORD k=0;k<n_active;++k) draw_wall(&spans[k],shared_edges[k],buf);
     }

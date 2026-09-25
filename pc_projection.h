@@ -7,3 +7,6 @@ uint16_t pc_project_spans(const PcWorld *world,uint8_t sides,PcSpan spans[PC_WAL
 #define PC_SPAN_NEXT 2u
 /* Input is the sorted, disjoint output of pc_project_spans; sides is 3..6. */
 void pc_span_shared_edges(const PcSpan *spans,uint16_t count,uint8_t sides,uint8_t *shared);
+
+/* Outward ending presentation; simulation/marker coordinates stay unchanged. */
+uint16_t pc_project_ending_spans(const PcWorld *world,uint8_t sides,PcSpan spans[PC_WALL_CAPACITY]);
