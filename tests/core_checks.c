@@ -31,6 +31,17 @@ unsigned pc_core_checks(void) {
     CHECK(pal_ticks == 600 && ntsc_ticks == 600 && pal.remainder == 0);
     CHECK(pc_clock_advance(&pal, 5, 50) == 6); /* Missed presentations retain time. */
     CHECK(pc_clock_advance(&ntsc, 65535, 60) == 65535u);
+#ifndef __m68k__
+    /* All frame counts and reachable residues, including rate changes. */
+    for (unsigned hz=50;hz<=60;hz+=10)
+        for (unsigned residue=0;residue<60;++residue)
+            for (uint32_t frames=0;frames<65536u;++frames) {
+                PcClock clock = {residue};
+                uint32_t elapsed=frames*60u+residue;
+                CHECK(pc_clock_advance(&clock,(uint16_t)frames,hz)==elapsed/hz);
+                CHECK(clock.remainder==elapsed%hz);
+            }
+#endif
     CHECK(pc_turn(30, PC_INPUT_POSITIVE, 7) == 37);
     CHECK(pc_turn(30, PC_INPUT_POSITIVE, 9) == 39);
     CHECK(pc_turn(358, 3, 7) == 5); /* Source input priority, no cancellation. */
@@ -39,6 +50,12 @@ unsigned pc_core_checks(void) {
     for (unsigned i = 0; i < 360; ++i) angle = pc_turn(angle, 1, 7);
     CHECK(angle == 30);
     CHECK(pc_render_angle(90) == 16384u && pc_render_angle(180) == 32768u);
+#ifndef __m68k__
+    /* Exhaustively preserve the original conversion, including its wrapping
+     * behaviour for negative/non-normalised int16 inputs. */
+    for (uint32_t a=0;a<65536u;++a)
+        CHECK(pc_render_angle((int16_t)a)==(uint16_t)((a*65536u)/360u));
+#endif
 
     /* Original x86-64 routine traces at speed22: verified 2026-09-19. */
     static const int16_t distances[] = {151,150,145,123,122,100};

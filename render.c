@@ -17,9 +17,11 @@ static WORD  ox, oy;  // camera shake offset applied this frame
 static RenderScene scene;
 static UWORD zoom;    // Q8 camera zoom applied this frame (ZOOM_ONE = 1.0)
 
-// radius * zoom, as a single 16x16->32 mulu.w (not the __mulsi3 that
-// (LONG)r * zoom compiled to - that was ~1.5ms/frame across all the corners).
+// Half-scale gameplay uses a shift; other zooms retain the exact 16x16->32
+// multiply rather than the expensive general __mulsi3 helper.
 static WORD zscale(WORD r) {
+    /* Preserve unsigned radius semantics, including wrapped negative values. */
+    if (zoom == 128) return (WORD)((UWORD)r >> 1);
     return (WORD)(muluw((UWORD)r, zoom) >> 8);
 }
 
@@ -48,14 +50,16 @@ static void poly(const WORD* xs, const WORD* ys, WORD n, void* buf) {
     }
 }
 
+/* Spokes are drawn later in this same scene, after the fill. Their inner
+ * endpoints are exactly the hub vertices; no second projection is needed. */
+static WORD hub_x[MAX_NUM_SIDES], hub_y[MAX_NUM_SIDES];
 static void draw_hub(void* buf) {
-    WORD xs[MAX_NUM_SIDES], ys[MAX_NUM_SIDES]; // capacity; scene.num_sides (runtime) says how many are used
     WORD rr = zscale(HUB_RADIUS + scene.pulse);
     UBYTE n = scene.num_sides;
     for (WORD i = 0; i < n; i++) {
-        slot_pt(i, rr, &xs[i], &ys[i]);
+        slot_pt(i, rr, &hub_x[i], &hub_y[i]);
     }
-    poly(xs, ys, n, buf);
+    poly(hub_x, hub_y, n, buf);
 }
 
 /* One pair per playfield buffer. Never edit data still being read by DMA. */
@@ -256,11 +260,9 @@ void render_init(void) {
 void render_spokes(void* buf) {
     blit_line_mode(); // re-arm line-mode registers after the fill
 
-    WORD inner = zscale(HUB_RADIUS + scene.pulse);
     UWORD a = scene.field_angle;
     for (WORD i = 0; i < scene.num_sides; i++) {
-        WORD sx, sy, ex, ey;
-        slot_pt(i, inner, &sx, &sy);
+        WORD sx = hub_x[i], sy = hub_y[i], ex, ey;
         if (ox || oy) {
             // Preserve camera-offset behaviour if shake is enabled later.
             spoke_endpoint(a, CX + ox, CY + oy, &ex, &ey);

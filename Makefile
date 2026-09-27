@@ -165,6 +165,17 @@ $(vasm_objects): obj/%.o : %.asm
 	@$(VASM) $(VASMFLAGS) -dependall=make -depfile $(@D)/$*.d -o $@ $(CURDIR)/$<
 
 .PHONY: test
+test: test-time-conversion
+test: test-collision-reciprocal
+.PHONY: test-collision-reciprocal
+test-collision-reciprocal: | out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror tests/collision_reciprocal_test.c pc_core.c -o out/collision_reciprocal_test
+	out/collision_reciprocal_test
+.PHONY: test-time-conversion
+test-time-conversion: | out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror tests/time_conversion_test.c -o out/time_conversion_test
+	out/time_conversion_test
+
 HOST_CC ?= cc
 test: test-morph-runs test-palette test-progression test-menu test-lifecycle test-death test-sfx test-pulse test-video test-projection-edges test-player-shape test-pcm-lifecycle test-display-handoff test-view-scale
 	@mkdir -p out

@@ -1,0 +1,48 @@
+{
+  "scope": "Musashi 68000 instruction cycles, no DMA/interrupts. Production functions at -O2; loop, call and result-check overhead included; identical inputs and expected outputs.",
+  "baseline": "cbf1e4b",
+  "trials": [
+    {
+      "variant": "before",
+      "kind": "angle",
+      "calls": 3600,
+      "cycles": 2160528,
+      "cycles_per_call": 600.1466666666666
+    },
+    {
+      "variant": "before",
+      "kind": "pulse_two",
+      "calls": 2410,
+      "cycles": 1941128,
+      "cycles_per_call": 805.4473029045644
+    },
+    {
+      "variant": "before",
+      "kind": "pulse_three",
+      "calls": 2410,
+      "cycles": 1922468,
+      "cycles_per_call": 797.7045643153527
+    },
+    {
+      "variant": "after",
+      "kind": "angle",
+      "calls": 3600,
+      "cycles": 972528,
+      "cycles_per_call": 270.14666666666665
+    },
+    {
+      "variant": "after",
+      "kind": "pulse_two",
+      "calls": 2410,
+      "cycles": 678708,
+      "cycles_per_call": 281.62157676348545
+    },
+    {
+      "variant": "after",
+      "kind": "pulse_three",
+      "calls": 2410,
+      "cycles": 872408,
+      "cycles_per_call": 361.995020746888
+    }
+  ]
+}

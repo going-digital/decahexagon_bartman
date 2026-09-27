@@ -1,0 +1,8 @@
+{
+  "target_register_cases": 11664,
+  "mismatches": 0,
+  "axis_bound_cases": 142400,
+  "scope": "Actual old/new 68000 code compared over a grid spanning all line octants, word boundaries, viewport edges, horizontal/vertical and invalid endpoints. Inert custom registers, no DMA or pixel validation. All possible valid horizontal/vertical deltas checked independently on host; signed offscreen endpoints and right-edge clipping included.",
+  "source_sha256": "eb4a5e28868cd61a5262c086fd6da524c6e9c6a8ff20dae88860f136c7d7154e",
+  "cycles_including_comparison": 225190318
+}

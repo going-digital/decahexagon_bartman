@@ -1,0 +1,15 @@
+{
+  "target_register_cases": 11664,
+  "ordered_register_write_traces_equal": true,
+  "mismatches": 0,
+  "axis_bound_cases": 142400,
+  "pointer_offset_cases": 64000,
+  "scope": "Actual old/new 68000 code compared over a grid spanning all line octants, word boundaries, viewport edges, horizontal/vertical and invalid endpoints. Full ordered byte-write traces to both inert custom-register blocks also match exactly (not just final register values); no DMA or pixel validation. All possible valid horizontal/vertical deltas checked independently on host; signed offscreen endpoints and right-edge clipping included.",
+  "source_sha256": "212c4d3ba0e559ec1979c3e0492f970e0971e9306fd4ad8e94b4b9c051dfc2a1",
+  "cycles_including_comparison": 219779454,
+  "source_hashes": {
+    "blitter.c": "212c4d3ba0e559ec1979c3e0492f970e0971e9306fd4ad8e94b4b9c051dfc2a1",
+    "render_clip.c": "6cecd12e277d2c6115150c8dd0cf98e26aeea70490cd594acd334656fa57bda2",
+    "render_clip_impl.h": "5649d841f0c5b34794211d29b5d877161eb5e17ab069591734b57dee4a6b6bbe"
+  }
+}

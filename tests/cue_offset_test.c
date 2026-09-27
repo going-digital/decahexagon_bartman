@@ -11,6 +11,9 @@ int main(void) {
   assert(pc_pulse_cue_index_offset(lead+199,lead)==0);
   assert(pc_pulse_cue_index_offset(lead+200,lead)==1);
   assert(pc_pulse_cue_index_offset(lead+12000,lead)==60);
+  /* Last quotient fitting DIVU.W and first full-width fallback quotient. */
+  for(uint32_t sample=13107198;sample<=13107401;++sample)
+   assert(pc_pulse_cue_index_offset(sample+lead,lead)==sample/200u);
  }
  assert(pc_pulse_cue_index_offset(UINT32_MAX,0)==UINT32_MAX/200);
  assert(pc_pulse_cue_index_offset(0,UINT32_MAX)==0);

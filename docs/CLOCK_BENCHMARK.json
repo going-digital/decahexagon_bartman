@@ -1,0 +1,66 @@
+{
+  "accuracy": {
+    "cases": 7864320,
+    "mismatches": 0
+  },
+  "scope": "Musashi 68000 -O2, loop/call/table-check overhead included, no DMA/IRQs; original clock from cbf1e4b versus current source",
+  "trials": [
+    {
+      "variant": "before",
+      "hz": 50,
+      "inputs": "single_frame",
+      "calls": 600,
+      "cycles_per_call": 1772.83
+    },
+    {
+      "variant": "before",
+      "hz": 50,
+      "inputs": "boundary",
+      "calls": 3600,
+      "cycles_per_call": 1772.1383333333333
+    },
+    {
+      "variant": "before",
+      "hz": 60,
+      "inputs": "single_frame",
+      "calls": 600,
+      "cycles_per_call": 1776.83
+    },
+    {
+      "variant": "before",
+      "hz": 60,
+      "inputs": "boundary",
+      "calls": 3600,
+      "cycles_per_call": 1776.1383333333333
+    },
+    {
+      "variant": "after",
+      "hz": 50,
+      "inputs": "single_frame",
+      "calls": 600,
+      "cycles_per_call": 493.49666666666667
+    },
+    {
+      "variant": "after",
+      "hz": 50,
+      "inputs": "boundary",
+      "calls": 3600,
+      "cycles_per_call": 492.02722222222224
+    },
+    {
+      "variant": "after",
+      "hz": 60,
+      "inputs": "single_frame",
+      "calls": 600,
+      "cycles_per_call": 308.83
+    },
+    {
+      "variant": "after",
+      "hz": 60,
+      "inputs": "boundary",
+      "calls": 3600,
+      "cycles_per_call": 308.1383333333333
+    }
+  ],
+  "current_pc_core_sha256": "06f5dd6835c020d921106866e899b2df21cbd35f52cb9ab4881bc3964d3d2fea"
+}

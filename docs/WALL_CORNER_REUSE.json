@@ -1,0 +1,23 @@
+{
+  "scope": "Two start-snapshot worlds; host reconstruction of ordinary span union and world-radius/sector corner keys. Counts reuse before zoom rounding, not cache hit rates or measured savings.",
+  "trials": [
+    {
+      "level": "hexagon",
+      "world_records": 14,
+      "sides": 5,
+      "merged_spans": 14,
+      "corner_requests": 56,
+      "unique_world_corners": 40,
+      "repeated_world_corners": 16
+    },
+    {
+      "level": "hexagonest",
+      "world_records": 30,
+      "sides": 6,
+      "merged_spans": 22,
+      "corner_requests": 88,
+      "unique_world_corners": 80,
+      "repeated_world_corners": 8
+    }
+  ]
+}

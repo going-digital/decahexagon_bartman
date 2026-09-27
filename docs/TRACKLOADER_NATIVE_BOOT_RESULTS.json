@@ -9,7 +9,7 @@
   "cue_offset": 286720,
   "cue_capacity": 16384,
   "free_disk_sectors": 33,
-  "adf_sha256": "ac09ae2c7bc4a8ddbba1a5f58cb50cd33a4ea3065d432ebe3159337b58ce0270",
+  "adf_sha256": "4d3d31e1ec7cf83de8f15d5c5e29d42a9667d62472ce77e51bb96804489ab6bc",
   "limitations": [
     "A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending",
     "All profiles mapped; Hyper unlock rules unchanged",

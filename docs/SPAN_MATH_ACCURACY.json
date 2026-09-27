@@ -1,0 +1,5 @@
+{
+  "target_passed": true,
+  "cycles": 393429828,
+  "scope": "Production public span projection checked against signed division on actual 68000. Every distance -65540..65540 with varying positive widths, INT32 extremes and both reciprocal/hardware fallback boundaries. Benchmark separately compares complete merged span arrays on two captured worlds."
+}

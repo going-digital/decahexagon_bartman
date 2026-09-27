@@ -1,6 +1,13 @@
 #include <assert.h>
 #include "../pc_pulse.h"
 int main(void) {
+    for(unsigned magnitude=0;magnitude<=65536u;++magnitude)
+        for(unsigned stage=0;stage<3;++stage) {
+            unsigned target=magnitude/(stage==2?3:2);
+            uint16_t expected=(uint16_t)(target?target-1:0);
+            assert(pc_pulse_tick(0,(int)magnitude,stage)==expected);
+            assert(pc_pulse_tick(0,-(int)magnitude,stage)==expected);
+        }
     /* Independently transcribed PC float dt=1 envelope, for every source cue,
      * stage divisor and reachable previous envelope. */
     for(unsigned stage=0;stage<3;++stage)

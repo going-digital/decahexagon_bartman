@@ -1,10 +1,10 @@
 {
-  "elf_sha256": "20de09d8b4d1b60eef9ed7c6c80548249f64bed2d07946358a5e79118af8bafe",
-  "package_bytes": 204849,
-  "packed_bytes": 99655,
+  "elf_sha256": "9dfc710cdb784d214c70a98277191c43d7cf7dc59a97f5b90a5c1d35007b7559",
+  "package_bytes": 204813,
+  "packed_bytes": 99779,
   "image_bytes": 197909,
-  "memory_bytes": 219788,
-  "relocations": 1727,
-  "sha256": "714c1cefd4f02f2a8e84869f76152f3160ab6b9f6bb0c4d8572e8bf2fd5909c2",
-  "packed_sha256": "8c04c4eb024473c7f9aa80d332d3526219beb1fae2c255daf4609bce5987cdfe"
+  "memory_bytes": 219812,
+  "relocations": 1718,
+  "sha256": "f1de93efe0be4e3b074059ad9e3c4b832a9ca22a4a511f5b503fd1986d9a2984",
+  "packed_sha256": "50a4862f5020fe90ebd63ee69f55af5689a5dace7fe0ad408435d96e0531dd5d"
 }

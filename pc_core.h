@@ -35,6 +35,7 @@ typedef struct {
 typedef struct { uint16_t remainder; } PcClock;
 
 /* Nominal reference cadence; does not emulate the desktop long-frame clamp. */
+/* display_hz must be 50 or 60; initialise remainder to zero (kept below 60). */
 uint32_t pc_clock_advance(PcClock *clock, uint16_t display_frames, uint16_t display_hz);
 int16_t pc_turn(int16_t angle, uint8_t held, uint8_t degrees_per_tick);
 uint16_t pc_render_angle(int16_t degrees);

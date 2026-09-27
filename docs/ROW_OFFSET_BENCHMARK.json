@@ -1,0 +1,17 @@
+{
+  "scope": "Musashi 68000 complete clipped-wrapper calls, both endpoint orders across all on-screen starting rows; identical loop overhead, inert registers, no DMA/IRQs. Not a representative mix of offscreen lines.",
+  "trials": [
+    {
+      "variant": "before",
+      "cycles": 6562098,
+      "calls": 3980,
+      "cycles_per_call": 1648.7683417085427
+    },
+    {
+      "variant": "after",
+      "cycles": 6522298,
+      "calls": 3980,
+      "cycles_per_call": 1638.7683417085427
+    }
+  ]
+}

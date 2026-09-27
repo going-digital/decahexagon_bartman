@@ -1,0 +1,50 @@
+{
+  "scope": "Extracted production zscale functions, actual Musashi 68000 -O2 execution, no DMA/IRQs. Every radius bit pattern at nine zooms including fallback and extrema. Microbenchmark includes identical loop/store overhead; full rendering profiles are separate. Compiler may hoist invariant zoom checks in the loop; cycle figures are not isolated call latency. Production render_scene disassembly confirms one zoom comparison shared by two wall-radius shifts.",
+  "accuracy_cases": 589824,
+  "accuracy_cycles": 217187122,
+  "trials": [
+    {
+      "variant": "before",
+      "zoom": 128,
+      "calls": 10240,
+      "cycles": 1147156,
+      "cycles_per_call": 112.026953125
+    },
+    {
+      "variant": "before",
+      "zoom": 127,
+      "calls": 10240,
+      "cycles": 1270036,
+      "cycles_per_call": 124.026953125
+    },
+    {
+      "variant": "before",
+      "zoom": 320,
+      "calls": 10240,
+      "cycles": 1167636,
+      "cycles_per_call": 114.026953125
+    },
+    {
+      "variant": "after",
+      "zoom": 128,
+      "calls": 10240,
+      "cycles": 604696,
+      "cycles_per_call": 59.05234375
+    },
+    {
+      "variant": "after",
+      "zoom": 127,
+      "calls": 10240,
+      "cycles": 1270196,
+      "cycles_per_call": 124.042578125
+    },
+    {
+      "variant": "after",
+      "zoom": 320,
+      "calls": 10240,
+      "cycles": 1167796,
+      "cycles_per_call": 114.042578125
+    }
+  ],
+  "render_source_sha256": "ea4a96bab5269aa754f85a91e5fbdb0ce6f5e416405830dfad5104201a62fb39"
+}

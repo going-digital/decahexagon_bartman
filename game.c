@@ -1,4 +1,5 @@
 #include "game.h"
+#include "pc_time.h"
 #include "pc_morph.h"
 #include "system.h"
 #include "patterns.h"
@@ -46,8 +47,11 @@ UBYTE game_selected_profile(void) { return selected_profile; }
 UBYTE game_selection_locked(void) { return !pc_profile_unlocked(&records,selected_profile); }
 static void load_record(void) {
     uint32_t best=records.best[selected_profile];
-    gamestate.record_seconds=(UWORD)(best/60);
-    gamestate.record_subsecond_frames=(UWORD)(best%60);
+    if ((uint32_t)gamestate.record_seconds*60u+
+        gamestate.record_subsecond_frames==best) return;
+    uint32_t seconds=pc_tick_seconds(best);
+    gamestate.record_seconds=(UWORD)seconds;
+    gamestate.record_subsecond_frames=(UWORD)(best-seconds*60u);
 }
 #if PC_CORE_SELFTEST
 static UWORD live_failure;
@@ -157,8 +161,9 @@ static void record_time(void) {
 
 static void update_playing(const InputState *in) {
     pc_lifecycle_tick(&lifecycle);
-    gamestate.time_seconds=(UWORD)(lifecycle.elapsed/60);
-    gamestate.time_subsecond_frames=(UWORD)(lifecycle.elapsed%60);
+    uint32_t seconds=pc_tick_seconds(lifecycle.elapsed);
+    gamestate.time_seconds=(UWORD)seconds;
+    gamestate.time_subsecond_frames=(UWORD)(lifecycle.elapsed-seconds*60u);
     sfx_emit(pc_sfx_live(&sound_events,lifecycle.elapsed));
     record_time();
     UBYTE held=in->held;
@@ -168,8 +173,8 @@ static void update_playing(const InputState *in) {
 #endif
     player.angle=pc_turn(player.angle,held,patterns_turn_rate());
     pc_morph_tick(&morph,&game_world);
-    project_state();
     /* Collision sees pre-motion distances and can restore the prior angle.
+     * It reads simulation state directly; project only the resolved state.
      * The authoritative record ordering is never changed for rendering. */
     pc_collide(&player,game_world.walls,game_world.count,morph.sides,(int16_t)game_world.speed);
     project_state();

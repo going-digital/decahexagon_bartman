@@ -1,0 +1,7 @@
+{
+  "cases": 2488320,
+  "mismatches": 0,
+  "blocked_cases": 483840,
+  "hit_cases": 1451520,
+  "scope": "Host comparison of production project_state and pc_collide: before vs after the removed call; all projected fields and player state, not a whole-game trace. Sides3..6, phases0..11, both morph directions, all360 player angles, 8 distance boundaries, 3 widths, 3 speeds; two active walls exercise rollback and hit cases."
+}

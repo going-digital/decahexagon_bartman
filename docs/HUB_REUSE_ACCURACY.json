@@ -1,0 +1,5 @@
+{
+  "cases": 131072,
+  "mismatches": 0,
+  "scope": "Host comparison of extracted production hub/spoke routines and line command streams, including culling. Varies sides3..6, angles, zoom64..512, pulse0..100, camera offsets and successive scenes. Deterministic host trig substitutes for target assembly; this verifies reuse semantics, not target trig accuracy or DMA pixels."
+}

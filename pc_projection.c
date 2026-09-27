@@ -1,6 +1,18 @@
 #include "pc_projection.h"
+#ifdef __m68k__
+#include "support/gcc8_c_support.h"
+#endif
 
 static int32_t project_div5(int32_t value) {
+    /* Normal wall distances/widths fit uint16. This reciprocal is exact
+     * throughout that range; negative and wider values retain signed division. */
+    if ((uint32_t)value<=65535u) {
+#ifdef __m68k__
+        return muluw((uint16_t)value,52429u)>>18;
+#else
+        return ((uint32_t)(uint16_t)value*52429u)>>18;
+#endif
+    }
 #ifdef __m68k__
     /* DIVS.W takes a 32-bit dividend but returns a signed 16-bit quotient.
      * Use an unsigned range check so even INT32_MIN/MAX are safe. Keep the

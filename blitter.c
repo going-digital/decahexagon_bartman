@@ -1,5 +1,5 @@
 #include "blitter.h"
-#include "render_clip.h"
+#include "render_clip_impl.h"
 
 // Y span touched by fill seeds this frame, so blit_fill only processes the
 // rows that actually contain toggles instead of the whole 200-line screen.
@@ -24,17 +24,6 @@ void blit_line_mode(void) {
     custom->bltcmod_bmod = (SCREEN_WIDTH_BYTES << 16) | SCREEN_WIDTH_BYTES;
 }
 
-// Clip before any seed tracking or DMA address calculation. The portable
-// helper is tested with large PC-world projections and corner near-misses.
-void blit_clipped_line_onedot(WORD x0,WORD y0,WORD x1,WORD y1,
-                            UWORD angle,void *bitplane) {
-    (void)angle;
-    RenderClip clip;
-    render_clip_line(x0,y0,x1,y1,&clip);
-    if (clip.fix) blit_fill_fix_onedot(clip.fix_y0,clip.fix_y1,bitplane);
-    if (clip.line) blit_line_onedot(clip.x0,clip.y0,clip.x1,clip.y1,bitplane);
-}
-
 // Plots ONE toggle pixel per scanline along x0,y0 -> x1,y1 to seed the XOR
 // area fill (blit_fill). The y span is half-open: scanlines
 // [min(y0,y1), max(y0,y1)) get a pixel and the max-y endpoint does not, so a
@@ -42,13 +31,12 @@ void blit_clipped_line_onedot(WORD x0,WORD y0,WORD x1,WORD y1,
 // Requires blit_line_mode() earlier this frame.
 // Line-mode setup after https://www.markwrobel.dk/post/amiga-machine-code-letter12-linedraw2/
 // See http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
-void blit_line_onedot(
+static __attribute__((always_inline)) inline void blit_line_prepared(
     UWORD x0, UWORD y0,
     UWORD x1, UWORD y1,
     void *bitplane
 ) {
-    // Horizontal segments contribute no scanline crossings to the fill.
-    if (y0 == y1 || x0 > XMAX || x1 > XMAX || y0 > YMAX || y1 > YMAX) return;
+    // Caller guarantees distinct Y and on-screen endpoints.
 
     // Swap end points to draw in a south/easterly direction (Octants 4 5 6 7 only)
     if (y0 > y1) {
@@ -62,14 +50,21 @@ void blit_line_onedot(
     // Calculate word address of start point
     // Note octants 0, 1, 2, 3 are omitted as they are never drawn.
 
-    APTR startpt = bitplane + muluw(y0, SCREEN_WIDTH_BYTES) + ((x0 >> 4) << 1);
+    /* Clipped Y is 0..199, so 40*y fits a word. GCC otherwise
+     * selects MULS even for this constant; enforce the cheaper 5*y << 3. */
+    UWORD row_offset = y0;
+#if SCREEN_WIDTH_BYTES == 40
+    __asm__("lsl.w #2,%0\n\tadd.w %1,%0\n\tlsl.w #3,%0"
+            : "+&d"(row_offset) : "d"(y0) : "cc");
+#else
+    row_offset = muluw(y0, SCREEN_WIDTH_BYTES);
+#endif
+    APTR startpt = bitplane + row_offset + ((x0 >> 4) << 1);
     WORD ed = x1 - x0; // Positive in east direction
     UWORD sd = y1 - y0; // Positive in south direction, guaranteed to be positive
 
-    // Safety net: on-screen endpoints can't be more than a screen apart. If a
-    // clip bug ever slips a wild coordinate through, skip the line rather than
-    // issue a giant blit that stalls the blitter for milliseconds.
-    if (ed > XMAX || ed < -XMAX || sd > (UWORD)YMAX) return;
+    // The caller guarantees |ed| <= XMAX and
+    // sd <= YMAX; swapping endpoints makes sd nonnegative.
 
     UWORD bltcon1;
     UWORD maj_d;
@@ -134,6 +129,22 @@ void blit_line_onedot(
     custom->bltcon0 = bltcon0;
     custom->bltcon1 = bltcon1;
     custom->bltsize = (maj_d << 4) + 2;
+}
+
+void blit_line_onedot(UWORD x0,UWORD y0,UWORD x1,UWORD y1,void *bitplane) {
+    if (y0 == y1 || x0 > XMAX || x1 > XMAX || y0 > YMAX || y1 > YMAX) return;
+    blit_line_prepared(x0,y0,x1,y1,bitplane);
+}
+
+// Clip before any seed tracking or DMA address calculation. The portable
+// helper is tested with large PC-world projections and corner near-misses.
+void blit_clipped_line_onedot(WORD x0,WORD y0,WORD x1,WORD y1,
+                            UWORD angle,void *bitplane) {
+    (void)angle;
+    RenderClip clip;
+    render_clip_line_inline(x0,y0,x1,y1,&clip);
+    if (clip.fix) blit_fill_fix_onedot(clip.fix_y0,clip.fix_y1,bitplane);
+    if (clip.line) blit_line_prepared(clip.x0,clip.y0,clip.x1,clip.y1,bitplane);
 }
 
 void blit_fill_fix_onedot(

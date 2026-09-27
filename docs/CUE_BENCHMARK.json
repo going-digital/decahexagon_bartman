@@ -1,0 +1,21 @@
+{
+  "scope": "Actual 68000 execution, -O2, no DMA/IRQs. Boundary accuracy checks each quotient0..65536 at its start/end and preceding sample for all3 leads, plus 10000 full-width samples and extreme inputs. Timings include identical loop/result-check overhead.",
+  "target_accuracy_passed": true,
+  "target_accuracy_cycles": 220326724,
+  "source_sha256": "9852362dd1da3b334c8589b1cf2cdd2a3af9cb429bc29340bd91fc875f8f3309",
+  "trials": [
+    {
+      "variant": "before",
+      "calls": 7060,
+      "cycles": 4617788,
+      "cycles_per_call": 654.0776203966005
+    },
+    {
+      "variant": "after",
+      "calls": 7060,
+      "cycles": 2626868,
+      "cycles_per_call": 372.0776203966006
+    }
+  ],
+  "target_accuracy_checks": 599837
+}

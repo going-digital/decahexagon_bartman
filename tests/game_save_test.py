@@ -12,6 +12,7 @@ def function(name):
 code='''
 #include <assert.h>
 #include "trackloader/save.h"
+#include "pc_time.h"
 typedef unsigned char UBYTE;
 typedef unsigned short UWORD;
 enum {MODE_ATTRACT,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER};
@@ -59,6 +60,14 @@ int main(void) {
  uint32_t before=records.best[0];assert(!game_restore_save(&loaded));
  assert(records.best[0]==before && save_restore_open);
  assert(!game_restore_save(0) && !game_save_snapshot(0) && !game_save_committed(0));
+ /* Formatting cache must survive profile changes, retries and wide scores. */
+ const uint32_t scores[]={0,59,60,65535,65536,3932159,3932160,0xffffffffU};
+ for(unsigned i=0;i<sizeof(scores)/sizeof(scores[0]);++i)
+  for(selected_profile=0;selected_profile<6;++selected_profile) {
+   records.best[selected_profile]=scores[i];load_record();load_record();
+   assert(gamestate.record_seconds==(UWORD)(scores[i]/60));
+   assert(gamestate.record_subsecond_frames==scores[i]%60);
+  }
  return 0;
 }
 '''

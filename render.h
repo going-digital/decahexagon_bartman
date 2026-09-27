@@ -16,7 +16,7 @@ void render_game(void* buf);
 
 // Radial slot-boundary lines, drawn solid (OR mode) straight into `buf`.
 // Call AFTER blit_fill has finished - these are an overlay, not fill seeds.
-// Must follow render_game() in the same frame (reuses its zoom).
+// Must follow render_game()/render_scene() in the same frame (reuses hub vertices).
 void render_spokes(void* buf);
 
 // Prepare the next pair of player sprites; call after spokes on the same buf.

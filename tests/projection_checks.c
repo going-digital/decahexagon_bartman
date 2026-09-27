@@ -16,6 +16,7 @@ unsigned pc_projection_checks(void) {
     static const int32_t extremes[]={
         (-2147483647-1),-2147483647,-163845,-163841,-163840,-163839,
         -163836,-163835,-6,-5,-4,-1,0,1,4,5,6,
+        65534,65535,65536,65537,
         163835,163839,163840,163841,163844,163845,2147483647
     };
     for (unsigned i=0;i<sizeof(extremes)/sizeof(extremes[0]);++i) {
@@ -28,7 +29,7 @@ unsigned pc_projection_checks(void) {
         if(check_value(163840+d,163840-d)) return 4004;
     }
 #ifdef __m68k__
-    const int32_t limit=20000;
+    const int32_t limit=65540;
 #else
     const int32_t limit=163850;
 #endif
