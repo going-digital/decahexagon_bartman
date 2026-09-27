@@ -642,3 +642,26 @@ build pass. `out/Hexagon.zip` includes the fix. Hardware confirmation is pending
 this fixes the identified camera freeze, not proof that every reported visual
 stall has the same cause. The opening field angle still settles and holds until
 the first flip at approximately 24.5 seconds, as specified by the controller.
+
+## Ending orientation correction (2026-09-27)
+
+The mismatch was an angle convention error, not a missing perspective effect.
+PC compose3dframe_ending builds x=sin(angle), y=cos(angle), advancing each
+sector angle positively. The Amiga renderer uses x=cos(angle), y=sin(angle),
+subtracting each sector angle. The correct conversion is screen=90-PC angle.
+Previously the ending controller's PC angle was used directly as a screen angle.
+At its opening 30-degree target this produced vertical vertices instead of the
+PC's horizontal vertices. Sixfold symmetry makes a 90-degree rotation appear
+like a 30-degree orientation difference; a constant offset alone would not fix
+the reversed angular convention during motion.
+
+Captured the first six vertices from the owned PC compose3dframe_ending routine
+at 0/30/90/180/270 degrees; see pc_ending_orientation_native.txt. The controller
+now converts in both directions, preserving the current orientation on entry.
+Tilt and Otis remain zero and the shared flat renderer stays in use.
+
+The prior suggestion to restore the 3D pipeline is withdrawn. Its claim that
+all planar rotation stops at stage 4 was also incorrect: updatevisualeffects
+updates field angle at gameclass+0x194 from mode +0x2988 independently of the
+ordinary gamelogic stage switch, including the 30-degree resting target.
+User playtesting confirmed that the corrected orientation works better.

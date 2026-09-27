@@ -32,7 +32,9 @@ to complete them all next week. Historical implementation details remain in
 ## Remaining behavior and presentation gaps
 
 - [ ] **Scripted ending.** Complete the ending sequence and its stage-2 camera
-  freeze, audio and transition behavior against the PC reference.
+  freeze, audio and transition behavior against the PC reference. The ending
+  angle-convention correction is playtested; tilt/Otis remain zero.
+  See [ending orientation correction](docs/ENDING_SEQUENCES.md#ending-orientation-correction-2026-09-27).
 - [ ] **Camera and death presentation parity.** Audit remaining perspective,
   field motion/shake, death flash and audio/cue differences against the current
   implementation. Preserve completed projection, pulse and fade work; measure

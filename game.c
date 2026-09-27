@@ -232,7 +232,7 @@ static void start_ending(void) {
     pc_world_reset(&game_world);game_world.speed=0;
     pc_morph_reset(&morph);player.hit=player.blocked=0;project_state();
     pc_palette_ending_start(&game_palette);
-    ending_angle=(int16_t)(((uint32_t)gamestate.field_angle*720u)>>16);
+    ending_angle=(int16_t)pc_ending_angle_from_render(gamestate.field_angle);
     gamestate.field_rotation=0;gamestate.pulse=0;
     gamestate.draw_distance_target=STARTING_ZOOM_TARGET;
     shake_x=shake_y=0;
@@ -256,7 +256,7 @@ static void update_ending(const InputState *in) {
         else if(ending_angle>60)delta=ending_angle-60<8?60-ending_angle:-8;
     }
     ending_angle=(ending_angle+delta+720)%720;
-    gamestate.field_angle=(UWORD)(((uint32_t)ending_angle*65536u)/720u);
+    gamestate.field_angle=pc_ending_render_angle((unsigned)ending_angle);
     pc_morph_tick(&morph,&game_world);
     player.angle=pc_turn(player.angle,in->held,9);project_state();
     unsigned events=pc_ending_tick(&ending,ending_flip.phase,game_palette.change);

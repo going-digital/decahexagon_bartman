@@ -514,3 +514,7 @@ test-ending-flip:
 test-ending-direction:
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I. pc_core.c pc_world.c pc_projection.c tests/ending_direction_test.c -o out/ending_direction_test
 	out/ending_direction_test
+
+.PHONY: test-ending-orientation
+test-ending-orientation:
+	python3 tests/ending_orientation_test.py

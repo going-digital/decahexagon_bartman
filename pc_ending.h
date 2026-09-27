@@ -38,3 +38,13 @@ int pc_ending_spawn(PcEnding *s,PcWorld *world,uint32_t elapsed_ms,
  * secret sequence; states 1/2 need their own completion presentation. */
 unsigned pc_ending_death_entry(unsigned completion,unsigned death_ticks,
                                unsigned extent,unsigned suppressed);
+
+/* PC geometry uses (sin(a),cos(a)); the shared Amiga renderer uses
+ * (cos(a),sin(a)). Keep controller angles in PC half-degree units. */
+static inline uint16_t pc_ending_render_angle(unsigned half_degrees) {
+    unsigned screen=(900u-half_degrees)%720u;
+    return (uint16_t)((uint32_t)screen*65536u/720u);
+}
+static inline unsigned pc_ending_angle_from_render(uint16_t angle) {
+    return (900u-(((uint32_t)angle*720u+32768u)>>16))%720u;
+}
