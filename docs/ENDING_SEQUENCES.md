@@ -665,3 +665,26 @@ all planar rotation stops at stage 4 was also incorrect: updatevisualeffects
 updates field angle at gameclass+0x194 from mode +0x2988 independently of the
 ordinary gamelogic stage switch, including the 30-degree resting target.
 User playtesting confirmed that the corrected orientation works better.
+
+## Normal post-death completion overlays
+
+First-completion states 1 and 2 now enable a persistent result overlay when the
+death extent passes 200, matching the existing WONDERFUL trigger. State 1 shows
+CONGRATULATIONS / NEW LEVEL UNLOCKED; state 2 shows CONGRATULATIONS / GAME
+COMPLETE. These reuse the Amiga completion font/layout; exact PC text/layout
+parity is not asserted. The timer, player and ordinary GAME OVER banner/flash
+are suppressed while the overlay is visible. Death timing continues normally,
+so confirmation retries once extent reaches 320; Escape returns to selection.
+Resetting a run clears the overlay. Records/unlocks remain owned by the original
+selected profile and use the existing save path.
+
+State 3 still enters the secret animation; its finish explicitly selects the
+game-complete overlay rather than unlock text. Previously completed profiles
+continue to use ordinary death/results because no new completion event is set.
+
+`test-ending-completion` now covers all 12 PC completion fixtures, the strict
+60-second boundary, overlay extent boundaries, WONDERFUL's one-shot trigger,
+secret-entry separation, and completed-profile retries. It is included in
+`make test`. Full host tests and ADF/WHDLoad distribution build checks pass.
+The rebuilt `out/Hexagon.zip` includes these changes with testing cheats enabled;
+new overlay presentation still needs visual playtesting.

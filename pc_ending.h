@@ -48,3 +48,6 @@ static inline uint16_t pc_ending_render_angle(unsigned half_degrees) {
 static inline unsigned pc_ending_angle_from_render(uint16_t angle) {
     return (900u-(((uint32_t)angle*720u+32768u)>>16))%720u;
 }
+
+/* Result overlay kind: 0 none, 1 unlock, 2 normal game completion. */
+unsigned pc_completion_overlay(unsigned completion,unsigned extent);

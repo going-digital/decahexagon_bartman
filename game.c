@@ -32,8 +32,10 @@ static UBYTE save_dirty,save_restore_open;
 static PcLifecycle lifecycle;
 static UBYTE selected_profile;
 static UBYTE test_run;
+/* Persistent result overlay: 0 none, 1 unlock, 2 game complete. */
 static UBYTE ending_complete;
-UBYTE game_ending_complete(void) {return ending_complete;}
+UBYTE game_ending_complete(void) {return ending_complete!=0;}
+UBYTE game_completion_unlocked(void) {return ending_complete==1;}
 static GameRunPreparer run_preparer;
 static UBYTE load_barrier;
 static UBYTE load_failed;
@@ -283,7 +285,7 @@ static void update_ending(const InputState *in) {
 #endif
         pc_world_reset(&game_world);pc_morph_reset(&morph);project_state();
         lifecycle.extent=320;lifecycle.death=100;sound_events.completion=2;
-        ending_complete=ending.phase==255;
+        ending_complete=ending.phase==255 ? 2:0;
         if(ending_complete) {
             sfx_emit(SFX_BIT(SFX_WONDERFUL));
             pc_palette_ending_start(&game_palette);
@@ -396,6 +398,10 @@ void game_update(const InputState* in) {
             pc_death_tick(&lifecycle,&game_world,&morph,patterns_stage(),selected_profile%3);
             sfx_emit(pc_sfx_death(&sound_events,lifecycle.death,old_extent,lifecycle.extent));
             project_state();
+            /* Match the WONDERFUL threshold. Leave the death/retry timing
+             * running, but replace ordinary results with completion text. */
+            if (pc_completion_overlay(sound_events.completion,lifecycle.extent))
+                ending_complete=sound_events.completion;
             if(pc_ending_death_entry(sound_events.completion,lifecycle.death,lifecycle.extent,0)) {
                 start_ending();break;
             }

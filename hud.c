@@ -834,8 +834,9 @@ void hud_draw_completion(void *buffer) {
     static const UBYTE congratulations[]={TF_C,TF_O,TF_N,TF_G,TF_R,TF_A,TF_T,TF_U,TF_L,TF_A,TF_T,TF_I,TF_O,TF_N,TF_S};
     static const UBYTE complete[]={TF_G,TF_A,TF_M,TF_E,TF_SPACE,TF_C,TF_O,TF_M,TF_P,TF_L,TF_E,TF_T,TF_E};
     UBYTE *plane=buffer;
-    const UBYTE *lines[]={congratulations,complete};
-    const unsigned lengths[]={sizeof(congratulations),sizeof(complete)};
+    static const UBYTE unlocked[]={TF_N,TF_E,TF_W,TF_SPACE,TF_L,TF_E,TF_V,TF_E,TF_L,TF_SPACE,TF_U,TF_N,TF_L,TF_O,TF_C,TF_K,TF_E,TF_D};
+    const UBYTE *lines[]={congratulations,game_completion_unlocked()?unlocked:complete};
+    const unsigned lengths[]={sizeof(congratulations),game_completion_unlocked()?sizeof(unlocked):sizeof(complete)};
     unsigned top=SCREEN_HEIGHT/2-18;
     for(unsigned y=top-4;y<top+36;++y)
         for(unsigned x=0;x<SCREEN_WIDTH_BYTES;++x)plane[y*SCREEN_WIDTH_BYTES+x]=0;

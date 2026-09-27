@@ -165,6 +165,7 @@ $(vasm_objects): obj/%.o : %.asm
 	@$(VASM) $(VASMFLAGS) -dependall=make -depfile $(@D)/$*.d -o $@ $(CURDIR)/$<
 
 .PHONY: test
+test: test-ending-completion
 test: test-time-conversion
 test: test-collision-reciprocal
 .PHONY: test-collision-reciprocal

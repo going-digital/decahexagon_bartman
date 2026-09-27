@@ -94,3 +94,7 @@ unsigned pc_ending_death_entry(unsigned completion,unsigned death_ticks,
                                unsigned extent,unsigned suppressed) {
     return completion==3 && death_ticks>=60 && extent>199 && !suppressed;
 }
+
+unsigned pc_completion_overlay(unsigned completion,unsigned extent) {
+    return extent>200 && (completion==1 || completion==2) ? completion:0;
+}

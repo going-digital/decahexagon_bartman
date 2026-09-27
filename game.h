@@ -67,3 +67,4 @@ int game_save_committed(const TrackSave *state);
 UBYTE game_save_dirty(void);
 
 UBYTE game_ending_complete(void);
+UBYTE game_completion_unlocked(void);

@@ -12,6 +12,7 @@ assert len(rows) == 12
 cases = ','.join('{%d,%d,%d}' % row for row in rows)
 source = '''#include <assert.h>
 #include "pc_sfx.h"
+#include "pc_ending.h"
 static const unsigned cases[][3]={CASES};
 int main(void){
  for(unsigned i=0;i<12;i++){
@@ -20,6 +21,18 @@ int main(void){
   assert(s.completion==0);
   pc_sfx_live(&s,3601);assert(s.completion==cases[i][2]);
   pc_sfx_live(&s,3602);assert(s.completion==cases[i][2]);
+  unsigned kind=s.completion==1 || s.completion==2 ? s.completion:0;
+  assert(!pc_completion_overlay(s.completion,199));
+  assert(!pc_completion_overlay(s.completion,200));
+  assert(pc_completion_overlay(s.completion,220)==kind);
+  assert(pc_completion_overlay(s.completion,320)==kind);
+  assert(pc_sfx_death(&s,68,200,220)==(kind?SFX_BIT(SFX_WONDERFUL):0));
+  assert(!pc_sfx_death(&s,69,220,240));
+  assert(pc_ending_death_entry(s.completion,68,220,0)==(s.completion==3));
+  /* A retry retains the earned completion but clears first-win actions. */
+  pc_sfx_begin(&s,4000,1,cases[i][0]);
+  for(unsigned tick=1;tick<=3602;tick++)pc_sfx_live(&s,tick);
+  assert(!s.completion && !pc_completion_overlay(s.completion,320));
  }
  return 0;
 }
@@ -28,6 +41,6 @@ with tempfile.TemporaryDirectory() as directory:
     p = Path(directory)
     (p/'test.c').write_text(source)
     subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(root),
-                    str(p/'test.c'),str(root/'pc_sfx.c'),'-o',str(p/'test')],check=True)
+                    str(p/'test.c'),str(root/'pc_sfx.c'),str(root/'pc_ending.c'),'-o',str(p/'test')],check=True)
     subprocess.run([str(p/'test')],check=True)
-print('All 12 completion classifications match PC entry fixtures; 60-second boundaries pass')
+print('All 12 completion classifications match PC entry fixtures; 60-second, death-overlay, WONDERFUL and retry boundaries pass')
