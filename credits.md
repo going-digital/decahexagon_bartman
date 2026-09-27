@@ -1,10 +1,14 @@
 # Credits to include in game
 
-* Original game concept and design : [Terry Cavanagh](www.distractionware.com)
-* Original Soundtrack : [Chipzel](chipzelmusic.bandcamp.com)
-* Voice : [Jenn Frank](www.infinitelives.net)
-* Font : [Aaron Amar](https://fontstruct.com/fontstructions/show/155156)
-* PC Port: [Ethan Lee](flibitijibibo.com)
+* Original game concept and design
+  * [Terry Cavanagh](https://www.distractionware.com)
+* Original Soundtrack
+  * [Chipzel](https://www.chipzel.co.uk)
+* Voice
+  * [Jenn Frank](https://linktr.ee/jennatar)
+* Font
+  * [Aaron Amar](https://fontstruct.com/fontstructions/show/155156)
+* PC Port: [Ethan Lee](https://flibitijibibo.com)
 * Amiga Port
   * Going Digital
 * Additional code
