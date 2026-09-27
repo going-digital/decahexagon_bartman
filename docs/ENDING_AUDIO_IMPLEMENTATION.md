@@ -8,8 +8,10 @@ Per the user's instruction, the PC's three-semitone pitch difference is omitted.
 This is separate from the two-channel stretched Focus used in the Hexagonest
 bonus. Reverse playback uses one Paula channel and the existing DMA buffers.
 
-`fib_song_read_reverse` seeks a logical block, copies it across any dictionary
-boundaries, then reverses those bytes in the output buffer. Cached samples are
+`fib_song_read_reverse` seeks once and then walks a persistent cursor backwards
+across dictionary boundaries. It copies directly into the DMA buffer, avoiding
+the previous forward-copy/reversal pass and per-block sequence scan. The small
+reverse cursor is separate from the resident loader binding. Cached samples are
 never modified. Production occurs in the main loop; there is no software mixer
 or resampler. The end is padded with silence rather than wrapping, and the
 controller's stop-music event, Escape and result transition stop playback.
@@ -237,3 +239,18 @@ No runtime audio or release assets are changed by this investigation.
   claim that the library itself is suitable for a 68000.
 - [SOLA explanation by the SoundTouch author](https://www.surina.net/article/time-and-pitch-scaling.html):
   overlapping sequences and waveform alignment to reduce join artifacts.
+
+Reverse optimisation: full-song byte comparison and irregular/repositioned reads
+pass. Eight-byte unrolling and a local source pointer reduce repeated state
+memory accesses. Musashi 68000 means over 64 blocks of 512 samples:
+
+| Reverse position | Original seek/copy/reverse | Cursor byte loop | Unrolled cursor |
+| --- | ---: | ---: | ---: |
+| Start | 76,719 | 42,426 | 13,390 |
+| Middle | 51,576 | 42,017 | 12,980 |
+| Near end | 25,280 | 41,613 | 12,575 |
+
+Cycles include the initial seek; subsequent blocks cost about 12,550–12,561
+cycles. The new loop is faster at all three measured positions. These changes
+combine pointer caching and unrolling, so the savings are not attributed solely
+to unrolling. See REVERSE_AUDIO_BENCHMARK.json; no DMA contention is modelled.

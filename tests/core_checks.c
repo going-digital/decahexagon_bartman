@@ -14,6 +14,7 @@ unsigned pc_wave_checks(void);
 unsigned pc_schedule_checks(void);
 unsigned render_clip_checks(void);
 unsigned pc_projection_checks(void);
+unsigned pc_morph_freeze_checks(void);
 
 unsigned pc_core_checks(void) {
 #ifdef __m68k__
@@ -67,6 +68,7 @@ unsigned pc_core_checks(void) {
     if (!failure) failure=pc_menu_checks();
     if (!failure) failure=pc_lifecycle_checks();
     if (!failure) failure=pc_death_checks();
+    if (!failure) failure=pc_morph_freeze_checks();
     if (!failure) failure=pc_projection_checks();
 #ifdef __m68k__
     if (!failure) failure=pc_trig_checks();

@@ -12,6 +12,12 @@ typedef struct {
     uint8_t morph_state;
     uint8_t camera_trigger;
     uint8_t overflow;
+    /* Wall movement freeze, refreshed to 20 by pc_morph_tick whenever it
+     * processes morph_state 1/2/3 (source this+0x54c0, dt=1 ticks). Decays
+     * by one otherwise; movement resumes once it reaches zero. Each frozen
+     * movement tick also adds one to the wave delay before scheduling. Source death
+     * regrowth (states 4/5) does not refresh it, matching the reference. */
+    uint8_t freeze;
 } PcWorld;
 
 typedef uint16_t (*PcRandom)(void *context, uint16_t exclusive_bound);

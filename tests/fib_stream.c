@@ -22,7 +22,8 @@ INCBIN_CHIP(FibSongTail, PCM_BANK_SECOND);
 #endif
 static PcmStretch stretch;
 static unsigned stretch_mode;
-static unsigned reverse_mode,reverse_remaining;
+static unsigned reverse_mode;
+static PcmReverse reverse_cursor;
 static unsigned stretch_gameplay;
 static const unsigned ending_focus_offsets[]={
 #include "../assets/ending_focus_offsets.inc"
@@ -164,7 +165,7 @@ static void audio_irq(unsigned channel) {
 static void fill_one(void) {
     positions[fill_slot]=fill_position;
     if(stretch_mode) fib_stretch_channels(&stretch,buffers+fill_slot*512,buffers+fill_slot*512+256);
-    else if(reverse_mode)fib_song_read_reverse(&song,&reverse_remaining,buffers+fill_slot*512,512);
+    else if(reverse_mode)fib_song_read_reverse(&song,&reverse_cursor,buffers+fill_slot*512,512);
     else fib_song_read(&song,buffers+fill_slot*512,512);
     fill_position+=stretch_mode?256:512;
     if(!stretch_mode && fill_position>=sample_length) fill_position-=sample_length;
@@ -208,7 +209,7 @@ void fib_stream_start(void) {
     if(stretch_mode) {
         start_position=0;sample_length=932885;active_cue_bytes=0;
     } else if(reverse_mode) {
-        start_position=0;reverse_remaining=loaded_samples;active_cue_bytes=0;
+        start_position=0;reverse_cursor=(PcmReverse){loaded_samples,0};active_cue_bytes=0;
     } else if(!fib_song_seek(&song,start_position)) start_position=0;
     fill_position=start_position;fill_slot=0;
     music_started=1;

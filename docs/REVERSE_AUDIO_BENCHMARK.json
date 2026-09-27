@@ -1,0 +1,67 @@
+{
+  "scope": "Musashi 68000 instruction cycles; no DMA contention or interrupts; 512-sample blocks, 12000 Hz; -m68000 -O2, no LTO; function/loop overhead included, setup subtracted",
+  "source_sha256": "e3e89092ddec8b40484252c1581b7a8673421440378c23d914520bdfa6c0c083",
+  "sequence_entries": 468,
+  "trials": [
+    {
+      "variant": "old",
+      "position": "start",
+      "blocks": 64,
+      "cycles": 4910020,
+      "cycles_per_block": 76719.0625,
+      "first_block_cycles": 81230,
+      "steady_cycles_per_block": 76647.46031746031,
+      "output_sha256": "d4db86f7f68898c3a28d26a8ea91281816afa6f8af7f08a8195bd9f1e6b577e3"
+    },
+    {
+      "variant": "old",
+      "position": "middle",
+      "blocks": 64,
+      "cycles": 3300842,
+      "cycles_per_block": 51575.65625,
+      "first_block_cycles": 55024,
+      "steady_cycles_per_block": 51520.920634920636,
+      "output_sha256": "b7bee6c6d48a03faf1f137c288c71e524d8e7d7ebab97b883007171d2dd441a0"
+    },
+    {
+      "variant": "old",
+      "position": "near_end",
+      "blocks": 64,
+      "cycles": 1617888,
+      "cycles_per_block": 25279.5,
+      "first_block_cycles": 29712,
+      "steady_cycles_per_block": 25209.14285714286,
+      "output_sha256": "b755755d7a715bb414d0f295d124fb67d0c4c2c9cc83d3f47c4d08aabada6e1b"
+    },
+    {
+      "variant": "new",
+      "position": "start",
+      "blocks": 64,
+      "cycles": 856972,
+      "cycles_per_block": 13390.1875,
+      "first_block_cycles": 65618,
+      "steady_cycles_per_block": 12561.174603174602,
+      "output_sha256": "d4db86f7f68898c3a28d26a8ea91281816afa6f8af7f08a8195bd9f1e6b577e3"
+    },
+    {
+      "variant": "new",
+      "position": "middle",
+      "blocks": 64,
+      "cycles": 830732,
+      "cycles_per_block": 12980.1875,
+      "first_block_cycles": 39410,
+      "steady_cycles_per_block": 12560.666666666666,
+      "output_sha256": "b7bee6c6d48a03faf1f137c288c71e524d8e7d7ebab97b883007171d2dd441a0"
+    },
+    {
+      "variant": "new",
+      "position": "near_end",
+      "blocks": 64,
+      "cycles": 804782,
+      "cycles_per_block": 12574.71875,
+      "first_block_cycles": 14098,
+      "steady_cycles_per_block": 12550.539682539682,
+      "output_sha256": "b755755d7a715bb414d0f295d124fb67d0c4c2c9cc83d3f47c4d08aabada6e1b"
+    }
+  ]
+}

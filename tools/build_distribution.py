@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build both Amiga editions and atomically publish one reproducible ZIP."""
 import argparse
+import os
 import hashlib
 import json
 from pathlib import Path
@@ -21,7 +22,9 @@ def main():
     parser.add_argument('--execram-source', type=Path, required=True)
     parser.add_argument('--whdload-sdk', type=Path,
                         default=ROOT/'scratchpad/whdload/sdk/WHDLoad')
+    parser.add_argument("--cheat", action="store_true", help="Enable hold-8 steering assist in both editions")
     args = parser.parse_args()
+    os.environ["HEXAGON_CHEAT_MODE"] = "1" if args.cheat else "0"
     if not (args.whdload_sdk/'Include/whdload.i').is_file():
         parser.error('Missing WHDLoad SDK: '+str(args.whdload_sdk))
     subprocess.run([sys.executable, str(ROOT/'tools/trackloader/build_release.py'),
@@ -46,6 +49,8 @@ def main():
         files['hexagon/WHDLoad/Hexagon/'+name] = data
     files['hexagon/WHDLoad/Hexagon/manifest.json'] = (whd/'manifest.json').read_bytes()
     files['hexagon/README.txt'] = (ROOT/'docs/DISTRIBUTION_README.txt').read_bytes()
+    if args.cheat:
+        files['hexagon/README.txt'] += b'\nCHEAT BUILD: Hold 8 during play for automatic steering assistance.\n'
     index = {'format': 1, 'files': {name: {'bytes': len(data), 'sha256': sha(data)}
                                   for name, data in sorted(files.items())}}
     files['hexagon/manifest.json'] = (json.dumps(index, indent=2)+'\n').encode()

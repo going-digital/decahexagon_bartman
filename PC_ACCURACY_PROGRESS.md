@@ -912,3 +912,49 @@ boots and runs gameplay in PAL FS-UAE with 512 KB Chip + 512 KB Slow RAM:
 `scratchpad/fsuae/pal/fs-uae-crop-2609192215-03.png`. This supersedes the
 sidecar requirement above; it is a short smoke check, not a full-song audio
 or underrun measurement.
+
+### Wall-movement freeze during polygon morphs
+
+The reference stalls the ordinary wall-movement loop in `superhex::gamelogic`
+(gate at `this+0x54c0`) while `gameclass::updatevisualeffects` is actively
+processing a marker-driven shrink or grow (`morph_state` 1/2/3, `this+0x210`);
+that function refreshes the gate to 20 ticks every such tick and otherwise lets
+it decay by one, so movement resumes a short, fixed interval after the last
+active morph tick. Death regrowth (states 4/5) does not refresh it, and player
+turning is unaffected (`gameinput()` never touches the wall array). The port
+previously moved every wall unconditionally regardless of `morph_state`.
+
+Added `PcWorld.freeze`, refreshed/decayed by `pc_morph_tick` and checked by
+`pc_world_move`, which now stalls wall movement (not the trailing-inactive
+trim) while it is nonzero. Verified against six native traces captured
+directly from the owned executable via `tools/probe_pc_morph_freeze.c`
+(shrink from 6/5/4 sides, grow from 4/5, and grow-at-six): 240 ticks match `morph_state`,
+sides, the gate value, wall hash and record count exactly. The full host
+regression suite passes with this change; see `tests/morph_freeze_checks.c`.
+
+Follow-up (2026-09-27): recaptured all six cases from the owned PC executable.
+Added retry-reset and death-regrowth countdown checks. The full host suite
+passes, including 256 forced-survival runs per stage and 6,826 uninterrupted
+Hexagon morphs. This validates simulation behaviour; visual Amiga playtesting
+of the pause during morphs remains outstanding.
+
+### Morph freeze scheduling correction (2026-09-27)
+
+ADF playtesting confirmed the visual morph pause and the hold-8 assist, but
+reported an impassable wall combination around 41 seconds. The PC's frozen
+movement branch increments the wave delay before the selector countdown;
+the first implementation omitted this. Waves therefore spawned while previous
+walls were stalled. In a controlled seed-1 run the first divergence was tick
+1337: the port spawned wave 300 thirty ticks before the PC (tick 1367).
+
+pc_world_move now compensates the delay as the original branch does. Eight
+full-minute native PC traces (28,800 ticks) match every active-wall hash,
+wave selection/timing, speed, morph state, side count, freeze and RNG draw count.
+The trace disables player collision by placing the probe player outside playable
+sectors; it verifies wall scheduling, not the steering assist or player survival.
+User playtesting confirmed that the corrected build works well through the
+previously reported failure.
+
+After this correction, the host steering-assist regression reaches 60 seconds
+for all 32 seeds in each of the three base stages (previous Hexagon minimum:
+25.67 seconds). This is additional simulation evidence, not hardware proof.

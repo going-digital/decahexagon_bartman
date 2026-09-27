@@ -43,6 +43,7 @@ int fib_song_init(PcmSong *s,const unsigned char *p,unsigned bytes) {
     return fib_pcm_init_split(s,p,bytes,0,0);
 }
 int fib_song_seek(PcmSong *s,unsigned sample) {
+
     for(unsigned i=0;i<s->seq_count;++i) {
         const unsigned char *entry=s->sequence+4*i;
         unsigned n=be16(entry+2);
@@ -58,6 +59,7 @@ int fib_song_seek(PcmSong *s,unsigned sample) {
     return 0;
 }
 void fib_song_read(PcmSong *s,unsigned char *out,unsigned samples) {
+
     while(samples) {
         if(!s->output_left) {
             if(s->seq_index==s->seq_count) s->seq_index=0;
@@ -129,15 +131,44 @@ void fib_stretch_channels(PcmStretch *s,unsigned char *a,unsigned char *b) {
     s->position+=256;
 }
 
-void fib_song_read_reverse(PcmSong *s,unsigned *remaining,unsigned char *out,unsigned samples) {
+void fib_song_read_reverse(PcmSong *s,PcmReverse *cursor,unsigned char *out,unsigned samples) {
+    unsigned *remaining=&cursor->remaining;
+    if(!samples)return;
     unsigned n=*remaining<samples?*remaining:samples;
-    if(n) {
-        *remaining-=n;
-        fib_song_seek(s,*remaining);
-        fib_song_read(s,out,n);
-        for(unsigned i=0;i<n/2;++i) {
-            unsigned char t=out[i];out[i]=out[n-1-i];out[n-1-i]=t;
+    unsigned padding=samples-n;
+    if(n && cursor->expected!=*remaining) {
+        /* Seek once, or after resetting/repositioning the reverse cursor. raw is
+         * then one past the last valid byte, excluding dictionary padding. */
+        if(!fib_song_seek(s,*remaining-1)) {
+            for(unsigned i=0;i<samples;++i)out[i]=0;
+            return;
         }
+        unsigned length=be16(s->sequence+4*(s->seq_index-1)+2);
+        s->output_left=length-s->output_left+1;
+        ++s->raw;
     }
-    for(unsigned i=n;i<samples;++i)out[i]=0;
+    *remaining-=n;
+    cursor->expected=*remaining;
+    while(n) {
+        if(!s->output_left) {
+            --s->seq_index;
+            const unsigned char *entry=s->sequence+4*(s->seq_index-1);
+            unsigned offset=be32(s->offsets+4*be16(entry));
+            s->output_left=be16(entry+2);
+            s->raw=(offset<s->pcm_split?s->bank+offset:s->edges+(offset-s->pcm_split))+s->output_left;
+        }
+        unsigned count=n<s->output_left?n:s->output_left;
+        n-=count;s->output_left-=count;
+        const unsigned char *source=s->raw;
+        while(count>=8) {
+            *out++=*--source;*out++=*--source;
+            *out++=*--source;*out++=*--source;
+            *out++=*--source;*out++=*--source;
+            *out++=*--source;*out++=*--source;
+            count-=8;
+        }
+        while(count--)*out++=*--source;
+        s->raw=source;
+    }
+    while(padding--)*out++=0;
 }

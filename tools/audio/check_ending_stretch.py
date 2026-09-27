@@ -15,6 +15,8 @@ with tempfile.TemporaryDirectory() as tmp:
     dll=C.CDLL(str(lib))
     class Song(C.Structure):
         _fields_=[(n,C.c_void_p) for n in ('sequence','offsets','bank','edges','raw')]+[('pcm_split',C.c_uint),('seq_count',C.c_ushort),('seq_index',C.c_ushort),('output_left',C.c_ushort)]
+    class Reverse(C.Structure):
+        _fields_=[('value',C.c_uint),('expected',C.c_uint)]
     class Stretch(C.Structure):
         _fields_=[('source',Song),('offsets',C.c_void_p)]+[(n,C.c_uint) for n in ('count','total','position')]+[('previous',C.c_byte*256),('grain',C.c_byte*512),('output',C.c_byte*256)]
     pcm=np.clip(np.rint(decode(ROOT/'scratchpad/audio/codec_audition_budget_250_preboost_pc_tracks/focus_expanded_fibonacci.wav')*128),-128,127).astype(np.int8).tobytes()
@@ -38,7 +40,7 @@ with tempfile.TemporaryDirectory() as tmp:
     reference=(expected//256).astype(np.int8).tobytes()
     assert bytes(output[:len(reference)])==reference
     assert not any(output[len(reference):])
-    remaining=C.c_uint(len(pcm));backwards=bytearray()
+    remaining=Reverse(len(pcm));backwards=bytearray()
     while remaining.value:
         block=(C.c_ubyte*512)()
         dll.fib_song_read_reverse(C.byref(song),C.byref(remaining),block,512)
@@ -48,6 +50,17 @@ with tempfile.TemporaryDirectory() as tmp:
     dll.fib_song_read_reverse(C.byref(song),C.byref(remaining),block,512)
     assert not any(block) and not remaining.value
     assert buf.raw[:len(blob)]==blob
+    for start in (1,997,998,2400,len(pcm)):
+        remaining=Reverse(start)
+        dll.fib_song_read_reverse(C.byref(song),C.byref(remaining),block,0)
+        assert remaining.value==start
+        for size in (1,255,513,997,7):
+            before=remaining.value
+            chunk=(C.c_ubyte*size)()
+            dll.fib_song_read_reverse(C.byref(song),C.byref(remaining),chunk,size)
+            expected_bytes=pcm[max(0,before-size):before][::-1]
+            assert bytes(chunk)==expected_bytes+bytes(size-len(expected_bytes))
+    print('PASS: reverse repositioning, zero-length and irregular blocks')
     print('PASS: full Focus reversed exactly across dictionary boundaries, cached bank unchanged, tail silence')
     # Hardware path must copy unscaled samples to two independent voices.
     assert dll.fib_stretch_init(C.byref(state),C.byref(song),len(pcm),schedule,len(starts),932885)==1

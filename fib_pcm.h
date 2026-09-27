@@ -29,5 +29,8 @@ void fib_stretch_read(PcmStretch *s,unsigned char *out,unsigned samples);
 void fib_stretch_channels(PcmStretch *s,unsigned char *a,unsigned char *b);
 
 /* Read backwards through the logical song; zero-pad once remaining reaches 0.
- * Reverses copied bytes only, leaving the cached bank unchanged. */
-void fib_song_read_reverse(PcmSong *s,unsigned *remaining,unsigned char *out,unsigned samples);
+ * Initialise cursor to {sample_count,0}; reset expected to 0 after any forward
+ * read/seek on this song. The song cursor is owned exclusively while reversing.
+ * Copies directly backwards, leaving the cached bank unchanged. */
+typedef struct { unsigned remaining, expected; } PcmReverse;
+void fib_song_read_reverse(PcmSong *s,PcmReverse *cursor,unsigned char *out,unsigned samples);
