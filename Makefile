@@ -568,3 +568,7 @@ test-arcade: test-game-save
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -I. tests/arcade_test.c -o out/arcade_test
 	out/arcade_test
 	python3 tests/arcade_flow_test.py
+
+.PHONY: test-trackloader-layout
+test-trackloader-layout:
+	python3 tests/trackloader_layout_test.py

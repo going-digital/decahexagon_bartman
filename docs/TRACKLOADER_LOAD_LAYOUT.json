@@ -1,0 +1,55 @@
+{
+  "before": {
+    "game": {
+      "sector_requests": 222,
+      "track_reads": 27,
+      "distinct_tracks": 22,
+      "cylinder_travel": 83
+    },
+    "courtesy": {
+      "sector_requests": 486,
+      "track_reads": 57,
+      "distinct_tracks": 46,
+      "cylinder_travel": 198
+    },
+    "otis": {
+      "sector_requests": 477,
+      "track_reads": 56,
+      "distinct_tracks": 45,
+      "cylinder_travel": 161
+    },
+    "focus": {
+      "sector_requests": 483,
+      "track_reads": 57,
+      "distinct_tracks": 45,
+      "cylinder_travel": 176
+    }
+  },
+  "after": {
+    "game": {
+      "sector_requests": 222,
+      "track_reads": 22,
+      "distinct_tracks": 22,
+      "cylinder_travel": 50
+    },
+    "courtesy": {
+      "sector_requests": 486,
+      "track_reads": 46,
+      "distinct_tracks": 46,
+      "cylinder_travel": 52
+    },
+    "otis": {
+      "sector_requests": 477,
+      "track_reads": 45,
+      "distinct_tracks": 44,
+      "cylinder_travel": 29
+    },
+    "focus": {
+      "sector_requests": 483,
+      "track_reads": 46,
+      "distinct_tracks": 46,
+      "cylinder_travel": 37
+    }
+  },
+  "scope": "OFS read order with one-track cache; excludes boot, saves, retries and CPU time"
+}

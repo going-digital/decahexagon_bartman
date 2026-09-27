@@ -4,6 +4,7 @@ import hashlib,json,struct,subprocess,zlib,runpy,sys,os
 from pathlib import Path
 from native_layout import reservations as native_reservations
 from check_adf_layout import inspect
+from pack_ofs import pack, read_cost
 from package_native_game import compress
 root=Path(__file__).resolve().parents[2];out=root/'scratchpad/trackloader';native=out/'native_game'
 runpy.run_path(str(root/'tools/trackloader/make_guarded_diskio.py'))
@@ -77,6 +78,10 @@ reservations=native_reservations()
 env=dict(os.environ,HEXAGON_RESERVED_SECTORS=','.join(str(n) for sectors in reservations.values() for n in sectors))
 result=subprocess.run(args,capture_output=True,text=True,check=True,env=env)
 data=bytearray((native/'native_menu.adf').read_bytes())
+before=read_cost(data,inspect(data,expected,reservations))
+data=pack(data,expected,reservations)
+after=read_cost(data,inspect(data,expected,reservations))
+(root/'docs/TRACKLOADER_LOAD_LAYOUT.json').write_text(json.dumps(dict(before=before,after=after,scope='OFS read order with one-track cache; excludes boot, saves, retries and CPU time'),indent=2)+'\n')
 bitmap=struct.unpack_from('>I',data,880*512+316)[0]
 layout=inspect(data,expected,reservations)
 assert reservations['bootstrap']==list(range(1661,1705))
