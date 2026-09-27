@@ -68,6 +68,17 @@ int main(void){
  }
  boot.boot_drive=4;native_save_init(&boot);assert(!transfer);
  boot.boot_drive=0;native_save_init(&boot);
+ /* Startup protection is latched for the session; no snapshots or I/O. */
+ protection_flag=1;assert(native_save_check_startup());
+ assert(native_save_check_startup()); /* Fire with protection still on. */
+ protection_flag=0;mode=MODE_ATTRACT;
+ assert(!native_save_tick(0) && !snapshots && !commits && !writes && !error);
+ mode=MODE_PLAYING;native_save_tick(0);mode=MODE_ATTRACT;
+ assert(!native_save_tick(0) && !snapshots && !commits);
+ /* New startup, remove protection before Fire: saving is enabled again. */
+ native_save_init(&boot);protection_flag=1;assert(native_save_check_startup());
+ protection_flag=0;assert(!native_save_check_startup() && !session_read_only);
+ mode=MODE_GAMEOVER;
  current.generation=1;current.records.best[0]=359;
  /* Death/retry must never start disk I/O or capture a pending snapshot. */
  assert(!native_save_tick(0) && !commits && !snapshots && !begins);

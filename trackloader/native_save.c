@@ -12,6 +12,7 @@ _Static_assert(sizeof(TrackSaveDiskScratch)==2048,"resident save workspace size"
 static int (*commit_save)(const TrackSave *);
 #else
 static unsigned char drive_select;
+static unsigned session_read_only;
 static TrackSaveMedia media;
 static TrackSaveDiskScratch *scratch;
 #endif
@@ -29,6 +30,7 @@ void native_save_init(const TrackGameBoot *boot) {
 #if WHDLOAD
     pending_valid=attempted=0;commit_save=boot->commit_save;
 #else
+    session_read_only=0;
     drive_select=(unsigned char)~(1u<<(3+(boot->boot_drive&3)));
     transfer=boot->boot_drive<4?boot->disk_transfer:0;pending_valid=attempted=0;
     scratch=(TrackSaveDiskScratch*)boot->save_scratch;
@@ -54,6 +56,12 @@ static int disk_write_protected(void) {
     __asm volatile("move.w %0,%%sr"::"d"(sr):"memory","cc");
     return protected;
 }
+/* Called at startup and once more when the warning is acknowledged.
+ * The final decision persists until reboot, even if protection later changes. */
+int native_save_check_startup(void) {
+    session_read_only=disk_write_protected();
+    return session_read_only;
+}
 static int read_sector(void *ctx,uint32_t n,unsigned char *b) {(void)ctx;return transfer(0,n,b);}
 static int write_sector(void *ctx,uint32_t n,const unsigned char *b) {(void)ctx;return transfer(1,n,(void*)b);}
 #endif
@@ -62,7 +70,7 @@ int native_save_tick(void *plane) {
 #if WHDLOAD
     if(!commit_save || attempted
 #else
-    if(!transfer || attempted
+    if(session_read_only || !transfer || attempted
 #endif
        /* Keep the death/retry loop uninterrupted. Persist accumulated runs
         * only when the player deliberately returns to level selection. */

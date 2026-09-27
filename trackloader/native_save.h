@@ -8,3 +8,7 @@ int native_save_tick(void *display_plane);
 #if WHDLOAD
 int native_save_finish(void *display_plane);
 #endif
+
+#if !WHDLOAD
+int native_save_check_startup(void);
+#endif

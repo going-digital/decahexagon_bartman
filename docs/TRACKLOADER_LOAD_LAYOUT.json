@@ -1,7 +1,7 @@
 {
   "before": {
     "game": {
-      "sector_requests": 222,
+      "sector_requests": 223,
       "track_reads": 27,
       "distinct_tracks": 22,
       "cylinder_travel": 83
@@ -27,7 +27,7 @@
   },
   "after": {
     "game": {
-      "sector_requests": 222,
+      "sector_requests": 223,
       "track_reads": 22,
       "distinct_tracks": 22,
       "cylinder_travel": 50

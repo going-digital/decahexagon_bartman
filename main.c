@@ -91,7 +91,7 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), menu_ink);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), menu_ink);
 
-    if(game_front_visible() && (game_front_page()==2 || game_front_page()==4)) {col0=0;col1=0;}
+    if(game_front_visible() && (game_front_page()==2 || game_front_page()==4 || game_front_page()==5)) {col0=0;col1=0;}
     // Set scene colours before the HUD's mid-display multiplex WAIT.
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
@@ -264,6 +264,9 @@ int main() {
 #if TRACKLOADER
     if (boot->saved_state) game_restore_save(boot->saved_state);
     native_save_init(boot);
+#if !WHDLOAD
+    if(native_save_check_startup())game_show_write_protect();
+#endif
     track_tune_cache_init(&tune_cache,boot->tune_arenas,boot->tune_metadata,boot->prepare);
     game_set_run_preparer(prepare_with_display);
     __asm volatile("move.w #0x2000,%%sr" : : : "memory","cc");

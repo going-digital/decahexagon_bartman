@@ -80,3 +80,5 @@ UBYTE game_menu_locks(void);
 
 #include "arcade.h"
 const Arcade *game_arcade(void);
+
+void game_show_write_protect(void);

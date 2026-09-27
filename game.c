@@ -10,6 +10,9 @@
 #include "pc_ending.h"
 #include "pc_ending_flip.h"
 #include "sfx.h"
+#if TRACKLOADER && !WHDLOAD
+#include "trackloader/native_save.h"
+#endif
 static PcSfx sound_events;
 #if CHEAT_MODE
 #include "cheat.h"
@@ -36,6 +39,7 @@ static UBYTE save_dirty,save_restore_open;
 static PcLifecycle lifecycle;
 static UBYTE selected_profile;
 static struct FrontMenu front;
+void game_show_write_protect(void) {front.page=FRONT_WRITE_PROTECT;}
 UBYTE game_front_page(void) {return front.page;}
 int game_front_slide(void) {return front.slide;}
 UBYTE game_front_choice(void) {return front.choice;}
@@ -355,6 +359,15 @@ __attribute__((optimize("Os"))) static int update_arcade_menu(const InputState *
 
 void game_update(const InputState* in) {
     save_restore_open=0;
+#if TRACKLOADER && !WHDLOAD
+    if(mode==MODE_ATTRACT && front.page==FRONT_WRITE_PROTECT) {
+        if(in->fire_edge) {
+            native_save_check_startup();
+            front.page=FRONT_HOME;front.held=in->held;front.slide=0;
+        }
+        return;
+    }
+#endif
     if(update_arcade_menu(in))return;
     if (!in->fire && !in->fire_edge) load_retry_wait=0;
     sfx_emit(pc_sfx_startup(&sound_events));

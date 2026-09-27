@@ -235,3 +235,11 @@ retained; the font and PC-port QR indices follow their reordered pages.
 Options now toggles session-only Arcade mode. All six levels are unlocked, with five named scores per level and keyboard name entry after qualifying deaths. Normal saved scores and unlocks are isolated. See [ARCADE_MODE.md](ARCADE_MODE.md) for PC evidence, controls and validation.
 
 The Home menu resets to the normal Hexagon palette on entry (including startup). Re-entering the level selector restores the selected profile's palette even when the selection has not changed. This prevents a white Hyper Hexagoner background carrying into Home, Options or Credits. All six profile-to-Home-and-back transitions were checked against `pc_palette_start`.
+
+## Floppy write-protection notice
+
+The native ADF checks the boot drive's active-low write-protection input during startup. A protected disk shows a full-screen warning before Home: no progress will be saved, remove protection now to enable saving, and Fire to start. Fire (also Space/Return) rechecks the drive, then enters Home without activating its selection. Escape and developer jumps cannot bypass the warning.
+
+If protection is still enabled at acknowledgement, native saving stays disabled until reboot. Normal records still update in RAM and previously saved progress still loads. Removing protection later does not re-enable saves in that session. If protection is removed before acknowledgement, the existing save flow is enabled, including its later per-save protection checks. WHDLoad does not show the floppy prompt or apply this lockout.
+
+`test-native-save-retry` checks both acknowledgement outcomes, persistent suppression through gameplay/menu transitions, and the existing transaction/retry behaviour. Menu raster/cache and WHDLoad save tests also pass.

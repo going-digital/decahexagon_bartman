@@ -888,6 +888,7 @@ static void front_text(UBYTE *plane,const char *text,unsigned y,unsigned scale) 
             static const UBYTE digits[10][7]={{14,17,19,21,25,17,14},{4,12,4,4,4,4,14},{14,17,1,2,4,8,31},{30,1,1,14,1,1,30},{2,6,10,18,31,2,2},{31,16,16,30,1,1,30},{14,16,16,30,17,17,14},{31,1,2,4,8,8,8},{14,17,17,14,17,17,14},{14,17,17,15,1,1,14}};
             bits=digits[ch-'0'][row];
         } else if(ch=='.')bits=row==6?4:0;
+        else if(ch==',')bits=row==5?4:row==6?8:0;
         else if(ch==':')bits=(row==2 || row==5)?4:0;
         else if(ch=='/')bits=1u<<(row<5?row:4);
         else if(ch=='-')bits=row==3?14:0;
@@ -967,6 +968,12 @@ void hud_draw_front(void *buffer) {
         front_text(plane,game_arcade()->enabled?"ARCADE MODE: ON":"ARCADE MODE: OFF",94,1);
         front_text(plane,"SPACE / RETURN / FIRE TO CHANGE",120,1);
         front_text(plane,"ESC TO RETURN",173,1);
+    } else if(page==5) {
+        front_text(plane,"DISK IS WRITE PROTECTED.",36,1);
+        front_text(plane,"NO PROGRESS WILL BE SAVED.",65,1);
+        front_text(plane,"IF YOU WANT TO SAVE PROGRESS,",94,1);
+        front_text(plane,"REMOVE WRITE PROTECTION NOW.",108,1);
+        front_text(plane,"FIRE TO START.",150,1);
     } else if(page==4) {
         const Arcade *a=game_arcade();
         front_text(plane,"HIGH SCORE",32,2);
