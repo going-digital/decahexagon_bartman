@@ -37,6 +37,7 @@ run('build_inflate_probe.py','--execram-source',a.execram_source.resolve())
 run('check_executable_target.py','--execram-source',a.execram_source.resolve())
 run('build_dosio_probe.py','--execram-source',a.execram_source.resolve())
 run('build_native_boot.py')
+run('check_ofs.py')
 image=(work/'native_game/native_menu.adf').read_bytes();digest=hashlib.sha256(image).hexdigest()
 assert len(image)==901120
 for sector in (1738,1749):assert image[sector*512:(sector+1)*512]==bytes(512)

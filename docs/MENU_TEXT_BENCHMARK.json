@@ -1,0 +1,13 @@
+{
+  "scope": "Musashi 68000 menu text only, two 16x16 headings and two small credit lines; no clear/copy DMA or cache effects, identical loop overhead. Not a whole transition timing.",
+  "trials": [
+    {
+      "variant": "before",
+      "cycles_per_four_lines": 753622.0
+    },
+    {
+      "variant": "after",
+      "cycles_per_four_lines": 134552.0
+    }
+  ]
+}

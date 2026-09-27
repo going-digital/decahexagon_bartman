@@ -1,0 +1,21 @@
+{
+  "scope": "PAL A500 OCS 512K Chip/512K Slow, separate fresh boot menu snapshots at 94s. Fill operations deduplicated across 99 full video frames proxy completed background renders (one fill per render), not exact presentation FPS. Includes extra overlay-plane DMA after change.",
+  "trials": [
+    {
+      "variant": "before",
+      "video_frames": 99,
+      "fills": 12,
+      "seconds": 1.9831568174417342,
+      "fill_rate": 6.050958701026962,
+      "blitter_busy_percent": 2.187530965451051
+    },
+    {
+      "variant": "after",
+      "video_frames": 99,
+      "fills": 99,
+      "seconds": 1.9831568174417342,
+      "fill_rate": 49.92040928347244,
+      "blitter_busy_percent": 18.41088965971093
+    }
+  ]
+}

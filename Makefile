@@ -165,6 +165,22 @@ $(vasm_objects): obj/%.o : %.asm
 	@$(VASM) $(VASMFLAGS) -dependall=make -depfile $(@D)/$*.d -o $@ $(CURDIR)/$<
 
 .PHONY: test
+test: test-menu-raster
+.PHONY: test-menu-raster
+test-menu-raster:
+	python3 tests/menu_raster_test.py
+
+test: test-menu-cache
+.PHONY: test-menu-cache
+test-menu-cache:
+	python3 tests/menu_cache_test.py
+
+test: test-front-menu
+.PHONY: test-front-menu
+test-front-menu: | out
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror tests/front_menu_test.c -o out/front_menu_test
+	out/front_menu_test
+
 test: test-ending-completion
 test: test-time-conversion
 test: test-collision-reciprocal
@@ -534,3 +550,14 @@ test-ending-orientation:
 .PHONY: test-morph-runs
 test-morph-runs: | out
 	python3 tests/compare_morph_runs.py
+
+.PHONY: test-menu-carousel
+test: test-menu-carousel
+test-menu-carousel:
+	cc -std=c99 -O2 -Wall -Wextra -Werror tests/menu_carousel_test.c -o out/menu_carousel_test
+	out/menu_carousel_test
+
+.PHONY: test-level-menu-text
+test: test-level-menu-text
+test-level-menu-text:
+	python3 tests/level_menu_text_test.py

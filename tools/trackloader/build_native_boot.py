@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Disposable PAL A500 ADF with resident three-track loading and cues."""
-import hashlib,json,struct,subprocess,zlib,runpy,sys
+import hashlib,json,struct,subprocess,zlib,runpy,sys,os
 from pathlib import Path
 from native_layout import reservations as native_reservations
 from check_adf_layout import inspect
@@ -68,17 +68,13 @@ args+=['DF0:game',str(native/'game.deflate')]
 for name,byte in [('save_a',51),('save_b',34)]:
  expected[name]=bytes([byte])*512
  fixture=native/(name+'.fixture');fixture.write_bytes(expected[name]);args+=['DF0:'+name,str(fixture)]
-result=subprocess.run(args,capture_output=True,text=True,check=True)
-data=bytearray((native/'native_menu.adf').read_bytes());inspect(data,expected)
-# Fixed on-disk ABI: stage tracks 151-154 and independent save tracks 158/159.
-# Validate every sector is free below; do not depend on a historical trial image.
+# Reserve the fixed ABI sectors before DosIO allocates any files. Growing
+# game payloads may need the remaining free space beyond the bootstrap tracks.
 reservations=native_reservations()
-bitmap=struct.unpack_from('>I',data,880*512+316)[0];words=list(struct.unpack_from('>128I',data,bitmap*512))
-for sectors in reservations.values():
- for sector in sectors:
-  assert words[1+(sector-2)//32]&(1<<((sector-2)%32)), 'reserved sector already occupied'
-  words[1+(sector-2)//32]&=~(1<<((sector-2)%32))
-words[0]=0;words[0]=(-sum(words))&0xffffffff;struct.pack_into('>128I',data,bitmap*512,*words)
+env=dict(os.environ,HEXAGON_RESERVED_SECTORS=','.join(str(n) for sectors in reservations.values() for n in sectors))
+result=subprocess.run(args,capture_output=True,text=True,check=True,env=env)
+data=bytearray((native/'native_menu.adf').read_bytes())
+bitmap=struct.unpack_from('>I',data,880*512+316)[0]
 layout=inspect(data,expected,reservations)
 assert reservations['bootstrap']==list(range(1661,1705))
 boot=(native/'boot.bin').read_bytes();assert len(boot)<=1024

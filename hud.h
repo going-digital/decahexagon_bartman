@@ -32,3 +32,8 @@ void hud_loading_end(void);
 void hud_save_failed(UBYTE failed);
 
 void hud_draw_completion(void *plane);
+
+void hud_draw_front(void *plane);
+
+void *hud_front_bitmap(unsigned slot);
+UBYTE hud_front_cached(void);

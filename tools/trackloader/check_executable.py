@@ -20,7 +20,7 @@ objects=[str(out/(source.replace('/','_')+'.o')) for source in sources]+[str(out
 rows=[]
 for base in (0x20000,0x40000):
  elf=out/f'game_{base:x}.elf'
- subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-nostdlib',f'-Wl,--gc-sections,--undefined=fib_stream_bind,--undefined=fib_stream_unbind,--undefined=fib_stream_set_cue_lead,--undefined=track_save_select,-e,trackloader_game_entry,-Ttext={base:#x}',*objects,'-o',str(elf)],check=True)
+ subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-nostdlib',f'-Wl,-z,max-page-size=4,--gc-sections,--undefined=fib_stream_bind,--undefined=fib_stream_unbind,--undefined=fib_stream_set_cue_lead,--undefined=track_save_select,-e,trackloader_game_entry,-Ttext={base:#x}',*objects,'-o',str(elf)],check=True)
  image,size,entry,_,address=elf_image(elf);assert address==base and size==memory
  expected=bytes(image)+bytes(memory-len(image));(out/f'expected_{base:x}.bin').write_bytes(expected)
  buf=ctypes.create_string_buffer(b'\xa5'*(capacity+32));ctypes.memmove(ctypes.addressof(buf)+16,raw,len(raw));info=Info()

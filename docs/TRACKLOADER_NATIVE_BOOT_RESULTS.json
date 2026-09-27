@@ -1,6 +1,6 @@
 {
   "status": "Native three-track diagnostic built; not yet boot verified",
-  "stage_bytes": 22413,
+  "stage_bytes": 22425,
   "chip_block_bytes": 385024,
   "image_offset": 65536,
   "image_capacity": 221184,
@@ -8,8 +8,8 @@
   "heap_bytes": 81920,
   "cue_offset": 286720,
   "cue_capacity": 16384,
-  "free_disk_sectors": 33,
-  "adf_sha256": "9698063e2894fb2e065a6804e1132a079244448a7ee315ef2eba74abde78b21f",
+  "free_disk_sectors": 24,
+  "adf_sha256": "148ff3b8a26375a4d945736df4248b8264057e866d83598aba80ef981a1adfe1",
   "limitations": [
     "A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending",
     "All profiles mapped; Hyper unlock rules unchanged",

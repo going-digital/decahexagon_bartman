@@ -67,14 +67,25 @@ static void Wait13() { WaitLine(0x13); }
 // sprite pointers/colours, palette), then parks the copper in an infinite
 // WAIT. Startup and steady-state lists use this same complete termination;
 // the fixed COP1 dispatcher enters the selected frame list via COP2.
-static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD col0, UWORD col1) {
+static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD col0, UWORD col1, void *overlay) {
     copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[0]), bpl0);
-    #ifdef SHOW_DRAW_PLANE
-    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]), bpl1);
-    #else
+    UWORD planes=overlay ? 2:1;
+#ifdef SHOW_DRAW_PLANE
+    planes=2;
+#else
     (void)bpl1;
-    #endif
+#endif
+    copPtr = copWrite(copPtr, offsetof(struct Custom, bplcon0),
+                     BPLCON0F_COLOR | (planes * BPLCON0F_BPU210));
+    copPtr = copWritePtr(copPtr, offsetof(struct Custom, bplpt[1]),
+                        overlay ? overlay : bpl1);
+    /* Overlay pixels have the same colour with either background bit. */
+    UWORD menu_ink=(game_front_visible() && game_front_page()==3 &&
+                    game_selected_profile()==4) ? 0x555 : 0xfff;
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), menu_ink);
+    copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), menu_ink);
 
+    if(game_front_visible() && game_front_page()==2) {col0=0;col1=0;}
     // Set scene colours before the HUD's mid-display multiplex WAIT.
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
@@ -216,7 +227,7 @@ int main() {
 
     // Start with a cleared display. Each list has the same static prefix.
     unsigned tail_offset = copPtr - copper1;
-    copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x000, 0x000);
+    copPtr = build_frame_tail(copPtr, bitplane_fg1, bitplane_fg2, 0x000, 0x000, 0);
     USHORT* draw_copper = copper1 + 512;
     for (unsigned i = 0; i < (unsigned)(copPtr-copper1); ++i) {
         draw_copper[i] = copper1[i];
@@ -298,7 +309,7 @@ int main() {
 #if !TRACKLOADER || WHDLOAD
         /* Native floppy boot has no OS return path. Its resident caller owns
          * startup-failure handling, not a desktop to return to on Escape. */
-        if (input.back_edge && game_mode() == MODE_ATTRACT) break;
+        if (input.back_edge && game_mode() == MODE_ATTRACT && game_front_page()==0) break;
 #endif
         ULONG ticks = pc_clock_advance(&simulation_clock, elapsed_frames, DISPLAY_RATE);
         while (ticks--) {
@@ -343,6 +354,7 @@ int main() {
         render_spokes(bitplane_fg2); // radial slot lines, drawn over the fill
         render_player(bitplane_fg2); // also retires stale player sprite pointers
         if(game_ending_complete()) {blit_wait();hud_draw_completion(bitplane_fg2);}
+        if(game_front_visible() && !hud_front_cached()) {blit_wait();hud_draw_front(bitplane_fg2);}
 #if BUILD_DEBUG
         custom->color[0] = 0x300;
 #endif
@@ -399,7 +411,8 @@ int main() {
         }
 
         // Build only the inactive list, then publish it as a complete frame.
-        copPtr = build_frame_tail(draw_copper + tail_offset, bitplane_fg2, bitplane_fg3, col0, col1);
+        copPtr = build_frame_tail(draw_copper + tail_offset, bitplane_fg2, bitplane_fg3, col0, col1,
+                                  hud_front_bitmap((draw_copper-copper1)/512));
         QueueDisplayList(draw_copper);
         draw_copper += 512;
         if (draw_copper == copper1 + 1536) draw_copper = copper1;

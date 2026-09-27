@@ -2,9 +2,9 @@
   "status": "Bounded host C OFS reader matches real disk payloads and rejects malformed controls",
   "valid_sector_reads": {
     "courtesy": 486,
-    "focus": 479,
+    "focus": 483,
     "otis": 477,
-    "game": 182,
+    "game": 218,
     "save_a": 4,
     "save_b": 5
   },
@@ -31,7 +31,8 @@
     "missing",
     "path",
     "long_name",
-    "hash_cycle"
+    "hash_cycle",
+    "reserved_root_hash_boundaries"
   ],
   "limitations": [
     "This report covers host C execution; native integration is recorded separately",

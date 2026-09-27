@@ -50,6 +50,22 @@ int main(int argc,char**argv){
  unsigned code_len;unsigned char*code=readfile(argv[1],&code_len);memcpy(mem+0x1000,code,code_len);
  m68k_init();m68k_set_cpu_type(M68K_CPU_TYPE_68000);m68k_write_memory_32(0,0x700000);m68k_write_memory_32(4,0x1000);m68k_pulse_reset();
  call(4,"DF0:Hexagon",NULL,0);
+ /* Native images must reserve resident/save sectors before file allocation. */
+ const char *reserve=getenv("HEXAGON_RESERVED_SECTORS");
+ if(reserve) {
+  unsigned off=880*512+316,bm=0;
+  for(unsigned j=0;j<4;j++)bm=(bm<<8)|disk[off+j];
+  if(bm>=1760)return 2;
+  unsigned words[128];
+  for(unsigned i=0;i<128;i++){words[i]=0;for(unsigned j=0;j<4;j++)words[i]=(words[i]<<8)|disk[bm*512+i*4+j];}
+  while(*reserve){char *end;unsigned sector=strtoul(reserve,&end,10);if(end==reserve || sector<2 || sector>=1760)return 2;
+   unsigned i=1+(sector-2)/32,bit=1u<<((sector-2)%32);
+   if(!(words[i]&bit))return 2;words[i]&=~bit;
+   reserve=end;if(*reserve==',')++reserve;else if(*reserve)return 2;
+  }
+  words[0]=0;unsigned sum=0;for(unsigned i=0;i<128;i++)sum+=words[i];words[0]=0u-sum;
+  for(unsigned i=0;i<128;i++)for(unsigned j=0;j<4;j++)disk[bm*512+i*4+j]=words[i]>>(24-j*8);
+ }
  for(int i=3;i<argc;i+=2){
   unsigned size;unsigned char*data=readfile(argv[i+1],&size);
   call(1,argv[i],data,size);memset(mem+0x200000,0xa5,size+16);

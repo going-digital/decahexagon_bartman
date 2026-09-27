@@ -27,3 +27,6 @@ __attribute__((always_inline)) inline void blit_wait(void) {
     (void)dummy;
     while (custom->dmaconr & DMAF_BLTDONE);
 }
+
+/* Full-size, non-overlapping Chip RAM bitmap copy; asynchronous. */
+void blit_copy_plane(const void *source,void *destination);

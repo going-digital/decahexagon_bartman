@@ -48,6 +48,7 @@ def main():
         assert len(data) == info['bytes'] and sha(data) == info['sha256'], name
         files['hexagon/WHDLoad/Hexagon/'+name] = data
     files['hexagon/WHDLoad/Hexagon/manifest.json'] = (whd/'manifest.json').read_bytes()
+    files['hexagon/BUMP_IT_UP_LICENSE.txt'] = (ROOT/'assets/fonts/BUMP_IT_UP_LICENSE.txt').read_bytes()
     files['hexagon/README.txt'] = (ROOT/'docs/DISTRIBUTION_README.txt').read_bytes()
     if args.cheat:
         files['hexagon/README.txt'] += b'\nCHEAT BUILD: Hold 8 during play for automatic steering assistance.\n'

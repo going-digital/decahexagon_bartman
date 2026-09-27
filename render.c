@@ -96,6 +96,9 @@ static void player_header(UWORD *sprite, WORD x, WORD y, UWORD height) {
     sprite[1]=((stop&255)<<8)|(((v>>8)&1)<<2)|(((stop>>8)&1)<<1)|(h&1);
 }
 
+#ifdef __m68k__
+__attribute__((optimize("Os")))
+#endif
 static void player_prerender(void) {
     player_poses=GameAllocChip(PLAYER_POSES*sizeof(*player_poses));
     if (!player_poses) return;
@@ -148,7 +151,7 @@ void render_player(void* buf) {
         player_sprites[player_sprite_slot][ch][0]=0;
         player_sprites[player_sprite_slot][ch][1]=0;
     }
-    if(game_mode()==MODE_ENDING || game_ending_complete())return;
+    if(game_mode()==MODE_ENDING || game_ending_complete() || game_front_visible())return;
     if (player_use_pose(a)) return;
     WORD rt = zscale(PLAYER_RADIUS + PLAYER_TIP_LEN);
     WORD rb = zscale(PLAYER_RADIUS);

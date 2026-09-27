@@ -8,7 +8,7 @@ static unsigned upper(unsigned c) { return c>='a' && c<='z' ? c-32:c; }
 static int block(TrackSectorRead read, void *ctx, uint32_t sector,
                  unsigned char *b, TrackOfsScratch *s) {
     uint32_t sum=0;
-    if(sector<2 || sector>=1661 || (s->seen[sector/8]&(1u<<(sector%8))))return 0;
+    if(sector<2 || sector>=1738 || (sector>=1661 && sector<1705) || (s->seen[sector/8]&(1u<<(sector%8))))return 0;
     s->seen[sector/8]|=(unsigned char)(1u<<(sector%8));
     if(!read(ctx,sector,b))return 0;
     for(unsigned i=0;i<128;i++)sum+=word(b,i);

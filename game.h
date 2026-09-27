@@ -68,3 +68,12 @@ UBYTE game_save_dirty(void);
 
 UBYTE game_ending_complete(void);
 UBYTE game_completion_unlocked(void);
+
+UBYTE game_front_page(void);
+UBYTE game_front_choice(void);
+UBYTE game_credit_page(void);
+UBYTE game_front_visible(void);
+
+int game_front_slide(void);
+
+UBYTE game_menu_locks(void);

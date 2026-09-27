@@ -36,6 +36,7 @@ header=r'''
 static unsigned mode,complete;
 static unsigned game_mode(void){return mode;}
 static unsigned game_ending_complete(void){return complete;}
+static unsigned game_front_visible(void){return 0;}
 static UWORD zoom=128;
 static WORD ox,oy;
 static RenderScene scene;

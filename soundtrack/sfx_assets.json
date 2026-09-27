@@ -1,8 +1,8 @@
 {
   "sample_rate": 8000,
   "format": "signed 8-bit mono, even padded",
-  "bytes": 107778,
-  "sha256": "a1d75d01fccbbbb12bdd88119979f2fd7eaedc2f144c7a8d50755241b4054f82",
+  "bytes": 109504,
+  "sha256": "fc5fce95d84e7ba7483e1bc64a74a36ae42f33c284ef8638f71dc932cfc1a11e",
   "clips": [
     {
       "id": 0,
@@ -108,15 +108,15 @@
       "name": "menuselect",
       "source_sha256": "74741ae3dc784e8f656bfd30ef0befae47fdbf98dbb513c26128b39f69c8c840",
       "offset": 81752,
-      "bytes": 0,
+      "bytes": 1726,
       "original_bytes": 2755,
-      "omitted": true
+      "omitted": false
     },
     {
       "id": 12,
       "name": "menuchoose",
       "source_sha256": "e1aacb5151eba89a8d450d70d8e28a3071458d8eb2316a0d97ec467eb7f0edfe",
-      "offset": 81752,
+      "offset": 83478,
       "bytes": 1160,
       "original_bytes": 1889,
       "omitted": false
@@ -125,7 +125,7 @@
       "id": 13,
       "name": "awesome",
       "source_sha256": "cb22cdb2f09173a3fcd8fb9d957c919bafbd4a4a09b17ac5969218066d49cedf",
-      "offset": 82912,
+      "offset": 84638,
       "bytes": 5592,
       "original_bytes": 5687,
       "omitted": false
@@ -134,7 +134,7 @@
       "id": 14,
       "name": "wonderful",
       "source_sha256": "2d9723e78204fb586ebb13f41df2660a9159a5f519c03e4c0bc2e103a79444ae",
-      "offset": 88504,
+      "offset": 90230,
       "bytes": 6890,
       "original_bytes": 7172,
       "omitted": false
@@ -143,7 +143,7 @@
       "id": 15,
       "name": "superhexagon",
       "source_sha256": "56e3ab7e2f6e17486cdbf3fdc2ad77d9ad7808d6f59ffdf3829d31bdfebed0dc",
-      "offset": 95394,
+      "offset": 97120,
       "bytes": 12384,
       "original_bytes": 12519,
       "omitted": false

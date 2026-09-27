@@ -1,4 +1,5 @@
 #include "game.h"
+#include "front_menu.h"
 #include "pc_time.h"
 #include "pc_morph.h"
 #include "system.h"
@@ -31,6 +32,12 @@ static uint32_t save_generation,save_achievements;
 static UBYTE save_dirty,save_restore_open;
 static PcLifecycle lifecycle;
 static UBYTE selected_profile;
+static struct FrontMenu front;
+UBYTE game_front_page(void) {return front.page;}
+int game_front_slide(void) {return front.slide;}
+UBYTE game_front_choice(void) {return front.choice;}
+UBYTE game_credit_page(void) {return front.credits;}
+UBYTE game_front_visible(void) {return game_mode()==MODE_ATTRACT;}
 static UBYTE test_run;
 /* Persistent result overlay: 0 none, 1 unlock, 2 game complete. */
 static UBYTE ending_complete;
@@ -46,6 +53,7 @@ UBYTE game_take_load_barrier(void) {
     UBYTE pending=load_barrier;load_barrier=0;return pending;
 }
 UBYTE game_selected_profile(void) { return selected_profile; }
+UBYTE game_menu_locks(void) {return (!records.completed[0]<<3)|(!records.completed[1]<<4)|(!records.completed[2]<<5);}
 UBYTE game_selection_locked(void) { return !pc_profile_unlocked(&records,selected_profile); }
 static void load_record(void) {
     uint32_t best=records.best[selected_profile];
@@ -141,7 +149,8 @@ static void reset_run(void) {
     gamestate.time_seconds=gamestate.time_subsecond_frames=0;
     shake_x=shake_y=0;new_record=0;gamestate.pulse=0;
 }
-void game_init(void) {
+__attribute__((optimize("Os"))) void game_init(void) {
+    front=(struct FrontMenu){0};
     records=(PcRecords){0};save_generation=save_achievements=0;
     save_dirty=0;save_restore_open=1;
     test_run=0;run_preparer=0;load_barrier=0;load_retry_wait=0;load_failed=0;
@@ -331,6 +340,7 @@ void game_update(const InputState* in) {
         reset_run();
         pc_menu_reset(&menu,selected_profile);
         pc_lifecycle_init(&lifecycle);
+        front.page=FRONT_LEVELS;front.held=in->held;front.level=selected_profile;front.slide=0;
         set_mode(MODE_ATTRACT);
         gamestate.field_angle += gamestate.field_rotation;
         return;
@@ -356,17 +366,22 @@ void game_update(const InputState* in) {
         }
         return;
     }
+    if(mode==MODE_ATTRACT) {
+        unsigned previous=front.page;
+        sfx_emit(front_menu_tick(&front,in->held,in->fire_edge,in->back_edge));
+        if(previous!=FRONT_LEVELS && front.page==FRONT_LEVELS) {front.level=selected_profile;front.slide=0;}
+        if(previous!=FRONT_LEVELS || front.page!=FRONT_LEVELS) {
+            gamestate.field_angle+=gamestate.field_rotation;
+            return;
+        }
+    }
     switch (mode) {
     case MODE_ATTRACT:
         // Keep the menu pointer visible; ease to gameplay zoom on confirmation.
         gamestate.draw_distance_target = ATTRACT_ZOOM_TARGET;
-        {
-            int moving=menu.motion;
-            pc_menu_tick(&menu,in->held);
-            if(!moving && menu.motion) sfx_emit(SFX_BIT(SFX_MENUCHOOSE));
-        }
-        if (selected_profile!=pc_menu_profile(&menu)) {
-            selected_profile=pc_menu_profile(&menu);load_record();load_failed=0;
+        if (selected_profile!=front.level) {
+            selected_profile=front.level;pc_menu_reset(&menu,selected_profile);
+            load_record();load_failed=0;
             pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
             mode_timer=0;
         }

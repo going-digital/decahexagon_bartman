@@ -19,7 +19,7 @@ def run(data,name='courtesy',success=False,fail_sector=None,capacity=None,untouc
     dst=ctypes.create_string_buffer(b'\xa5'*(n+32));scratch=ctypes.create_string_buffer(b'\xa5'*(1244+32));calls=[];errors=[]
     @read_type
     def read(ctx,sector,buffer):
-        if not (2<=sector<1661 and sector not in calls):
+        if not (2<=sector<1738 and not 1661<=sector<1705 and sector not in calls):
             errors.append(sector);return 0
         calls.append(sector)
         if sector==fail_sector:return 0
@@ -31,7 +31,7 @@ def run(data,name='courtesy',success=False,fail_sector=None,capacity=None,untouc
     assert scratch.raw[:16]==b'\xa5'*16 and scratch.raw[1260:1276]==b'\xa5'*16
     if success:assert dst.raw[16:16+n]==payload
     if untouched:assert dst.raw[16:16+n]==b'\xa5'*n
-    assert len(calls)<=1659
+    assert len(calls)<=1692
     return len(calls)
 valid={name:run(original,name,True) for name in expected}
 run(original,'COURTESY',True)
@@ -59,5 +59,10 @@ data=change(header,124,header);data[header*512+433]^=1
 struct.pack_into('>I',data,header*512+20,0)
 struct.pack_into('>I',data,header*512+20,(-sum(struct.unpack_from('>128I',data,header*512)))&0xffffffff)
 run(data)
-report=dict(status='Bounded host C OFS reader matches real disk payloads and rejects malformed controls',valid_sector_reads=valid,malformed_cases=[x[0] for x in cases]+['checksum','read_failure','capacity','missing','path','long_name','hash_cycle'],limitations=['This report covers host C execution; native integration is recorded separately','Failure may leave validated prefix in destination; caller must not publish it'])
+# Reject every reserved range before issuing a disk read, through the root hash.
+hash_value=len('courtesy')
+for ch in 'COURTESY':hash_value=(hash_value*13+ord(ch))&0x7ff
+for forbidden in (0,1,1661,1704,1738,1749,1759,1760):
+    run(change(880,6+hash_value%72,forbidden),untouched=True)
+report=dict(status='Bounded host C OFS reader matches real disk payloads and rejects malformed controls',valid_sector_reads=valid,malformed_cases=[x[0] for x in cases]+['checksum','read_failure','capacity','missing','path','long_name','hash_cycle','reserved_root_hash_boundaries'],limitations=['This report covers host C execution; native integration is recorded separately','Failure may leave validated prefix in destination; caller must not publish it'])
 (root/'docs/TRACKLOADER_OFS_RESULTS.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))

@@ -22,8 +22,10 @@ for source in sources:
  subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),*flags,*(['-Os'] if source in size_sources else []),'-c',str(root/source),'-o',str(obj)],cwd=root,check=True)
 obj=out/'asm.o';objects.append(str(obj))
 subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-Wa,--register-prefix-optional','-c',str(root/'support/gcc8_a_support.s'),'-o',str(obj)],check=True)
+# EXE1 is a flat relocated Chip RAM image, with no paged text/data protection.
+# Omit the ELF linker's page gap so menu SFX fit the fixed resident budget.
 elf=out/'game.elf'
-subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-nostdlib','-Wl,--emit-relocs,--gc-sections,--undefined=fib_stream_bind,--undefined=fib_stream_unbind,--undefined=fib_stream_set_cue_lead,--undefined=track_save_select,-e,trackloader_game_entry,-Ttext=0',*objects,'-o',str(elf)],check=True)
+subprocess.run([str(sdk/'m68k-amiga-elf-gcc'),'-m68000','-nostdlib','-Wl,-z,max-page-size=4,--emit-relocs,--gc-sections,--undefined=fib_stream_bind,--undefined=fib_stream_unbind,--undefined=fib_stream_set_cue_lead,--undefined=track_save_select,-e,trackloader_game_entry,-Ttext=0',*objects,'-o',str(elf)],check=True)
 undefined=subprocess.check_output([str(binutils/'nm'),'-u',str(elf)],text=True).strip()
 assert not undefined,undefined
 symbols=subprocess.check_output([str(binutils/'nm'),str(elf)],text=True)

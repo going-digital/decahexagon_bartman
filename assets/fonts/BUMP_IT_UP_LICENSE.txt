@@ -1,0 +1,10 @@
+Bump IT UP by Aaron Amar (aaronamar)
+https://fontstruct.com/fontstructions/show/155156/bump_it_up
+https://fontstruct.com/fontstructions/download/155156
+Licensed under Creative Commons Attribution-ShareAlike 3.0 Unported:
+https://creativecommons.org/licenses/by-sa/3.0/
+
+The 16x16 bitmap adaptation in menu_font16.h was rasterised from the font
+bundled with the locally installed PC game, with a common baseline and
+centred glyphs. This bitmap adaptation is distributed under CC BY-SA 3.0.
+The font does not imply endorsement of this Amiga port by its author.

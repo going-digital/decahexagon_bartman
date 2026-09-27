@@ -340,3 +340,14 @@ void blit_fill(void *bitplane, void *bitplane2) {
     custom->bltdmod = SCREEN_WIDTH_BYTES;
     custom->bltsize = (rows << 6) | (SCREEN_WIDTH_BYTES >> 1);
 }
+
+void blit_copy_plane(const void *source,void *destination) {
+    blit_wait();
+    custom->bltcon0=BC0F_SRCA | BC0F_DEST | 0xf0; /* D = A */
+    custom->bltcon1=0;
+    custom->bltafwm=custom->bltalwm=0xffff;
+    custom->bltamod=custom->bltdmod=0;
+    custom->bltapt=(void*)source;
+    custom->bltdpt=destination;
+    custom->bltsize=(SCREEN_HEIGHT<<6) | (SCREEN_WIDTH_BYTES>>1);
+}

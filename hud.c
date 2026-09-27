@@ -4,6 +4,16 @@
 #include "coplist.h" // copWritePtr
 #include "game.h"
 #include "render.h"
+#include "blitter.h"
+#include "menu_font16.h"
+#include "menu_carousel.h"
+#include "credit_qr.h"
+#pragma GCC optimize ("Os")
+
+static UBYTE *front_planes;
+static ULONG front_keys[3],front_scores[3];
+static int front_positions[3];
+static unsigned front_strip_page;
 
 // --- layout --------------------------------------------------------------
 #define SPRITE_CHANNELS 8 // total OCS sprite DMA channels
@@ -322,28 +332,11 @@ static const UBYTE title_font[TITLE_GLYPH_COUNT][HUD_GLYPH_H] = {
     /* U */ {9,9,9,9,9,6},
 };
 
-static const UBYTE title_names[6][16] = {
-    {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
-    {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
-    {TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T},
-    {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N},
-    {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_R},
-    {TF_H,TF_Y,TF_P,TF_E,TF_R,TF_SPACE,TF_H,TF_E,TF_X,TF_A,TF_G,TF_O,TF_N,TF_E,TF_S,TF_T}
-};
-static const UBYTE title_lengths[6]={7,9,10,13,15,16};
 static const UBYTE title_saving[]={TF_S,TF_A,TF_V,TF_E};
 static const UBYTE title_write_protected[]={TF_W,TF_R,TF_I,TF_T,TF_E,TF_SPACE,TF_P,TF_R,TF_O,TF_T,TF_E,TF_C,TF_T,TF_E,TF_D};
 static const UBYTE title_save_error[]={TF_S,TF_A,TF_V,TF_E,TF_SPACE,TF_E,TF_R,TF_R,TF_O,TF_R};
 static const UBYTE title_loading[]={TF_L,TF_O,TF_A,TF_D,TF_SPACE,TF_T,TF_R,TF_A,TF_C,TF_K};
 static const UBYTE title_load_error[]={TF_L,TF_O,TF_A,TF_D,TF_SPACE,TF_E,TF_R,TF_R,TF_O,TF_R};
-static const UBYTE title_locked[]={
-    TF_L,
-    TF_O,
-    TF_C,
-    TF_K,
-    TF_E,
-    TF_D
-};
 static const UBYTE title_str_gameover[] = {
     TF_G,
     TF_A,
@@ -365,7 +358,6 @@ static UWORD* glyph_buf[HUD_SLOTS][GLYPH_COUNT];
 static UBYTE  cur_glyph[HUD_SLOTS]; // this frame's HUD choice per slot, from hud_tick()
 static UBYTE centisecond_digits[FRAME_RATE]; // packed decimal, indexed by tick
 static UWORD glyph_seconds=0xffff;
-static UWORD* locked_buf[SPRITE_CHANNELS];
 static UWORD* load_error_buf[SPRITE_CHANNELS];
 #if TRACKLOADER
 static UWORD* loading_buf[SPRITE_CHANNELS],*saving_buf[SPRITE_CHANNELS],*save_error_buf[SPRITE_CHANNELS];
@@ -422,7 +414,6 @@ UWORD* hud_loading_copper(void *plane,UBYTE saving) {
     return loading_copper;
 }
 #endif
-static UWORD* title_buf[6][SPRITE_CHANNELS];    // six profile canvases, one slice per channel
 static UWORD* gameover_buf[SPRITE_CHANNELS]; // "GAME OVER" canvas, same layout
 
 // A degenerate (0,0) pos/ctl descriptor: 0-height, so the DMA channel goes
@@ -437,6 +428,9 @@ static const UWORD blank_sprite[2] __attribute__((section(".MEMF_CHIP"))) = { 0,
 
 // Double each bit of a `width`-bit row so an authored "pixel" is 2 sprite dots
 // wide, matching the display's lores pixel size (sprites are always hires-pitch).
+/* Size-optimise startup bitmap construction; frame rendering keeps O2. */
+#pragma GCC push_options
+#pragma GCC optimize ("Os")
 static UWORD double_bits(UWORD n, WORD width) {
     UWORD r = 0;
     for (WORD b = width - 1; b >= 0; b--) {
@@ -578,13 +572,12 @@ static void free_sprite(UWORD **buf) {
     *buf = 0;
 }
 
-void hud_free(void) {
+__attribute__((optimize("Os"))) void hud_free(void) {
+    if(front_planes) {GameFreeChip(front_planes,3*BITPLANE_SIZE+MENU_STRIP_SIZE);front_planes=0;}
     for (WORD slot = 0; slot < HUD_SLOTS; ++slot)
         for (WORD g = 0; g < GLYPH_COUNT; ++g)
             free_sprite(&glyph_buf[slot][g]);
     for (WORD ch = 0; ch < SPRITE_CHANNELS; ++ch) {
-        for (WORD p=0;p<6;++p) free_sprite(&title_buf[p][ch]);
-        free_sprite(&locked_buf[ch]);
         free_sprite(&load_error_buf[ch]);
 #if TRACKLOADER
         free_sprite(&loading_buf[ch]);free_sprite(&saving_buf[ch]);free_sprite(&save_error_buf[ch]);free_sprite(&write_protected_buf[ch]);
@@ -593,7 +586,11 @@ void hud_free(void) {
     }
 }
 
-void hud_init(void) {
+__attribute__((optimize("Os"))) void hud_init(void) {
+    front_planes=GameAllocChip(3*BITPLANE_SIZE+MENU_STRIP_SIZE);
+    front_strip_page=0;
+    if(front_planes)menu_strip_init(front_planes+3*BITPLANE_SIZE);
+    for(unsigned i=0;i<3;++i)front_keys[i]=~0u;
     glyph_seconds=0xffff;
     for (UWORD tick=0;tick<FRAME_RATE;++tick) {
         UWORD cs=tick*100/FRAME_RATE;
@@ -629,8 +626,6 @@ void hud_init(void) {
         for (WORD ch = 0; ch < SPRITE_CHANNELS; ch++) {
             UWORD pos, ctl;
             pos_ctl(base_hstart + ch * 16, DISPLAY_HW_Y + TITLE_Y, &pos, &ctl);
-            for (WORD p=0;p<6;++p) title_buf[p][ch]=alloc_canvas_slice(pos,ctl);
-            locked_buf[ch]=alloc_canvas_slice(pos,ctl);
             load_error_buf[ch]=alloc_canvas_slice(pos,ctl);
 #if TRACKLOADER
             loading_buf[ch]=alloc_canvas_slice(pos,ctl);
@@ -639,8 +634,6 @@ void hud_init(void) {
 #endif
             gameover_buf[ch] = alloc_canvas_slice(pos, ctl);
         }
-        for (WORD p=0;p<6;++p) paint_banner(title_buf[p],title_names[p],title_lengths[p]);
-        paint_banner(locked_buf,title_locked,sizeof(title_locked));
         paint_banner(load_error_buf,title_load_error,sizeof(title_load_error));
 #if TRACKLOADER
         paint_banner(loading_buf,title_loading,sizeof(title_loading));
@@ -692,8 +685,10 @@ typedef enum { BANNER_NONE, BANNER_HEXAGON, BANNER_GAMEOVER, BANNER_LOCKED, BANN
 // Selection keeps its best visible; names are revealed only after unlocking.
 // GAME OVER shows for a beat at the start of MODE_GAMEOVER. Either way,
 // hud_flash_now() cuts away to the timer HUD with a one-tick white flash.
+
+#pragma GCC pop_options
 static Banner banner_active(GameMode m) {
-    if(game_ending_complete())return BANNER_NONE;
+    if(game_ending_complete() || (game_front_visible() && game_front_page()!=3))return BANNER_NONE;
     if (game_load_failed()) return BANNER_LOAD_ERROR;
 #if TRACKLOADER
     /* A failed save is a temporary notice, not a replacement menu. Keep
@@ -706,7 +701,7 @@ static Banner banner_active(GameMode m) {
 #endif
     UWORD t = game_mode_timer();
     if (m == MODE_ATTRACT) {
-        return game_selection_locked() ? BANNER_LOCKED:BANNER_HEXAGON;
+        return BANNER_NONE;
     }
     if (m == MODE_GAMEOVER && t < GAMEOVER_HOLD_TICKS) return BANNER_GAMEOVER;
     return BANNER_NONE;
@@ -761,11 +756,9 @@ void hud_tick(void) {
 USHORT* hud_emit_copper(USHORT* copPtr) {
     GameMode mode=game_mode();
     Banner banner = banner_active(mode);
-    UBYTE show_timer=!game_ending_complete() && (mode==MODE_ATTRACT || banner==BANNER_NONE);
+    UBYTE show_timer=!game_front_visible() && !game_ending_complete() && (mode==MODE_ATTRACT || banner==BANNER_NONE);
     UWORD **banner_buf=0;
-    if (banner==BANNER_HEXAGON) banner_buf=title_buf[game_selected_profile()];
-    else if (banner==BANNER_LOCKED) banner_buf=locked_buf;
-    else if (banner==BANNER_GAMEOVER) banner_buf=gameover_buf;
+    if (banner==BANNER_GAMEOVER) banner_buf=gameover_buf;
     else if (banner==BANNER_LOAD_ERROR) banner_buf=load_error_buf;
 #if TRACKLOADER
     else if (banner==BANNER_SAVE_ERROR) banner_buf=save_failed==2 ? write_protected_buf : save_error_buf;
@@ -854,3 +847,172 @@ void hud_draw_completion(void *buffer) {
                             }
     }
 }
+
+#pragma GCC push_options
+#pragma GCC optimize ("Os")
+/* Small planar font for front-end pages; six pixels per character. */
+static const UBYTE front_font[26][7]={
+ {14,17,17,31,17,17,17},{30,17,17,30,17,17,30},{14,17,16,16,16,17,14},
+ {30,17,17,17,17,17,30},{31,16,16,30,16,16,31},{31,16,16,30,16,16,16},
+ {14,17,16,23,17,17,15},{17,17,17,31,17,17,17},{14,4,4,4,4,4,14},
+ {7,2,2,2,18,18,12},{17,18,20,24,20,18,17},{16,16,16,16,16,16,31},
+ {17,27,21,21,17,17,17},{17,25,21,19,17,17,17},{14,17,17,17,17,17,14},
+ {30,17,17,30,16,16,16},{14,17,17,17,21,18,13},{30,17,17,30,20,18,17},
+ {15,16,16,14,1,1,30},{31,4,4,4,4,4,4},{17,17,17,17,17,17,14},
+ {17,17,17,17,17,10,4},{17,17,17,21,21,21,10},{17,17,10,4,10,17,17},
+ {17,17,10,4,4,4,4},{31,1,2,4,8,16,31}
+};
+static void front_text(UBYTE *plane,const char *text,unsigned y,unsigned scale) {
+    unsigned len=0;while(text[len])++len;
+    if(scale==2) {
+        unsigned left=(SCREEN_WIDTH-len*16)/2;
+        for(unsigned c=0;c<len;++c) {
+            unsigned ch=(unsigned char)text[c];
+            if(ch<'A' || ch>'Z')continue;
+            for(unsigned row=0;row<16;++row) {
+                UWORD bits=menu_font16[ch-'A'][row];
+                /* Centred 16-pixel cells always start on a byte boundary. */
+                unsigned offset=(y+row)*SCREEN_WIDTH_BYTES+(left>>3)+c*2;
+                plane[offset]|=bits>>8;
+                plane[offset+1]|=bits;
+
+            }
+        }
+        return;
+    }
+    unsigned left=(SCREEN_WIDTH-len*6*scale)/2;
+    for(unsigned c=0;c<len;++c)for(unsigned row=0;row<7;++row) {
+        unsigned ch=(unsigned char)text[c],bits=0;
+        if(ch>='A' && ch<='Z')bits=front_font[ch-'A'][row];
+        else if(ch>='0' && ch<='9') {
+            static const UBYTE digits[10][7]={{14,17,19,21,25,17,14},{4,12,4,4,4,4,14},{14,17,1,2,4,8,31},{30,1,1,14,1,1,30},{2,6,10,18,31,2,2},{31,16,16,30,1,1,30},{14,16,16,30,17,17,14},{31,1,2,4,8,8,8},{14,17,17,14,17,17,14},{14,17,17,15,1,1,14}};
+            bits=digits[ch-'0'][row];
+        } else if(ch=='.')bits=row==6?4:0;
+        else if(ch==':')bits=(row==2 || row==5)?4:0;
+        else if(ch=='/')bits=1u<<(row<5?row:4);
+        else if(ch=='-')bits=row==3?14:0;
+        else if(ch=='_')bits=row==6?31:0;
+        unsigned px=left+c*6;
+        UWORD mask=bits<<(11-(px&7));
+        unsigned offset=(y+row)*SCREEN_WIDTH_BYTES+(px>>3);
+        plane[offset]|=mask>>8;
+        plane[offset+1]|=mask;
+
+    }
+}
+void hud_draw_front(void *buffer) {
+    UBYTE *plane=buffer;
+    /* Draw only into the unpublished buffer, after its blits have finished. */
+    unsigned page=game_front_page();
+    if(page==0) {
+        blit_wait();
+        for(unsigned i=0;i<8000/4;++i)((ULONG*)plane)[i]=0;
+    } else {blit_cls(plane);blit_wait();}
+    if(page==0) {
+        front_text(plane,"SUPER HEXAGON",32,2);
+        if(!front_planes) {
+            static const char *items[]={"START","OPTIONS","CREDITS"};
+            front_text(plane,items[game_front_choice()],92,2);
+        }
+        front_text(plane,"LEFT / RIGHT TO CHOOSE",158,1);
+        front_text(plane,"SPACE / RETURN / FIRE TO SELECT",173,1);
+    } else if(page==3) {
+        if(!game_selection_locked() && game_selected_profile()>=3)front_text(plane,"HYPER",64,2);
+        if(!front_planes) {
+            static const char *names[]={"HEXAGON","HEXAGONER","HEXAGONEST"};
+            front_text(plane,game_selection_locked()?"LOCKED":names[game_selected_profile()%3],92,2);
+        }
+        if(!game_selection_locked()) {
+        unsigned profile=game_selected_profile();
+        char difficulty[]="DIFFICULTY: HARDESTESTESTEST";
+        if(profile==1) {difficulty[17]='R';difficulty[18]=0;}
+        else difficulty[profile ? 13+3*profile:16]=0;
+        front_text(plane,difficulty,120,1);
+        char best[]="BEST SCORE: 000.00";
+        unsigned seconds=gamestate.record_seconds;
+        if(seconds>999)seconds=999;
+        best[12]+=(seconds/100);best[13]+=(seconds/10)%10;best[14]+=seconds%10;
+        unsigned cs=gamestate.record_subsecond_frames*100u/60u;
+        best[16]+=cs/10;best[17]+=cs%10;
+        front_text(plane,best,136,1);
+        }
+        front_text(plane,game_load_failed()?"LOAD ERROR - PRESS FIRE TO RETRY":
+            game_selection_locked()?"LOCKED - COMPLETE THE NORMAL LEVEL":"SPACE / RETURN / FIRE TO START",158,1);
+        front_text(plane,"LEFT / RIGHT TO CHOOSE - ESC TO RETURN",173,1);
+    } else if(page==1) {
+        front_text(plane,"OPTIONS",36,2);
+        front_text(plane,"NO OPTIONS YET",94,1);
+        front_text(plane,"ESC TO RETURN",173,1);
+    } else {
+        unsigned page=game_credit_page();
+        front_text(plane,"CREDITS",8,2);
+        if(page<5) {
+            static const char *roles[]={"ORIGINAL GAME CONCEPT AND DESIGN","ORIGINAL SOUNDTRACK","VOICE","FONT - BUMP IT UP","PC PORT"};
+            static const char *names[]={"TERRY CAVANAGH","CHIPZEL","JENN FRANK","AARON AMAR - CC BY-SA","ETHAN LEE"};
+            unsigned row=page;
+            unsigned qr=page<3?page:7-page;
+            front_text(plane,roles[row],34,1);front_text(plane,names[row],47,1);
+            unsigned n=credit_qr_size[qr],size=(n+8)*2,left=(320-size)/2;
+            const UBYTE *bits=credit_qr_bits+credit_qr_offset[qr];
+            for(unsigned y=0;y<size;++y)for(unsigned x=0;x<size;++x) {
+                unsigned mx=x/2,my=y/2;
+                unsigned black=mx>=4 && my>=4 && mx<n+4 && my<n+4 &&
+                    (bits[(my-4)*((n+7)/8)+(mx-4)/8] & (128u>>((mx-4)&7)));
+                if(!black)plane[(64+y)*40+(left+x)/8]|=128u>>((left+x)&7);
+            }
+        } else {
+            static const char *pages[2][7]={
+                {"AMIGA PORT","GOING DIGITAL","ADDITIONAL CODE","A/B - KEIR FRASER","EMMANUEL MARTY","ASTRA - SONNET",""},
+                {"PLAYTESTING","AMBROID - ROBINSONB5 - FRIAR","JANK FACTOR - SEIFER - JC - NAG_GRAHAM","PROMETHEUS - RETRO32 - ZENDAR","ADDITIONAL ASSISTANCE","NAG - NORWICH GAMEDEVS","SPAG - AMIGAGAMEDEV"}
+            };
+            for(unsigned i=0;i<7;++i)front_text(plane,pages[page-5][i],48+i*13,1);
+        }
+        char counter[]="PAGE 1 / 7";counter[5]+=page;front_text(plane,counter,156,1);
+        front_text(plane,"LEFT / RIGHT OR FIRE - ESC TO RETURN",173,1);
+    }
+}
+
+#pragma GCC pop_options
+
+/* Each bitmap belongs to the matching free copper-list slot. Never repaint
+ * the displayed or queued slots; page keys survive visits to gameplay. */
+void *hud_front_bitmap(unsigned slot) {
+    if(!game_front_visible() || !front_planes)return 0;
+    unsigned locks=game_front_page()==3?game_menu_locks():0;
+    ULONG key=game_front_page()==0 ? 0 : game_front_page() |
+              ((ULONG)game_credit_page()<<16) | ((ULONG)locks<<20) |
+              (game_front_page()==3 ? ((ULONG)game_selected_profile()<<8) |
+                ((ULONG)game_selection_locked()<<12) | ((ULONG)game_load_failed()<<13):0);
+    UBYTE *plane=front_planes+slot*BITPLANE_SIZE;
+    ULONG score=((ULONG)gamestate.record_seconds<<8)|gamestate.record_subsecond_frames;
+    unsigned changed=front_keys[slot]!=key || (game_front_page()==3 && front_scores[slot]!=score);
+    if(changed) {
+        unsigned source=0;
+        while(source<3 && (front_keys[source]!=key ||
+              (game_front_page()==3 && front_scores[source]!=score)))++source;
+        if(source<3 && game_front_page()!=0) {
+            /* Reading a published bitmap is safe; only this free slot is written. */
+            blit_copy_plane(front_planes+source*BITPLANE_SIZE,plane);
+            blit_wait();
+        } else hud_draw_front(plane);
+        front_keys[slot]=key;front_scores[slot]=score;
+    }
+    if(game_front_page()==0 || game_front_page()==3) {
+        unsigned levels=game_front_page()==3;
+        unsigned strip_key=levels|(locks<<8);
+        if(front_strip_page!=strip_key) {
+            menu_strip_init_for(front_planes+3*BITPLANE_SIZE,strip_key);
+            front_strip_page=strip_key;
+        }
+        int period=levels?1152:576;
+        int position=(int)(levels?game_selected_profile():game_front_choice())*192-game_front_slide();
+        if(position<0)position+=period;
+        if(position>=period)position-=period;
+        if(changed || front_positions[slot]!=position) {
+            menu_strip_window(front_planes+3*BITPLANE_SIZE,plane,(unsigned)position);
+            front_positions[slot]=position;
+        }
+    }
+    return plane;
+}
+UBYTE hud_front_cached(void) {return front_planes!=0;}
