@@ -900,6 +900,24 @@ static void front_text(UBYTE *plane,const char *text,unsigned y,unsigned scale) 
 
     }
 }
+/* Five local scores fit below the unchanged scrolling level title. */
+static void front_arcade_scores(UBYTE *plane) {
+    const Arcade *a=game_arcade();
+    for(unsigned row=0;row<ARCADE_ROWS;++row) {
+        const ArcadeScore *score=&a->scores[game_selected_profile()][row];
+        char line[]="1. ----------  000.00";
+        line[0]+=row;
+        if(score->ticks) {
+            for(unsigned i=0;i<ARCADE_NAME;++i)line[3+i]=' ';
+            for(unsigned i=0;score->name[i] && i<ARCADE_NAME;++i)line[3+i]=score->name[i];
+            unsigned sec=score->ticks/60u,cs=score->ticks%60u*100u/60u;
+            if(sec>999)sec=999;
+            line[15]+=(sec/100);line[16]+=(sec/10)%10;line[17]+=sec%10;
+            line[19]+=cs/10;line[20]+=cs%10;
+        }
+        front_text(plane,line,114+row*11,1);
+    }
+}
 void hud_draw_front(void *buffer) {
     UBYTE *plane=buffer;
     /* Draw only into the unpublished buffer, after its blits have finished. */
@@ -922,6 +940,11 @@ void hud_draw_front(void *buffer) {
             static const char *names[]={"HEXAGON","HEXAGONER","HEXAGONEST"};
             front_text(plane,game_selection_locked()?"LOCKED":names[game_selected_profile()%3],92,2);
         }
+        if(game_arcade()->enabled) {
+            front_arcade_scores(plane);
+            front_text(plane,"ARCADE - FIRE TO START - ESC TO RETURN",180,1);
+            return;
+        }
         if(!game_selection_locked()) {
         unsigned profile=game_selected_profile();
         char difficulty[]="DIFFICULTY: HARDESTESTESTEST";
@@ -941,8 +964,17 @@ void hud_draw_front(void *buffer) {
         front_text(plane,"LEFT / RIGHT TO CHOOSE - ESC TO RETURN",173,1);
     } else if(page==1) {
         front_text(plane,"OPTIONS",36,2);
-        front_text(plane,"NO OPTIONS YET",94,1);
+        front_text(plane,game_arcade()->enabled?"ARCADE MODE: ON":"ARCADE MODE: OFF",94,1);
+        front_text(plane,"SPACE / RETURN / FIRE TO CHANGE",120,1);
         front_text(plane,"ESC TO RETURN",173,1);
+    } else if(page==4) {
+        const Arcade *a=game_arcade();
+        front_text(plane,"HIGH SCORE",32,2);
+        front_text(plane,"ENTER YOUR NAME",65,1);
+        front_text(plane,a->scores[a->profile][a->row].name,94,1);
+        front_text(plane,"TYPE NAME - BACKSPACE TO DELETE",140,1);
+        front_text(plane,"RETURN / JOYSTICK FIRE TO ACCEPT",158,1);
+        front_text(plane,"ESC TO ACCEPT AND RETURN",173,1);
     } else {
         unsigned page=game_credit_page();
         front_text(plane,"CREDITS",8,2);
@@ -976,6 +1008,7 @@ void hud_draw_front(void *buffer) {
 
 /* Each bitmap belongs to the matching free copper-list slot. Never repaint
  * the displayed or queued slots; page keys survive visits to gameplay. */
+static UWORD front_versions[3];
 void *hud_front_bitmap(unsigned slot) {
     if(!game_front_visible() || !front_planes)return 0;
     unsigned locks=game_front_page()==3?game_menu_locks():0;
@@ -985,17 +1018,18 @@ void *hud_front_bitmap(unsigned slot) {
                 ((ULONG)game_selection_locked()<<12) | ((ULONG)game_load_failed()<<13):0);
     UBYTE *plane=front_planes+slot*BITPLANE_SIZE;
     ULONG score=((ULONG)gamestate.record_seconds<<8)|gamestate.record_subsecond_frames;
-    unsigned changed=front_keys[slot]!=key || (game_front_page()==3 && front_scores[slot]!=score);
+    UWORD version=game_arcade()->revision;
+    unsigned changed=front_versions[slot]!=version || front_keys[slot]!=key || (game_front_page()==3 && front_scores[slot]!=score);
     if(changed) {
         unsigned source=0;
-        while(source<3 && (front_keys[source]!=key ||
+        while(source<3 && (front_versions[source]!=version || front_keys[source]!=key ||
               (game_front_page()==3 && front_scores[source]!=score)))++source;
         if(source<3 && game_front_page()!=0) {
             /* Reading a published bitmap is safe; only this free slot is written. */
             blit_copy_plane(front_planes+source*BITPLANE_SIZE,plane);
             blit_wait();
         } else hud_draw_front(plane);
-        front_keys[slot]=key;front_scores[slot]=score;
+        front_keys[slot]=key;front_scores[slot]=score;front_versions[slot]=version;
     }
     if(game_front_page()==0 || game_front_page()==3) {
         unsigned levels=game_front_page()==3;

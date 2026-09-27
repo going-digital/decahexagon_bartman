@@ -82,10 +82,16 @@ static USHORT* build_frame_tail(USHORT* copPtr, void* bpl0, void* bpl1, UWORD co
     /* Overlay pixels have the same colour with either background bit. */
     UWORD menu_ink=(game_front_visible() && game_front_page()==3 &&
                     game_selected_profile()==4) ? 0x555 : 0xfff;
+    /* Keep the Arcade table distinct from both the background and spokes.
+     * Both light Hyper palettes retain their original colours in gameplay. */
+    if(game_front_visible() && game_front_page()==3 &&
+       game_selected_profile()>=4 && game_arcade()->enabled) {
+        col0=0x012;col1=0x246;menu_ink=0xfff;
+    }
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[2]), menu_ink);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[3]), menu_ink);
 
-    if(game_front_visible() && game_front_page()==2) {col0=0;col1=0;}
+    if(game_front_visible() && (game_front_page()==2 || game_front_page()==4)) {col0=0;col1=0;}
     // Set scene colours before the HUD's mid-display multiplex WAIT.
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[0]), col0);
     copPtr = copWrite(copPtr, offsetof(struct Custom, color[1]), col1);
@@ -318,6 +324,7 @@ int main() {
             fib_stream_tick(game_mode()==MODE_PLAYING,game_mode()==MODE_ATTRACT);
 #endif
             // Held state persists; one-shot actions belong to only the first tick.
+            input.text[0]=input.text[1]=input.accept_edge=0;
             input.fire_edge = input.back_edge = input.ending_edge = input.test_level = 0;
             if (game_take_load_barrier()) {
                 /* Blocking disk/decode time belongs to loading, not the run.

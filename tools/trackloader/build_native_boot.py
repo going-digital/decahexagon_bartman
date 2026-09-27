@@ -8,6 +8,9 @@ from package_native_game import compress
 root=Path(__file__).resolve().parents[2];out=root/'scratchpad/trackloader';native=out/'native_game'
 runpy.run_path(str(root/'tools/trackloader/make_guarded_diskio.py'))
 sdk=next((Path.home()/'.vscode/extensions').glob('bartmanabyss.amiga-debug-*/bin/darwin/opt/bin'))
+# Reclaim 4 KiB of unused cue capacity for Arcade code/data. Largest cue is
+# 11,441 bytes; the total Chip allocation and display heap stay unchanged.
+assert 65536+225280==290816 and 290816+12288==303104
 # Resident workspaces must remain disjoint even as code/data budgets evolve.
 regions=[('stage',0,22528),('diskio',24000,37056),('track_cache',38000,43632),
  ('save_anchors',45000,46548),('save_scratch',46800,48848),
@@ -17,7 +20,7 @@ raw=(native/'game.exe1').read_bytes();packed=(native/'game.deflate').read_bytes(
 assert zlib.decompress(packed,-15)==raw
 proof=json.loads((root/'docs/TRACKLOADER_EXECUTABLE_TARGET_RESULTS.json').read_text())['inflate']
 assert proof['packed_sha256']==hashlib.sha256(packed).hexdigest() and proof['overlap_matches']
-assert proof['arena_bytes']<=221184 and struct.unpack_from('>I',raw,12)[0]<=221184
+assert proof['arena_bytes']<=225280 and struct.unpack_from('>I',raw,12)[0]<=225280
 entry=native/'executable_pic.s';entry.write_text('.text\n.global _start\n_start: bra.w track_executable_prepare\n bra.w resident_tune_prepare\n bra.w track_ofs_load\n')
 # Keep sample expansion/decoding at O2; shrink validation and boot-only glue.
 pic_objects=[]
@@ -37,7 +40,7 @@ for index,(track,lead) in enumerate([('courtesy',0),('otis',0),('focus',0)],1):
  proof_tune=next(r for r in json.loads((root/'docs/TRACKLOADER_INFLATE_RESULTS.json').read_text())['trials'] if r['name']==f'{track}.fibonacci.deflate')
  assert proof_tune['sha256']==hashlib.sha256(tune).hexdigest() and proof_tune['overlap_matches']
  assert proof_tune['arena_bytes']<=500000
- cues=(root/f'assets/music{index}.cues').read_bytes();assert 0<len(cues)<=16384
+ cues=(root/f'assets/music{index}.cues').read_bytes();assert 0<len(cues)<=12288
  (native/f'cues{index}.deflate').write_bytes(compress(cues,out/'libzultra.dylib'))
  values=[proof_tune['source_offset'],len(tune),sum(tune),len(zlib.decompress(tune,-15)),lead,len(cues)]
  name='DF0:'+track
@@ -91,7 +94,7 @@ assert zlib.decompress((native/'save_anchors.deflate').read_bytes(),-15)==anchor
 data[1661*512:1661*512+len(stage)]=stage
 (native/'native_menu.adf').write_bytes(data)
 (native/'native_menu.toml').write_text(f'[emulation]\npacing_budget = "cycles"\n[floppy.df0]\npath = "{native/"native_menu.adf"}"\nwrite_protected = true\n')
-report=dict(status='Native three-track diagnostic built; not yet boot verified',stage_bytes=len(stage),chip_block_bytes=385024,image_offset=65536,image_capacity=221184,heap_offset=303104,heap_bytes=81920,cue_offset=286720,cue_capacity=16384,free_disk_sectors=layout['free_sectors'],adf_sha256=hashlib.sha256(data).hexdigest(),limitations=['A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending','All profiles mapped; Hyper unlock rules unchanged','Native saving requires writable disposable media; hardware validation pending'])
+report=dict(status='Native three-track diagnostic built; not yet boot verified',stage_bytes=len(stage),chip_block_bytes=385024,image_offset=65536,image_capacity=225280,heap_offset=303104,heap_bytes=81920,cue_offset=290816,cue_capacity=12288,free_disk_sectors=layout['free_sectors'],adf_sha256=hashlib.sha256(data).hexdigest(),limitations=['A500 PAL/NTSC auto-detection; full NTSC lifecycle validation pending','All profiles mapped; Hyper unlock rules unchanged','Native saving requires writable disposable media; hardware validation pending'])
 (root/'docs/TRACKLOADER_NATIVE_BOOT_RESULTS.json').write_text(json.dumps(report,indent=2)+'\n');print(report)
 
 subprocess.run([sys.executable,str(root/"tools/trackloader/make_save_manifest.py")],check=True)

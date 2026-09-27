@@ -13,7 +13,7 @@ data.mkdir(parents=True,exist_ok=True)
 native=root/'scratchpad/trackloader/native_game';packed=root/'scratchpad/trackloader'
 assert (native/'executable_pic.bin').exists(),'Build make trackloader-adf first'
 subprocess.run([sys.executable,str(root/'tools/trackloader/check_native_game.py'),'--whdload'],check=True)
-raw=package(work/'game.elf');assert len(raw)<=221184 and struct.unpack_from('>I',raw,12)[0]<=221184
+raw=package(work/'game.elf');assert len(raw)<=225280 and struct.unpack_from('>I',raw,12)[0]<=225280
 (data/'game').write_bytes(raw)
 # Uncompressed EXE1 eliminates an unnecessary second decompression path on HD.
 # Audio keeps the exact proven Zultra/Fibonacci assets and overlap offsets.
@@ -28,7 +28,7 @@ descriptors=[]
 for index,name in enumerate(('courtesy','otis','focus'),1):
  proof=next(r for r in proofs if r['name']==f'{name}.fibonacci.deflate')
  tune=(data/name).read_bytes();cues=(root/f'assets/music{index}.cues').read_bytes()
- assert 0<len(cues)<=16384 and zlib.decompress((work/f'cues{index}.deflate').read_bytes(),-15)==cues
+ assert 0<len(cues)<=12288 and zlib.decompress((work/f'cues{index}.deflate').read_bytes(),-15)==cues
  values=[proof['source_offset'],len(tune),sum(tune),len(zlib.decompress(tune,-15)),0,len(cues)]
  filename='DF0:'+name
  descriptors.append(' dc.l '+','.join(map(str,values))+f',cues{index}-descriptors,{sum(cues)}\n'+f" dc.b '{filename}',0\n dcb.b {15-len(filename)},0\n")

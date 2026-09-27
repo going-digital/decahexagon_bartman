@@ -561,3 +561,10 @@ test-menu-carousel:
 test: test-level-menu-text
 test-level-menu-text:
 	python3 tests/level_menu_text_test.py
+
+.PHONY: test-arcade
+test: test-arcade
+test-arcade: test-game-save
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -I. tests/arcade_test.c -o out/arcade_test
+	out/arcade_test
+	python3 tests/arcade_flow_test.py

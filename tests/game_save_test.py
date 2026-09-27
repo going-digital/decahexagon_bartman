@@ -13,6 +13,8 @@ code='''
 #include <assert.h>
 #include "trackloader/save.h"
 #include "pc_time.h"
+#include "arcade.h"
+static Arcade arcade;
 typedef unsigned char UBYTE;
 typedef unsigned short UWORD;
 enum {MODE_ATTRACT,MODE_PLAYING,MODE_DEAD,MODE_GAMEOVER};
@@ -60,6 +62,12 @@ int main(void) {
  uint32_t before=records.best[0];assert(!game_restore_save(&loaded));
  assert(records.best[0]==before && save_restore_open);
  assert(!game_restore_save(0) && !game_save_snapshot(0) && !game_save_committed(0));
+ /* Arcade must leave even already-dirty normal progress untouched. */
+ records.best[0]=123;records.completed[0]=0;save_dirty=1;
+ arcade.enabled=1;selected_profile=0;gamestate.time_seconds=180;
+ record_time();assert(records.best[0]==123 && !records.completed[0]);
+ assert(save_dirty && !game_save_dirty() && !game_save_snapshot(&snapshot));
+ arcade.enabled=0;assert(game_save_dirty());
  /* Formatting cache must survive profile changes, retries and wide scores. */
  const uint32_t scores[]={0,59,60,65535,65536,3932159,3932160,0xffffffffU};
  for(unsigned i=0;i<sizeof(scores)/sizeof(scores[0]);++i)

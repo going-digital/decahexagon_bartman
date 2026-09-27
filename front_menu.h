@@ -1,7 +1,7 @@
 #pragma once
 #include "pc_sfx.h"
 /* Menu pages stay inside MODE_ATTRACT, preserving resident audio/save policy. */
-enum { FRONT_HOME, FRONT_OPTIONS, FRONT_CREDITS, FRONT_LEVELS };
+enum { FRONT_HOME, FRONT_OPTIONS, FRONT_CREDITS, FRONT_LEVELS, FRONT_NAME };
 #define FRONT_CREDIT_PAGES 7
 struct FrontMenu { unsigned char page, choice, credits, held, level; short slide; };
 #ifdef __m68k__

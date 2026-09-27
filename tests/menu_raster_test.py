@@ -11,6 +11,8 @@ with tempfile.TemporaryDirectory() as directory:
   header='''#include <string.h>
 #include "menu_font16.h"
 #include "credit_qr.h"
+#include "arcade.h"
+const Arcade *game_arcade(void);
 typedef unsigned char UBYTE;typedef unsigned short UWORD;typedef unsigned int ULONG;
 static UBYTE *front_planes;
 static struct {unsigned record_seconds,record_subsecond_frames;} gamestate;
@@ -23,6 +25,9 @@ void blit_cls(void*p){memset(p,0,8000);}void blit_wait(void){}
   (p/(variant+'.c')).write_text(header+s)
   subprocess.run(['cc','-std=c99','-O2','-I'+str(root),'-Dhud_draw_front='+variant+'_draw','-Dblit_cls='+variant+'_clear','-Dblit_wait='+variant+'_wait','-c',str(p/(variant+'.c')),'-o',str(p/(variant+'.o'))],check=True)
  (p/'test.c').write_text('''#include <assert.h>
+#include "arcade.h"
+static Arcade arcade;
+const Arcade *game_arcade(void){return &arcade;}
 #include <string.h>
 static unsigned page,choice,credits;
 unsigned game_selected_profile(void){return 0;}unsigned game_selection_locked(void){return 0;}unsigned game_load_failed(void){return 0;}
@@ -34,6 +39,6 @@ int main(void){unsigned char a[8064],b[8064];
  before_draw(a+32);after_draw(b+32);assert(!memcmp(a,b,sizeof(a)));
  }return 0;}
 ''')
- subprocess.run(['cc',str(p/'test.c'),str(p/'before.o'),str(p/'after.o'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-I'+str(root),str(p/'test.c'),str(p/'before.o'),str(p/'after.o'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)
 print('15 Options states: bitmaps identical, including guard bytes')

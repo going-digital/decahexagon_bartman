@@ -16,6 +16,8 @@ def function(name):
     return source[start:end]
 code = r'''
 #include <assert.h>
+#include "arcade.h"
+static Arcade arcade;
 typedef unsigned char UBYTE;
 typedef struct { UBYTE held,fire,fire_edge,back_edge,cheat_held; } InputState;
 typedef int (*GameRunPreparer)(UBYTE);
@@ -66,6 +68,6 @@ with tempfile.TemporaryDirectory() as directory:
     path=Path(directory)
     (path/'test.c').write_text(code)
     for cheat in (0,1):
-        subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',f'-DCHEAT_MODE={cheat}',str(path/'test.c'),'-o',str(path/'test')],check=True)
+        subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(root),f'-DCHEAT_MODE={cheat}',str(path/'test.c'),'-o',str(path/'test')],check=True)
         subprocess.run([str(path/'test')],check=True)
 print('Game loading: all profiles, failure preservation, retry latch and start ordering pass')

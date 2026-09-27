@@ -16,6 +16,8 @@ typedef struct sInputState {
 #if CHEAT_MODE
     UBYTE cheat_held;  // top-row 8, held only; absent from release layout
 #endif
+    UBYTE text[2];     // up to two typed characters per hardware poll
+    UBYTE accept_edge; // Return or joystick fire, not Space
     UBYTE held;        // PC_INPUT_POSITIVE / PC_INPUT_NEGATIVE, both preserved
     WORD  turn;        // -1 = anticlockwise (left), +1 = clockwise (right), 0
     UBYTE fire;        // 1 while select/confirm (space, return or joy fire) is held

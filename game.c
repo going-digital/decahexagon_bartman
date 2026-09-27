@@ -28,6 +28,9 @@ static PcPlayer player;
 static PcMorph morph;
 static PcMenu menu;
 static PcRecords records;
+static Arcade arcade;
+static UBYTE arcade_submitted;
+const Arcade *game_arcade(void) {return &arcade;}
 static uint32_t save_generation,save_achievements;
 static UBYTE save_dirty,save_restore_open;
 static PcLifecycle lifecycle;
@@ -53,10 +56,10 @@ UBYTE game_take_load_barrier(void) {
     UBYTE pending=load_barrier;load_barrier=0;return pending;
 }
 UBYTE game_selected_profile(void) { return selected_profile; }
-UBYTE game_menu_locks(void) {return (!records.completed[0]<<3)|(!records.completed[1]<<4)|(!records.completed[2]<<5);}
-UBYTE game_selection_locked(void) { return !pc_profile_unlocked(&records,selected_profile); }
+UBYTE game_menu_locks(void) {return arcade.enabled?0:(!records.completed[0]<<3)|(!records.completed[1]<<4)|(!records.completed[2]<<5);}
+UBYTE game_selection_locked(void) { return !arcade.enabled && !pc_profile_unlocked(&records,selected_profile); }
 static void load_record(void) {
-    uint32_t best=records.best[selected_profile];
+    uint32_t best=arcade.enabled?arcade.scores[selected_profile][0].ticks:records.best[selected_profile];
     if ((uint32_t)gamestate.record_seconds*60u+
         gamestate.record_subsecond_frames==best) return;
     uint32_t seconds=pc_tick_seconds(best);
@@ -106,7 +109,7 @@ static void project_state(void) {
     gamestate.segment_angle=pc_render_angle((int16_t)pc_morph_arc(&morph));
     gamestate.player_angle=pc_render_angle(player.angle ? 360-player.angle:0);
 }
-UBYTE game_save_dirty(void) { return save_dirty; }
+UBYTE game_save_dirty(void) { return !arcade.enabled && save_dirty; }
 int game_restore_save(const TrackSave *state) {
     if (!state || !save_restore_open || save_dirty) return 0;
     for (unsigned i=0;i<6;i++) if (state->records.completed[i]>1) return 0;
@@ -117,7 +120,7 @@ int game_restore_save(const TrackSave *state) {
     return 1;
 }
 int game_save_snapshot(TrackSave *state) {
-    if (!state || !save_dirty || (mode!=MODE_ATTRACT && mode!=MODE_GAMEOVER)) return 0;
+    if (arcade.enabled || !state || !save_dirty || (mode!=MODE_ATTRACT && mode!=MODE_GAMEOVER)) return 0;
     state->records=records;state->achievements=save_achievements;
     state->generation=save_generation+1;
     return 1;
@@ -136,7 +139,7 @@ int game_save_committed(const TrackSave *state) {
 }
 
 static void reset_run(void) {
-    ending_complete=0;
+    ending_complete=0;arcade_submitted=0;
 #if CHEAT_MODE
     cheat_reset();
 #endif
@@ -150,7 +153,7 @@ static void reset_run(void) {
     shake_x=shake_y=0;new_record=0;gamestate.pulse=0;
 }
 __attribute__((optimize("Os"))) void game_init(void) {
-    front=(struct FrontMenu){0};
+    front=(struct FrontMenu){0};arcade=(Arcade){0};
     records=(PcRecords){0};save_generation=save_achievements=0;
     save_dirty=0;save_restore_open=1;
     test_run=0;run_preparer=0;load_barrier=0;load_retry_wait=0;load_failed=0;
@@ -159,10 +162,11 @@ __attribute__((optimize("Os"))) void game_init(void) {
     player.angle=player.previous_angle=30;
     selected_profile=PC_START_STAGE+3*PC_START_HYPER;
     pc_menu_reset(&menu,selected_profile);reset_run();set_mode(MODE_ATTRACT);load_record();
+    pc_palette_start(&game_palette,0,0);
 }
 
 static void record_time(void) {
-    if(test_run) {load_record();return;}
+    if(test_run || arcade.enabled) {load_record();return;}
     uint32_t elapsed=(uint32_t)gamestate.time_seconds*60+gamestate.time_subsecond_frames;
     UBYTE completed=records.completed[selected_profile];
     if (pc_record_tick(&records,selected_profile,elapsed)) { new_record=1;save_dirty=1; }
@@ -316,15 +320,42 @@ static void start_playing(const InputState *in) {
 #if CHEAT_MODE
     first.cheat_held=0;
 #endif
-    sfx_emit(pc_sfx_begin(&sound_events,records.best[selected_profile],
-        test_run?0:records.completed[selected_profile],selected_profile));
+    sfx_emit(pc_sfx_begin(&sound_events,arcade.enabled?arcade.scores[selected_profile][0].ticks:records.best[selected_profile],
+        arcade.enabled?1:test_run?0:records.completed[selected_profile],selected_profile));
     reset_run();set_mode(MODE_PLAYING);
     pc_palette_tick(&game_palette,patterns_effective_score(1));
     update_playing(&first);
 }
 
+/* Arcade owns only its session table; normal records never enter this path. */
+__attribute__((optimize("Os"))) static int update_arcade_menu(const InputState *in) {
+    if(mode==MODE_ATTRACT && front.page==FRONT_NAME) {
+        for(unsigned i=0;i<2;++i)arcade_type(&arcade,in->text[i]);
+        if(in->accept_edge || in->back_edge) {
+            arcade_finish(&arcade);front.page=FRONT_LEVELS;front.slide=0;
+            front.level=selected_profile;front.held=in->held;load_record();
+            sfx_emit(SFX_BIT(SFX_MENUSELECT));
+        }
+        return 1;
+    }
+    if(mode==MODE_ATTRACT && front.page==FRONT_OPTIONS && in->fire_edge && !in->back_edge) {
+        arcade.enabled=!arcade.enabled;++arcade.revision;load_record();
+        sfx_emit(SFX_BIT(SFX_MENUSELECT));return 1;
+    }
+    if(arcade.enabled && !test_run && !arcade_submitted &&
+       (mode==MODE_DEAD || mode==MODE_GAMEOVER) && pc_lifecycle_can_start(&lifecycle)) {
+        arcade_submitted=1;
+        if(arcade_enter(&arcade,selected_profile,lifecycle.elapsed)) {
+            front.page=FRONT_NAME;front.slide=0;front.level=selected_profile;
+            set_mode(MODE_ATTRACT);return 1;
+        }
+    }
+    return 0;
+}
+
 void game_update(const InputState* in) {
     save_restore_open=0;
+    if(update_arcade_menu(in))return;
     if (!in->fire && !in->fire_edge) load_retry_wait=0;
     sfx_emit(pc_sfx_startup(&sound_events));
     mode_timer++;
@@ -369,7 +400,12 @@ void game_update(const InputState* in) {
     if(mode==MODE_ATTRACT) {
         unsigned previous=front.page;
         sfx_emit(front_menu_tick(&front,in->held,in->fire_edge,in->back_edge));
-        if(previous!=FRONT_LEVELS && front.page==FRONT_LEVELS) {front.level=selected_profile;front.slide=0;}
+        if(previous!=FRONT_HOME && front.page==FRONT_HOME)
+            pc_palette_start(&game_palette,0,0);
+        if(previous!=FRONT_LEVELS && front.page==FRONT_LEVELS) {
+            front.level=selected_profile;front.slide=0;
+            pc_palette_start(&game_palette,selected_profile%3,selected_profile/3);
+        }
         if(previous!=FRONT_LEVELS || front.page!=FRONT_LEVELS) {
             gamestate.field_angle+=gamestate.field_rotation;
             return;

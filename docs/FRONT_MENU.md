@@ -229,3 +229,9 @@ Chipzel, Jenn Frank, Aaron Amar (font), Ethan Lee (PC port), Amiga port/addition
 code, and Playtesting/additional assistance. The removed calls-to-action page
 is no longer shown. All credited names and the five website QR destinations are
 retained; the font and PC-port QR indices follow their reordered pages.
+
+## Arcade option
+
+Options now toggles session-only Arcade mode. All six levels are unlocked, with five named scores per level and keyboard name entry after qualifying deaths. Normal saved scores and unlocks are isolated. See [ARCADE_MODE.md](ARCADE_MODE.md) for PC evidence, controls and validation.
+
+The Home menu resets to the normal Hexagon palette on entry (including startup). Re-entering the level selector restores the selected profile's palette even when the selection has not changed. This prevents a white Hyper Hexagoner background carrying into Home, Options or Credits. All six profile-to-Home-and-back transitions were checked against `pc_palette_start`.

@@ -4,6 +4,11 @@ import subprocess,tempfile
 root=Path(__file__).resolve().parents[1];s=(root/'hud.c').read_text()
 a=s.index('void *hud_front_bitmap(');b=s.index('\nUBYTE hud_front_cached',a)
 code='''#include <assert.h>
+#include "arcade.h"
+static Arcade arcade;
+const Arcade *game_arcade(void){return &arcade;}
+static unsigned short front_versions[3];
+typedef unsigned short UWORD;
 #include <string.h>
 typedef unsigned char UBYTE;typedef unsigned long ULONG;
 #define BITPLANE_SIZE 8000
@@ -51,6 +56,6 @@ int main(void){
 '''
 with tempfile.TemporaryDirectory() as d:
  p=Path(d);(p/'test.c').write_text(code)
- subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(root),str(p/'test.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)
 print('Menu cache: unchanged frames do not redraw; slot ownership, invalidation and fallback pass')

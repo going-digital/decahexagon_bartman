@@ -5,6 +5,9 @@ import subprocess,tempfile
 root=Path(__file__).resolve().parents[1]
 s=(root/'hud.c').read_text();s=s[s.index('void hud_draw_front('):s.index('#pragma GCC pop_options',s.index('static const UBYTE front_font'))]
 code=r'''#include <assert.h>
+#include "arcade.h"
+static Arcade arcade;
+const Arcade *game_arcade(void){return &arcade;}
 #include "credit_qr.h"
 #include <string.h>
 typedef unsigned char UBYTE;typedef unsigned int ULONG;
@@ -14,6 +17,7 @@ static unsigned profile,normal,hyper,locked,locked_name;static char difficulty[6
 unsigned game_front_page(void){return 3;}unsigned game_front_choice(void){return 0;}
 unsigned game_credit_page(void){return 0;}unsigned game_selected_profile(void){return profile;}
 unsigned game_load_failed(void){return 0;}unsigned game_selection_locked(void){return locked;}
+void front_arcade_scores(UBYTE*p){(void)p;}
 void blit_cls(void*p){(void)p;}void blit_wait(void){}
 void front_text(UBYTE*p,const char*s,unsigned y,unsigned scale){
  (void)p;(void)y;(void)scale;

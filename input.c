@@ -1,5 +1,6 @@
 #include "input.h"
 #include "pc_core.h"
+#include "arcade.h"
 #include "system.h"
 
 // JOY1DAT direction decode (digital joystick in port 1).
@@ -23,7 +24,7 @@ static UBYTE k_left, k_right, k_space, k_return, k_esc;
 static UBYTE k_select_edge, k_esc_edge;
 
 static UBYTE ending_edge,test_level;
-static UBYTE prev_fire;
+static UBYTE prev_fire,prev_joy,accept_edge,text[2],text_count;
 
 // Hold the keyboard handshake line low for ~2 scanlines (~130us, over the
 // 75us minimum), independent of CPU speed.
@@ -60,6 +61,11 @@ static void kbd_scan(void) {
         UBYTE code = (UBYTE)((n >> 1) | (n << 7));
         UBYTE up = code & 0x80;
 
+        if(!up) {
+            unsigned ch=arcade_key(code);
+            if(ch && text_count<2)text[text_count++]=ch;
+            if(code==KEY_RETURN)accept_edge=1;
+        }
         if(!up && (code&0x7f)>=0x50 && (code&0x7f)<=0x56)
             test_level=(code&0x7f)-0x50+1;
         switch (code & 0x7f) {
@@ -82,6 +88,7 @@ void input_init(void) {
     custom->potgo = 0xff00;
     // Make sure the keyboard serial port is in input mode.
     ciaa->ciacra &= (UBYTE)~CIACRAF_SPMODE;
+    prev_joy=accept_edge=text_count=0;
     prev_fire = 0;ending_edge=test_level=0;
 #if CHEAT_MODE
     k_cheat = 0;
@@ -93,7 +100,11 @@ void input_init(void) {
 }
 
 void input_poll(InputState* in) {
+    text_count=0;text[0]=text[1]=accept_edge=0;
     kbd_scan();
+    in->text[0]=text[0];in->text[1]=text[1];
+    UBYTE joy_fire=JoyFire()!=0;
+    in->accept_edge=accept_edge || (joy_fire && !prev_joy);prev_joy=joy_fire;
 #if CHEAT_MODE
     in->cheat_held = k_cheat;
 #endif

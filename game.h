@@ -77,3 +77,6 @@ UBYTE game_front_visible(void);
 int game_front_slide(void);
 
 UBYTE game_menu_locks(void);
+
+#include "arcade.h"
+const Arcade *game_arcade(void);

@@ -1,6 +1,6 @@
 ; A500 native-game boot. A4 owns a 385024-byte Chip block.
-; stage/workspace/stack [0,65536), image [65536,286720),
-; cues [286720,303104), display heap [303104,385024).
+; stage/workspace/stack [0,65536), image [65536,290816),
+; cues [290816,303104), display heap [303104,385024).
 ; DiskIO workspace [24000,37056), track cache [38000,43632),
 ; OFS scratch [54000,55244) reused as tune metadata after disk loading.
         lea boot_args(pc),a0
@@ -49,7 +49,7 @@ video_detected:
         adda.l #GAME_SOURCE_OFFSET,a1
         lea 24000(a4),a2
         move.l #GAME_PACKED_BYTES,d1
-        move.l #221184-GAME_SOURCE_OFFSET,d2
+        move.l #225280-GAME_SOURCE_OFFSET,d2
         bsr bounded_load
         tst.l d0
         bne fail
@@ -79,7 +79,7 @@ sum:    moveq #0,d3
         adda.l #54000,a0
         move.l a0,-(sp)          ; output info
         move.l a3,-(sp)          ; actual relocation base
-        move.l #221184,-(sp)     ; image arena capacity
+        move.l #225280,-(sp)     ; image arena capacity
         move.l #GAME_PACKAGE_BYTES,-(sp)
         move.l a3,-(sp)
         bsr executable_binary
@@ -344,18 +344,18 @@ packed_sum:
         tst.l d0
         beq callback_failed
 tune_prepared:
-        ; Immutable compressed cues -> dedicated 16 KiB Chip region.
+        ; Immutable compressed cues -> dedicated 12 KiB Chip region.
         move.l current_descriptor(pc),a2
         lea descriptors(pc),a5
         adda.l 24(a2),a5
         move.l a4,-(sp)
         move.l a4,a6
         adda.l #52000,a6
-        adda.l #286720,a4
+        adda.l #290816,a4
         bsr inflate
         move.l (sp)+,a4
         move.l a4,a0
-        adda.l #286720,a0
+        adda.l #290816,a0
         move.l 20(a2),d1
         moveq #0,d2
 cue_sum:
@@ -372,7 +372,7 @@ cue_sum:
         move.l current_descriptor(pc),a2
         move.l 20(a2),-(sp)
         move.l a4,a0
-        adda.l #286720,a0
+        adda.l #290816,a0
         move.l a0,-(sp)
         move.l a4,a0
         adda.l #54000,a0
