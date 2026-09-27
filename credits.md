@@ -8,7 +8,8 @@
   * [Jenn Frank](https://linktr.ee/jennatar)
 * Font
   * [Aaron Amar](https://fontstruct.com/fontstructions/show/155156)
-* PC Port: [Ethan Lee](https://flibitijibibo.com)
+* PC Port
+  * [Ethan Lee](https://flibitijibibo.com)
 * Amiga Port
   * Going Digital
 * Additional code
